@@ -1,0 +1,14 @@
+# Unreal Engine Ignore List
+
+# VS and JetBrains project files
+.idea/
+.vs/
+
+# Unreal Engine generated folders
+Saved/
+Intermediate/
+DerivedDataCache/
+
+# Unreal Engine build files
+Binaries/
+Build/
