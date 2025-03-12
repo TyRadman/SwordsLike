@@ -336,8 +336,8 @@ void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		}
 		
 		EnhancedInputComponent->BindAction(LockAction, ETriggerEvent::Completed, TargetLockerComponent, &UTargetLockerComponent::PerformLockAction);
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, Sprint, &USprintComponent::OnSprintStated);
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, Sprint, &USprintComponent::OnSprintEnded);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ASwordslikeCharacter::OnSprintStarted);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::OnSprintEnded);
 		EnhancedInputComponent->BindAction(AttackInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::Attack);
 		EnhancedInputComponent->BindAction(RollInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::Roll);
 		EnhancedInputComponent->BindAction(TestInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::StartAttackCycle);
@@ -552,6 +552,28 @@ void ASwordslikeCharacter::OnParryEnded()
 {
 	bCanJump = true;
 	bCanMove = true;
+}
+
+void ASwordslikeCharacter::OnSprintStarted()
+{
+	Sprint->OnSprintStated();
+
+	if(TargetLockerComponent->bIsLockedOnTarget)
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	}
+}
+
+void ASwordslikeCharacter::OnSprintEnded()
+{
+	Sprint->OnSprintEnded();
+
+	if(TargetLockerComponent->bIsLockedOnTarget)
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	}
 }
 #pragma endregion
 

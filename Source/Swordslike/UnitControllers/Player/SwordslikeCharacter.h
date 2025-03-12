@@ -163,6 +163,8 @@ private:
 	void OnRollFinished();
 	void OnParryStarted();
 	void OnParryEnded();
+	void OnSprintStarted();
+	void OnSprintEnded();
 	
 	FTimerHandle HitRecoveryTimer;
 	const float RecoveryDuration = .5f;
