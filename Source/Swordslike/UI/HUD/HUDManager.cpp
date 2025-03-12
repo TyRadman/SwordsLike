@@ -13,7 +13,7 @@
 
 AHUDManager::AHUDManager()
 {
-	static ConstructorHelpers::FClassFinder<UUserWidget>HealthBarWidgetClass(TEXT("/Game/UI/HUD/HealthBars/PlayerHealthBar/WBP_PlayerHUD"));
+	static ConstructorHelpers::FClassFinder<UUserWidget>HealthBarWidgetClass(TEXT("/Game/UI/HUD/PlayerHUD/WBP_PlayerHUD"));
 
 	if(HealthBarWidgetClass.Class)
 	{

@@ -1,5 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-#include "NiagaraFunctionLibrary.h"
+
 #include "NiagaraComponent.h"
 #include "SwordslikeCharacter.h"
 #include "BaseEntityAnimationsComponent.h"
@@ -99,12 +98,19 @@ void ASwordslikeCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	if(UOverheadHealthBarWidget* CastOverHeadHUD = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
+	{
+		OverHeadHUD = CastOverHeadHUD;
+	}
+
 	if(ParryComponent)
 	{
 		ParryComponent->InitEntityComponent(this);
 
 		ParryComponent->OnParryStartedEvent.AddUObject(this, &ASwordslikeCharacter::OnParryStarted);
 		ParryComponent->OnParryEndedEvent.AddUObject(this, &ASwordslikeCharacter::OnParryEnded);
+
+		ParryComponent->OnPostureChanged.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::SetPostureBarValue);
 	}
 
 	if(LockIndicatorWidget)
@@ -148,20 +154,20 @@ void ASwordslikeCharacter::BeginPlay()
 	{
 		OverheadHealthBar->SetWidget(nullptr);
 	}
-	else if(UOverheadHealthBarWidget* HealthBar = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
+	else if(OverHeadHUD)
 	{
 		if(Health)
 		{
-			Health->OnEntityHealthChanged.AddUObject(HealthBar, &UOverheadHealthBarWidget::SetHealthBarValue);
+			Health->OnEntityHealthChanged.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::SetHealthBarValue);
 			// GEngine->AddOnScreenDebugMessage(-1, 50.f,  FColor::Red, FString::Printf(TEXT("Healthbar / %s: Binded"), *GetActorNameOrLabel()));
 
 			FString Name = FString::Printf(TEXT("%s\n%s"), *UEnum::GetValueAsString(GetLocalRole()), *GetActorNameOrLabel());
-			HealthBar->SetNameValue(FText::FromString(*Name));
+			OverHeadHUD->SetNameValue(FText::FromString(*Name));
 
-			HealthBar->Hide();
+			OverHeadHUD->Hide();
 			
-			LockableTargetComponent->OnLockableLocked.AddUObject(HealthBar, &UOverheadHealthBarWidget::Show);
-			LockableTargetComponent->OnLockableUnlocked.AddUObject(HealthBar, &UOverheadHealthBarWidget::Hide);
+			LockableTargetComponent->OnLockableLocked.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::Show);
+			LockableTargetComponent->OnLockableUnlocked.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::Hide);
 		}
 		else
 		{

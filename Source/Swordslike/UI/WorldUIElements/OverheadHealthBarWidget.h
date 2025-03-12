@@ -22,9 +22,13 @@ public:
 	UProgressBar* HealthBar;
 	
 	UPROPERTY(meta = (BindWidget))
+	UProgressBar* PostureBar;
+	
+	UPROPERTY(meta = (BindWidget))
 	UTextBlock* NameTextBlock;
 	
 	void SetHealthBarValue(float CurrentHealth, float MaxHealth);
+	void SetPostureBarValue(float Current, float Max);
 	void SetNameValue(FText NameText);
 
 	void Show();

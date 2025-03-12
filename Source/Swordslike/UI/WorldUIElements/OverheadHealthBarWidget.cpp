@@ -11,6 +11,15 @@ void UOverheadHealthBarWidget::SetHealthBarValue(float CurrentHealth, float MaxH
 	}
 }
 
+void UOverheadHealthBarWidget::SetPostureBarValue(float Current, float Max)
+{
+	if(PostureBar)
+	{
+		float amount = Current / Max;
+		PostureBar->SetPercent(amount);
+	}
+}
+
 void UOverheadHealthBarWidget::SetNameValue(FText NameText)
 {
 	if (NameTextBlock)

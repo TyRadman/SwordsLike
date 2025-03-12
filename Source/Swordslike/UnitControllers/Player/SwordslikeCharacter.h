@@ -11,6 +11,7 @@
 
 #include "SwordslikeCharacter.generated.h"
 
+class UOverheadHealthBarWidget;
 class UBaseParryComponent;
 class USprintComponent;
 class UWidgetComponent;
@@ -118,6 +119,8 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* OverheadHealthBar;
+	
+	UOverheadHealthBarWidget* OverHeadHUD;
 	
 	virtual void BeginPlay() override;
 
