@@ -3,6 +3,7 @@
 
 #include "HUDManager.h"
 
+#include "BaseParryComponent.h"
 #include "SprintComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "HealthBars/PlayerHealthBar.h"
@@ -12,7 +13,7 @@
 
 AHUDManager::AHUDManager()
 {
-	static ConstructorHelpers::FClassFinder<UUserWidget>HealthBarWidgetClass(TEXT("/Game/UI/HUD/HealthBars/PlayerHealthBar/WBP_HealthBar"));
+	static ConstructorHelpers::FClassFinder<UUserWidget>HealthBarWidgetClass(TEXT("/Game/UI/HUD/HealthBars/PlayerHealthBar/WBP_PlayerHUD"));
 
 	if(HealthBarWidgetClass.Class)
 	{
@@ -65,12 +66,30 @@ void AHUDManager::BindStaminaBar(ACharacter* Character)
 
 		if(PlayerStats)
 		{
-			if(PlayerCharacter && PlayerCharacter->GetHealthComponent())
+			if(PlayerCharacter && PlayerCharacter->GetSprintComponent())
 			{
 				PlayerCharacter->GetSprintComponent()->OnEntityStaminaChanged.AddUObject(PlayerStats, &UPlayerHealthBar::SetStaminaBarValue);
 			}
 
 			PlayerStats->SetStaminaBarValue(1.f, 1.f);
+		}
+	}
+}
+
+void AHUDManager::BindPostureBar(ACharacter* Character)
+{
+	if(Character && Character->GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character);
+
+		if(PlayerStats)
+		{
+			if(PlayerCharacter && PlayerCharacter->GetParryComponent())
+			{
+				PlayerCharacter->GetParryComponent()->OnPostureChanged.AddUObject(PlayerStats, &UPlayerHealthBar::SetPostureBarValue);
+			}
+
+			PlayerStats->SetPostureBarValue(1.f, 1.f);
 		}
 	}
 }

@@ -24,6 +24,7 @@ public:
 	 */
 	void BindHealthBar(ACharacter* Character);
 	void BindStaminaBar(ACharacter* Character);
+	void BindPostureBar(ACharacter* Character);
 
 protected:
 	virtual void BeginPlay() override;

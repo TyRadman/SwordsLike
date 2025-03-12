@@ -26,6 +26,8 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 void UBaseParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	AddToCurrentPosture(PostureRecoveryRate * DeltaTime);
 }
 
 #pragma region Parry Network
@@ -131,3 +133,39 @@ void UBaseParryComponent::OnParryNotifyStart(FName NotifyName, const FBranchingP
 	// PrintOnScreen(FString::Printf(TEXT("Parry state %s"), *UEnum::GetValueAsString(CurrentParryState)));
 }
 #pragma endregion
+
+#pragma region Posture
+void UBaseParryComponent::InflictParryPostureDamage(float PostureDamage)
+{
+	float Multiplier = PostureMultipliers[CurrentParryState];
+	AddToCurrentPosture(-PostureDamage * Multiplier);
+}
+
+void UBaseParryComponent::SetMaxPosture(float Amount)
+{
+	MaxPosture = Amount;
+}
+
+void UBaseParryComponent::AddToCurrentPosture(float Amount)
+{
+	CurrentPosture = FMath::Min(CurrentPosture + Amount, MaxPosture);
+
+	// PrintOnScreen_Local(FString::Printf(TEXT("Posture: %f / %f"), CurrentPosture, MaxPosture));
+	
+	// on posture broken
+	if(CurrentPosture <= 0)
+	{
+		CurrentPosture = 0.f;
+	}
+	
+	if(OnPostureChanged.IsBound())
+	{
+		OnPostureChanged.Broadcast(CurrentPosture, MaxPosture);
+	}
+}
+
+void UBaseParryComponent::FullyRefillPosuture()
+{
+	CurrentPosture = MaxPosture;
+}
+#pragma endregion 

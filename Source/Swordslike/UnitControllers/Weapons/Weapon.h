@@ -30,6 +30,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float DamagePerHit;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float PostureDamagePerHit = 5.f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float StaminaPerHit;

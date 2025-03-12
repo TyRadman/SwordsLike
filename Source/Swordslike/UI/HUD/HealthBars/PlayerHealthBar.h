@@ -1,11 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "PlayerHealthBar.generated.h"
 
+class USizeBox;
 class UProgressBar;
 
 /**
@@ -23,9 +22,13 @@ public:
 	
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UProgressBar* StaminaBar;
+	
+	UPROPERTY(EditAnywhere, meta = (BindWidget))
+	UProgressBar* PostureBar;
 
 	void SetHealthBarValue(float CurrentHealth, float MaxHealth);
 	void SetStaminaBarValue(float CurrentStamina, float MaxStamina);
+	void SetPostureBarValue(float Current, float Max);
 
 protected:
 	// Override the Initialize function to set up the widget

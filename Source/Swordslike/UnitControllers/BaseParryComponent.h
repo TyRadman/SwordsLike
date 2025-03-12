@@ -18,6 +18,7 @@ enum class EParryState : uint8
 
 DECLARE_MULTICAST_DELEGATE(ParryDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(SuccessfulParryDelegate, const FDamageInfo& DamageInfo, EParryState State);
+DECLARE_MULTICAST_DELEGATE_TwoParams(PostureDelegate, float Current, float Max);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SWORDSLIKE_API UBaseParryComponent : public UMyActorComponent, public IIEntityComponent
@@ -34,6 +35,7 @@ public:
 
 	virtual void Parry();
 	virtual void EndParry();
+	void InflictParryPostureDamage(float PostureDamage);
 
 	ParryDelegate OnParryStartedEvent;
 	ParryDelegate OnParryEndedEvent;
@@ -72,8 +74,27 @@ private:
 		{"GoodParry", EParryState::Good},
 		{"NormalParry", EParryState::Normal}
 	};
+	
+	const TMap<EParryState, float> PostureMultipliers =
+		{
+		{EParryState::Perfect, 0.f},
+		{EParryState::Good, 0.5f},
+		{EParryState::Normal, 0.7f},
+		{EParryState::None, 1.f}
+		};
 
 	const FName StartSectionName = FName("Start");
 	const FName MiddleSectionName = FName("Middle");
 	const FName EndSectionName = FName("End");
+
+	// POSTURE
+	float CurrentPosture;
+	float MaxPosture;
+	const float PostureRecoveryRate = 0.5f;
+
+public:
+	void SetMaxPosture(float MaxPosture);
+	void AddToCurrentPosture(float Amount);
+	void FullyRefillPosuture();
+	PostureDelegate OnPostureChanged;
 };

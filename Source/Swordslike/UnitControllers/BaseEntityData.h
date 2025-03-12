@@ -27,4 +27,6 @@ public:
 	float MaxHealthPoints = 200.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stats")
 	float MaxStamina = 100.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stats")
+	float MaxPosture = 20.f;
 };

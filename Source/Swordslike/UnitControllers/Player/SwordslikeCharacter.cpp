@@ -231,6 +231,7 @@ void ASwordslikeCharacter::BeginPlay()
 				{
 					HUDManager->BindHealthBar(this);
 					HUDManager->BindStaminaBar(this);
+					HUDManager->BindPostureBar(this);
 				}
 			}
 		}
@@ -271,6 +272,12 @@ void ASwordslikeCharacter::SetInitialValues()
 	{
 		Sprint->SetMaxStamina(PlayerStats->MaxStamina);
 		Sprint->FullyRefillStamina();
+	}
+
+	if(ParryComponent)
+	{
+		ParryComponent->SetMaxPosture(PlayerStats->MaxPosture);
+		ParryComponent->FullyRefillPosuture();
 	}
 }
 
@@ -318,33 +325,22 @@ void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASwordslikeCharacter::Move);
-
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASwordslikeCharacter::Look);
 
-		if(TargetLockerComponent)
-		{
-			// GEngine->AddOnScreenDebugMessage(-1, 50.f,  FColor::Red, FString::Printf(TEXT("Input setup: Player Target Locker %p"), TargetLockerComponent));
-		}
-		else
+		if(!TargetLockerComponent)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 50.f,  FColor::Red, FString::Printf(TEXT("Input setup: No locker")));
 		}
 		
-		// Lock
 		EnhancedInputComponent->BindAction(LockAction, ETriggerEvent::Completed, TargetLockerComponent, &UTargetLockerComponent::PerformLockAction);
-		
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, Sprint, &USprintComponent::OnSprintStated);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, Sprint, &USprintComponent::OnSprintEnded);
-		
 		EnhancedInputComponent->BindAction(AttackInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::Attack);
 		EnhancedInputComponent->BindAction(RollInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::Roll);
-		
 		EnhancedInputComponent->BindAction(TestInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::StartAttackCycle);
-		
 		EnhancedInputComponent->BindAction(ParryInputAction, ETriggerEvent::Started, this, &ASwordslikeCharacter::Parry);
 		EnhancedInputComponent->BindAction(ParryInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::EndParry);
 	}
@@ -525,6 +521,8 @@ void ASwordslikeCharacter::OnCharacterHit(const FDamageInfo& DamageInfo)
 		FRotator Rotation =  GetActorForwardVector().ToOrientationRotator();
 		ParrySparkVFX->SetWorldLocationAndRotation(WeaponMiddlePoint, Rotation);
 		ParrySparkVFX->Activate();
+
+		ParryComponent->InflictParryPostureDamage(WeaponHandler->GetCurrentWeapon()->PostureDamagePerHit);
 	}
 }
 

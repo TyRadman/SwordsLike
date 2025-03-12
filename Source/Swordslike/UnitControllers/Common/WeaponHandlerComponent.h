@@ -38,6 +38,8 @@ public:
 	float GetWeaponStaminaCost() const;
 	FVector GetWeaponMiddleLocation() const;
 
+	FORCEINLINE AWeapon* GetCurrentWeapon() const { return CurrentWeapon; }
+
 private:
 	bool bIsAttacking = false;
 

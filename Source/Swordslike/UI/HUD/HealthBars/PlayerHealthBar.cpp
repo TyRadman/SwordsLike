@@ -1,9 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "PlayerHealthBar.h"
 
 #include "Components/ProgressBar.h"
+#include "Components/SizeBox.h"
 
 void UPlayerHealthBar::SetHealthBarValue(float CurrentHealth, float MaxHealth)
 {
@@ -23,9 +21,20 @@ void UPlayerHealthBar::SetStaminaBarValue(float CurrentHealth, float MaxHealth)
 	}
 }
 
+void UPlayerHealthBar::SetPostureBarValue(float Current, float Max)
+{
+	if(PostureBar)
+	{
+		float amount = Current / Max;
+		PostureBar->SetPercent(amount);
+
+		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+		// 	FString::Printf(TEXT("Posture values: %f / %f"), Current, Max));
+	}
+}
+
 void UPlayerHealthBar::NativeConstruct()
 {
 	Super::NativeConstruct();
-	
 }
 
