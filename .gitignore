@@ -1,0 +1,17 @@
+# Unreal Engine Ignore List
+
+# VS and JetBrains project files
+.idea/
+.vs/
+
+# Unreal Engine generated folders
+Saved/
+Intermediate/
+DerivedDataCache/
+
+# Unreal Engine build files
+Binaries/
+Build/
+Content/Orasot_Bundle/Maps/M_5_Bioms_Showcase.umap
+Content/Characters/Souls/Combat/SwordAttackCombo/Driving_SwordAttackCombo1.uasset 
+*.uasset
