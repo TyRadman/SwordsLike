@@ -11,6 +11,8 @@
 
 #include "SwordslikeCharacter.generated.h"
 
+class UInteractionComponent;
+enum class EParryState : uint8;
 class UOverheadHealthBarWidget;
 class UBaseParryComponent;
 class USprintComponent;
@@ -81,6 +83,8 @@ protected:
 	TObjectPtr<UInputAction> TestInputAction;
 	UPROPERTY(EditDefaultsOnly, Category= Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ParryInputAction;
+	UPROPERTY(EditDefaultsOnly, Category= Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> InteractActionInput;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats", meta = (AllowPrivateAccess = "true"))
 	UPlayerHealthComponent* Health;
@@ -110,6 +114,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UBaseParryComponent* ParryComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	UInteractionComponent* InteractionComponent;
 
 	///////////////////////
 	/// WIDGETS
@@ -128,6 +135,8 @@ protected:
 	void Move(const FInputActionValue& Value);
 
 	void Look(const FInputActionValue& Value);
+
+	void Interact();
 	
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -143,6 +152,8 @@ public:
 	FORCEINLINE USprintComponent* GetSprintComponent() const {return Sprint;}
 	FORCEINLINE USkeletalMeshComponent* GetCustomMesh() const {return CustomMesh;}
 	FORCEINLINE UBaseParryComponent* GetParryComponent() const {return ParryComponent;}
+	FORCEINLINE UOverheadHealthBarWidget* GetOverHeadHUDComponent() const {return OverHeadHUD;}
+	FORCEINLINE UInteractionComponent* GetOverInteractionComponent() const {return InteractionComponent;}
 
 	void OnDeath(const FDamageInfo& DamageInfo);
 	void SetSprintSpeed();
@@ -164,8 +175,6 @@ private:
 	void OnCharacterHitRecovered();
 	void OnRollStarted();
 	void OnRollFinished();
-	void OnParryStarted();
-	void OnParryEnded();
 	void OnSprintStarted();
 	void OnSprintEnded();
 	
@@ -180,6 +189,14 @@ private:
 
 	// TEST
 	void StartAttackCycle();
+
+	void SetCanMove(bool NewCanMove);
+	void SetCanJump(bool NewCanJump);
+
+public:
+	void OnKnockedDown();
+	void OnKnockedDownRecover();
+	void OnAttackParried(const FDamageInfo& DamageInfo, EParryState State);
 
 private:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

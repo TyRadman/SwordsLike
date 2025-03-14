@@ -11,8 +11,10 @@ struct SWORDSLIKE_API FDamageInfo
 public:
     UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float Damage = 0.f;
+	
+    UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	float PostureDamage = 1.f;
 
 	UPROPERTY(BlueprintReadOnly)
 	AActor* Instigator;
-	
 };

@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Weapon.generated.h"
 
+class AWeaponInteractable;
 class UArrowComponent;
 
 UCLASS()
@@ -52,5 +53,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* SceneRoot;
+	
+	AWeaponInteractable* OwnerInteractable;
+
+public:
+	void SetInteractable(AWeaponInteractable* Interactable);
 
 };

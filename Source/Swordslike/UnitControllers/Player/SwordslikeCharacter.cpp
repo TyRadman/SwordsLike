@@ -1,6 +1,6 @@
 
-#include "NiagaraComponent.h"
 #include "SwordslikeCharacter.h"
+#include "NiagaraComponent.h"
 #include "BaseEntityAnimationsComponent.h"
 #include "BaseEntityData.h"
 #include "BaseParryComponent.h"
@@ -13,6 +13,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "InteractionComponent.h"
 #include "PlayerCombatComponent.h"
 #include "PlayerHealthComponent.h"
 #include "SprintComponent.h"
@@ -43,9 +44,7 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
 	// instead of recompiling to adjust them
-	// GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	// GetCharacterMovement()->MaxWalkSpeed = 500.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
@@ -88,6 +87,8 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 	WeaponHandler = CreateDefaultSubobject<UWeaponHandlerComponent>("Player Weapon Handler");
 	
 	ParryComponent = CreateDefaultSubobject<UBaseParryComponent>("Player Parry");
+	
+	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>("Player Interaction");
 
 	// VFX
 	ParrySparkVFX = CreateDefaultSubobject<UNiagaraComponent>("Sparks Effect");
@@ -95,7 +96,6 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 
 void ASwordslikeCharacter::BeginPlay()
 {
-	// Call the base class  
 	Super::BeginPlay();
 
 	if(UOverheadHealthBarWidget* CastOverHeadHUD = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
@@ -106,11 +106,6 @@ void ASwordslikeCharacter::BeginPlay()
 	if(ParryComponent)
 	{
 		ParryComponent->InitEntityComponent(this);
-
-		ParryComponent->OnParryStartedEvent.AddUObject(this, &ASwordslikeCharacter::OnParryStarted);
-		ParryComponent->OnParryEndedEvent.AddUObject(this, &ASwordslikeCharacter::OnParryEnded);
-
-		ParryComponent->OnPostureChanged.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::SetPostureBarValue);
 	}
 
 	if(LockIndicatorWidget)
@@ -279,12 +274,6 @@ void ASwordslikeCharacter::SetInitialValues()
 		Sprint->SetMaxStamina(PlayerStats->MaxStamina);
 		Sprint->FullyRefillStamina();
 	}
-
-	if(ParryComponent)
-	{
-		ParryComponent->SetMaxPosture(PlayerStats->MaxPosture);
-		ParryComponent->FullyRefillPosuture();
-	}
 }
 
 void ASwordslikeCharacter::SetSprintSpeed()
@@ -349,6 +338,7 @@ void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(TestInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::StartAttackCycle);
 		EnhancedInputComponent->BindAction(ParryInputAction, ETriggerEvent::Started, this, &ASwordslikeCharacter::Parry);
 		EnhancedInputComponent->BindAction(ParryInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::EndParry);
+		EnhancedInputComponent->BindAction(InteractActionInput, ETriggerEvent::Completed, this, &ASwordslikeCharacter::Interact);
 	}
 	else
 	{
@@ -411,6 +401,9 @@ void ASwordslikeCharacter::Parry()
 {
 	if(ParryComponent)
 	{
+		SetCanJump(false);
+		SetCanMove(false);
+		
 		ParryComponent->Parry();
 	}
 	else
@@ -421,9 +414,18 @@ void ASwordslikeCharacter::Parry()
 
 void ASwordslikeCharacter::EndParry()
 {
-	if(ParryComponent)
+	if(ParryComponent && ParryComponent->bIsParrying)
 	{
 		ParryComponent->EndParry();
+		
+		if(ParryComponent->bIsKnockedDown)
+		{
+			return;
+		}
+	
+		
+		SetCanJump(true);
+		SetCanMove(true);
 	}
 	else
 	{
@@ -481,11 +483,27 @@ void ASwordslikeCharacter::Look(const FInputActionValue& Value)
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
+
+void ASwordslikeCharacter::Interact()
+{
+	if(!InteractionComponent)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("No interaction component"));
+		return;
+	}
+
+	InteractionComponent->Interact();
+}
 #pragma endregion 
 
 #pragma region Externals
 void ASwordslikeCharacter::OnTargetLockedOn(bool IsLockedOn)
 {
+	if(Sprint->GetIsSprintingValue())
+	{
+		return;
+	}
+	
 	if(IsLockedOn)
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = false;
@@ -509,55 +527,66 @@ void ASwordslikeCharacter::OnCharacterHit(const FDamageInfo& DamageInfo)
 	// get the parry state
 	EParryState ParryState = ParryComponent->ValidateParry(DamageInfo);
 
+	// posture will take damage regardless on whether the character parried or not
+	ParryComponent->DamagePosture(DamageInfo);
+
 	// if there is no parry, then take normal damage
 	if(ParryState == EParryState::None)
 	{
-		bCanJump = false;
-		bCanMove = false;
-		Animations->PlayHitReactMontage();
-		GetWorldTimerManager().SetTimer(HitRecoveryTimer, this, &ASwordslikeCharacter::OnCharacterHitRecovered, RecoveryDuration, false);
-		
 		Health->AddToCurrentHealth(DamageInfo);
+			
+		if(!ParryComponent->bIsKnockedDown)
+		{
+			SetCanJump(false);
+			SetCanMove(false);
+			Animations->PlayHitReactMontage();
+			GetWorldTimerManager().SetTimer(HitRecoveryTimer, this, &ASwordslikeCharacter::OnCharacterHitRecovered, RecoveryDuration, false);
+		}
 	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f,  FColor::Red, FString::Printf(TEXT("PARRIED A %s PARRY"), *UEnum::GetValueAsString(ParryState)));
-		
-		FVector WeaponMiddlePoint = WeaponHandler->GetWeaponMiddleLocation();
-		FRotator Rotation =  GetActorForwardVector().ToOrientationRotator();
-		ParrySparkVFX->SetWorldLocationAndRotation(WeaponMiddlePoint, Rotation);
-		ParrySparkVFX->Activate();
+}
 
-		ParryComponent->InflictParryPostureDamage(WeaponHandler->GetCurrentWeapon()->PostureDamagePerHit);
-	}
+void ASwordslikeCharacter::OnAttackParried(const FDamageInfo& DamageInfo, EParryState State)
+{
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f,  FColor::Red, FString::Printf(TEXT("PARRIED A %s PARRY"), *UEnum::GetValueAsString(State)));
+	
+	FVector WeaponMiddlePoint = WeaponHandler->GetWeaponMiddleLocation();
+	FRotator Rotation =  GetActorForwardVector().ToOrientationRotator();
+	ParrySparkVFX->SetWorldLocationAndRotation(WeaponMiddlePoint, Rotation);
+	ParrySparkVFX->Activate();
 }
 
 void ASwordslikeCharacter::OnCharacterHitRecovered()
 {
-	bCanMove = true;
-	bCanJump = true;
+	UE_LOG(LogTemp, Display, TEXT("Recover jump and movement"));
+	SetCanMove(true);
+	SetCanJump(true);
 }
 
 void ASwordslikeCharacter::OnRollStarted()
 {
-	bCanJump = false;
+	SetCanJump(false);
 }
 
 void ASwordslikeCharacter::OnRollFinished()
 {
-	bCanJump = true;
+	SetCanJump(true);
 }
 
-void ASwordslikeCharacter::OnParryStarted()
+void ASwordslikeCharacter::OnKnockedDown()
 {
-	bCanJump = false;
-	bCanMove = false;
+	if(GetWorldTimerManager().IsTimerActive(HitRecoveryTimer))
+	{
+		GetWorldTimerManager().ClearTimer(HitRecoveryTimer);
+	}
+	
+	SetCanJump(false);
+	SetCanMove(false);
 }
 
-void ASwordslikeCharacter::OnParryEnded()
+void ASwordslikeCharacter::OnKnockedDownRecover()
 {
-	bCanJump = true;
-	bCanMove = true;
+	SetCanJump(true);
+	SetCanMove(true);
 }
 
 void ASwordslikeCharacter::OnSprintStarted()
@@ -594,4 +623,14 @@ void ASwordslikeCharacter::StartAttackCycle()
 {
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ASwordslikeCharacter::Attack, 2.f, true);
+}
+
+void ASwordslikeCharacter::SetCanMove(bool Value)
+{
+	bCanMove = Value;
+}
+
+void ASwordslikeCharacter::SetCanJump(bool Value)
+{
+	bCanJump = Value;
 }

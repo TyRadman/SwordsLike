@@ -5,6 +5,7 @@
 #include "Damagable.h"
 #include "KismetTraceUtils.h"
 #include "Components/ArrowComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Player/SwordslikeCharacter.h"
 #include "Weapons/Weapon.h"
 
@@ -13,58 +14,112 @@ UWeaponHandlerComponent::UWeaponHandlerComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-void UWeaponHandlerComponent::BeginPlay()
+void UWeaponHandlerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	Super::BeginPlay();
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UWeaponHandlerComponent, CurrentWeapon);
 }
 
 void UWeaponHandlerComponent::Setup(ASwordslikeCharacter* Character)
 {
+	PrintOnScreen(TEXT("SetUp"));
+	
 	if (!Character)
 	{
-		PrintOnScreen_Local(FString::Printf(TEXT("ERROR: No Character passed to the weapon handler")), FColor::Red, 10.f);
+		PrintOnScreen(TEXT("ERROR: No Character passed to the weapon handler"), FColor::Red, 10.f);
+		return;
+	}
+
+	if(!StartingWeapon)
+	{
+		PrintOnScreen(TEXT("Weapon BP is missing."));
 		return;
 	}
 
 	WeaponOwner = Character;
 
-	if(!StartingWeapon)
+	if (GetOwnerRole() < ROLE_Authority)
 	{
-		PrintOnScreen_Local(TEXT("Weapon BP is missing."));
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Instigator = WeaponOwner;
-	SpawnParams.Owner = WeaponOwner;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	
-	AWeapon* Weapon = GetWorld()->SpawnActor<AWeapon>(StartingWeapon, SpawnParams);
-
-	if(Weapon)
-	{
-		EquipWeapon(Weapon);
+		Server_SpawnDefaultWeapon(StartingWeapon);
 	}
 	else
 	{
-		PrintOnScreen_Local(TEXT("No weapon created, are you missing a subclass reference?"));
+		Server_SpawnDefaultWeapon(StartingWeapon);
+	}
+}
+
+void UWeaponHandlerComponent::Server_SpawnDefaultWeapon_Implementation(TSubclassOf<AWeapon> WeaponClass)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		PrintOnScreen(TEXT("ERROR: Weapon spawn attempted outside Authority!"), FColor::Red);
+		return;
+	}
+	
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = WeaponOwner;
+	SpawnParams.Instigator = WeaponOwner->GetInstigator();
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass, SpawnParams);
+
+	if (SpawnedWeapon)
+	{
+		PrintOnScreen(TEXT("Weapon spawned successfully on Server."), FColor::Green);
+		CurrentWeapon = SpawnedWeapon;
+		EquipWeapon(CurrentWeapon);
+	}
+	else
+	{
+		PrintOnScreen(TEXT("Weapon spawn failed on Server!"), FColor::Red);
+	}
+}
+
+void UWeaponHandlerComponent::OnRep_CurrentWeapon()
+{
+	if(CurrentWeapon)
+	{
+		PrintOnScreen(TEXT("OnRep_CurrentWeapon called: equipping on client"), FColor::Green);
+		EquipWeapon(CurrentWeapon);
 	}
 }
 
 void UWeaponHandlerComponent::EquipWeapon(AWeapon* Weapon)
 {
-	if(Weapon)
+	if(GetOwnerRole() < ROLE_Authority)
 	{
-		CurrentWeapon = Weapon;
-
-		CurrentWeapon->AttachToComponent(WeaponOwner->GetCustomMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("swordsocket_r"));
-
-		CurrentWeapon->SetActorRelativeLocation(CurrentWeapon->LocationOffset);
-		CurrentWeapon->SetActorRelativeRotation(CurrentWeapon->RotationOffset);
+		Server_EquipWeapon(Weapon);
 	}
-	else
+}
+
+void UWeaponHandlerComponent::Server_EquipWeapon_Implementation(AWeapon* Weapon)
+{
+	EquipWeaponProcess(Weapon);
+}
+
+void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
+{
+	if(!Weapon)
 	{
-		PrintOnScreen_Local(FString::Printf(TEXT("WeaponHandler: No Weapon passed for EquipWeapon")));
+		PrintOnScreen(FString::Printf(TEXT("WeaponHandler: No Weapon passed for EquipWeapon")));
 	}
+	
+	if (!WeaponOwner || !WeaponOwner->GetCustomMesh())
+	{
+		PrintOnScreen(TEXT("WeaponOwner or CustomMesh is null"), FColor::Red);
+		return;
+	}
+	
+	CurrentWeapon = Weapon;
+	CurrentWeapon->AttachToComponent(
+		WeaponOwner->GetCustomMesh(),
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		FName("swordsocket_r")
+	);
+
+	CurrentWeapon->SetActorRelativeLocation(CurrentWeapon->LocationOffset);
+	CurrentWeapon->SetActorRelativeRotation(CurrentWeapon->RotationOffset);
 }
 
 float UWeaponHandlerComponent::GetWeaponStaminaCost() const
@@ -89,6 +144,18 @@ void UWeaponHandlerComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 void UWeaponHandlerComponent::StartWeaponAttackDetection()
 {
+	if (!CurrentWeapon)
+	{
+		PrintOnScreen(TEXT("CurrentWeapon is null"), FColor::Red);
+		return;
+	}
+
+	if (!CurrentWeapon->StartArrow || !CurrentWeapon->EndArrow)
+	{
+		PrintOnScreen(TEXT("Weapon arrows are null"), FColor::Red);
+		return;
+	}
+	
 	if(OnWeaponHitStarted.IsBound())
 	{
 		OnWeaponHitStarted.Broadcast(CurrentWeapon);
@@ -109,7 +176,7 @@ void UWeaponHandlerComponent::GetTargetsInWeaponRange()
 {
 	if(!CurrentWeapon->StartArrow || !CurrentWeapon->EndArrow)
 	{
-		PrintOnScreen_Local(TEXT("No arrows"));
+		PrintOnScreen(TEXT("No arrows"));
 		return;
 	}
 
@@ -159,7 +226,6 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 	}
 
 	AActor* Actor = Result.GetActor();
-	UE_LOG(LogTemp, Log, TEXT("%s"), *Result.GetActor()->GetActorNameOrLabel());
 
 	TArray<UActorComponent*> Components;
 	Actor->GetComponents(Components);
@@ -181,6 +247,7 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				
 			FDamageInfo DamageInfo;
 			DamageInfo.Damage = CurrentWeapon->DamagePerHit;
+			DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
 			DamageInfo.Instigator = WeaponOwner;
 				
 			TargetDamagable->TakeDamage(DamageInfo);

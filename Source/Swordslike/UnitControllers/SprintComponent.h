@@ -49,6 +49,7 @@ private:
 	UPROPERTY(Replicated)
 	bool bIsSprinting = false;
 
+
 	TObjectPtr<ASwordslikeCharacter> EntityCharacter;
 	void OnStaminaUpdated();
 

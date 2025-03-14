@@ -32,3 +32,14 @@ void AWeapon::Tick(float DeltaTime)
 
 }
 
+ void AWeapon::SetInteractable(AWeaponInteractable* Interactable)
+ {
+	if(!Interactable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("WEAPON: Interactable is null"));
+		return;
+	}
+ 	
+ 	OwnerInteractable = Interactable;
+ }
+

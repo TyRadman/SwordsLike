@@ -17,9 +17,9 @@ void ULockWidgetController::BeginPlay()
 	if(LockOnIndicatorClass)
 	{
 		LockOnIndicatorInstance = GetWorld()->SpawnActor<AActor>(LockOnIndicatorClass, SpawnParams);
-		FString Name = FString::Printf(TEXT("Lock Widget (%s) (%p)"), *UEnum::GetValueAsString(GetOwnerRole()), this);
-		PrintOnScreen_Local(FString::Printf(TEXT("Changed name to %s"), *Name));
-		LockOnIndicatorInstance->Rename(*Name);
+		// FString Name = FString::Printf(TEXT("Lock Widget (%s) (%p)"), *UEnum::GetValueAsString(GetOwnerRole()), this);
+		// PrintOnScreen_Local(FString::Printf(TEXT("Changed name to %s"), *Name));
+		// LockOnIndicatorInstance->Rename(*Name);
 	}
 	else
 	{
