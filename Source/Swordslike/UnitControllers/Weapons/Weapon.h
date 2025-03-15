@@ -55,6 +55,9 @@ public:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Visuals)
 	bool bIsCarryingHeavyWeapon;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Visuals)
+	UAnimMontage* ComboMontage;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = true))

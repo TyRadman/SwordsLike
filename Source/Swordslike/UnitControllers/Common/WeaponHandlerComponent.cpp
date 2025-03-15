@@ -36,6 +36,17 @@ void UWeaponHandlerComponent::InitEntityComponent(ACharacter* Character)
 	AnimInstance = CustomCharacter->GetAnimInstance();
 }
 
+UAnimMontage* UWeaponHandlerComponent::GetAttackMontage() const
+{
+	if(!CurrentWeapon)
+	{
+		PrintOnScreen(TEXT("No attack montage"));
+		return nullptr;
+	}
+
+	return CurrentWeapon->ComboMontage;
+}
+
 void UWeaponHandlerComponent::Setup(ASwordslikeCharacter* Character)
 {
 	// PrintOnScreen(TEXT("SetUp"));

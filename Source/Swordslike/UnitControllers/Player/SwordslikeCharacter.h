@@ -9,6 +9,7 @@
 
 #include "SwordslikeCharacter.generated.h"
 
+class UBaseCombatComponent;
 class UMasterHUD;
 class USphereComponent;
 class UInteractionComponent;
@@ -149,7 +150,7 @@ public:
 	FORCEINLINE UWeaponHandlerComponent* GetWeaponHandler() const {return WeaponHandler;}
 	FORCEINLINE UPlayerHealthComponent* GetHealthComponent() const {return Health;}
 	FORCEINLINE UBaseEntityData* GetPlayerStats() const {return PlayerStats;}
-	FORCEINLINE UPlayerCombatComponent* GetCombat() const {return Combat;}
+	FORCEINLINE UPlayerCombatComponent* GetCombatComponent() const {return Combat;}
 	FORCEINLINE UTargetLockerComponent* GetLockOnComponent() const {return TargetLockerComponent;}
 	FORCEINLINE ULockWidgetController* GetLockOnWidget() const {return LockIndicatorWidget;}
 	FORCEINLINE USprintComponent* GetSprintComponent() const {return Sprint;}

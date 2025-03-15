@@ -78,7 +78,7 @@ private:
 	const TMap<EParryState, float> PostureMultipliers =
 		{
 		{EParryState::Perfect, 0.f},
-		{EParryState::Good, 0.5f},
+		{EParryState::Good, 0.4f},
 		{EParryState::Normal, 0.7f},
 		{EParryState::None, 1.f}
 		};

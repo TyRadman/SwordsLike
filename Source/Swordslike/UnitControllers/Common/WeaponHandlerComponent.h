@@ -27,6 +27,8 @@ protected:
 
 public:	
 	virtual void InitEntityComponent(ACharacter* Character) override;
+	
+	UAnimMontage* GetAttackMontage() const;
 
 	WeaponHitDelegate OnWeaponHitStarted;
 	void StartWeaponAttackDetection();

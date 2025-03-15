@@ -24,11 +24,11 @@ void AWeaponInteractable::GetLifetimeReplicatedProps(TArray<class FLifetimePrope
 void AWeaponInteractable::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	Collider = GetComponentByClass<USphereComponent>();
 
 	if(HasAuthority())
 	{
-		Collider = GetComponentByClass<USphereComponent>();
-	
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Instigator = GetInstigator();
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -104,13 +104,17 @@ void AWeaponInteractable::InteractionProcess(AActor* InteractingActor)
 		Collider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	// Multicast_Interact(InteractingActor);
+	Multicast_Interact(InteractingActor);
 }
 
 // for cosmetics 
 void AWeaponInteractable::Multicast_Interact_Implementation(AActor* InteractingActor)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Weapon equipped - cosmetic effect"));
+	if(Collider)
+	{
+		Collider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Weapon equipped - cosmetic effect"));
 }
 
 void AWeaponInteractable::Tick(float DeltaTime)

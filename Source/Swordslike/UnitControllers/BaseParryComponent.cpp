@@ -159,7 +159,7 @@ EParryState UBaseParryComponent::ValidateParry(const FDamageInfo& DamageInfo)
 
 	if(CurrentParryState == EParryState::Perfect)
 	{
-		AttackerCharacter->GetCombat()->ForceStopAttack();
+		AttackerCharacter->GetCombatComponent()->ForceStopAttack();
 	}
 	
 	return CurrentParryState;

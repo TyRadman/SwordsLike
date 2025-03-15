@@ -36,25 +36,20 @@ protected:
 	virtual void BeginPlay() override;
 	
 	virtual void PlayAttackAnimation();
-	
 
 	
 	UFUNCTION()
 	virtual void OnAttackEnded(UAnimMontage* Anim, bool bInterrupted);
-	UFUNCTION()
-	virtual void OnComboNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
-	UFUNCTION()
-	virtual void OnComboNotifyEnd(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
-
 
 public:
 	// TODO: To be move to the EntityAnimation component
-	UPROPERTY(EditDefaultsOnly, Category="Animations")
-	TObjectPtr<UAnimMontage> AttackAnimationMontage;
+	// UPROPERTY(EditDefaultsOnly, Category="Animations")
+	// TObjectPtr<UAnimMontage> AttackAnimationMontage;
 	UPROPERTY(EditDefaultsOnly, Category="Animations")
 	TObjectPtr<UAnimMontage> AttackInterruptionMontage;
 
 	void SetWeaponHandler(TObjectPtr<UWeaponHandlerComponent> Handler);
+	FORCEINLINE UWeaponHandlerComponent* GetWeaponHandler() const {return WeaponHandler;}
 
 	/**
 	 * Broadcasts when the entity performs a roll.
@@ -66,8 +61,11 @@ public:
 	virtual void ForceStopAttack();
 	virtual void PerformForceStop();
 
+	void AllowInput();
+	void DisableInput();
+
 private:
-	TObjectPtr<UAnimInstance> EntityAnimInstance;
+	TObjectPtr<UAnimInstance> AnimInstance;
 
 protected:
 	bool bCanAttack = false;
@@ -81,11 +79,6 @@ protected:
 	float RollDuration = 0.7f;
 	
 	TObjectPtr<UWeaponHandlerComponent> WeaponHandler;
-
-
-private:
-	static const FName ANIMATION_STOP_NOTIFY_NAME;
-	static const FName INPUT_NOTIFY_NAME;
 
 	// EXTERNALS
 public:
