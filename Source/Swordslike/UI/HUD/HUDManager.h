@@ -6,9 +6,10 @@
 #include "GameFramework/HUD.h"
 #include "HUDManager.generated.h"
 
+class UMasterHUD;
 class UPlayerHealthBar;
 /**
- * 
+ * The HUD that holds the stats of the player such as HP, Stamina, and Posture.
  */
 UCLASS()
 class SWORDSLIKE_API AHUDManager : public AHUD
@@ -18,20 +19,14 @@ class SWORDSLIKE_API AHUDManager : public AHUD
 public:
 	AHUDManager();
 
-	/**
-	 * Binds the character's health amount to the HUD health bar.
-	 * @param Character The character controller that has a BaseHealthComponent or a derived class from it.
-	 */
-	void BindHealthBar(ACharacter* Character);
-	void BindStaminaBar(ACharacter* Character);
-	void BindPostureBar(ACharacter* Character);
+	FORCEINLINE UMasterHUD* GetMasterHUD() const { return MasterHUD; }
 
 protected:
 	virtual void BeginPlay() override;
 
 private:
 	UPROPERTY()
-	UPlayerHealthBar* PlayerStats;
+	UMasterHUD* MasterHUD;
 
 	void CreateHealthBar();
 };

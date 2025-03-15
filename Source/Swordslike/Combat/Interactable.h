@@ -21,4 +21,5 @@ class SWORDSLIKE_API IInteractable
 
 public:
 	virtual void Interact(AActor* Interactor) = 0;
+	virtual FString GetInteractionMessage() = 0;
 };

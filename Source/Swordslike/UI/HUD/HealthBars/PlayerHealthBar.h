@@ -30,6 +30,15 @@ public:
 	void SetStaminaBarValue(float CurrentStamina, float MaxStamina);
 	void SetPostureBarValue(float Current, float Max);
 
+	
+	/**
+	 * Binds the character's health amount to the HUD health bar.
+	 * @param Character The character controller that has a BaseHealthComponent or a derived class from it.
+	 */
+	void BindHealthBar(ACharacter* Character);
+	void BindStaminaBar(ACharacter* Character);
+	void BindPostureBar(ACharacter* Character);
+
 protected:
 	// Override the Initialize function to set up the widget
 	virtual  void NativeConstruct() override;

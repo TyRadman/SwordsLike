@@ -19,9 +19,11 @@ public:
 	AWeaponInteractable();
 
 	virtual void Interact(AActor* InteractingActor) override;
+	virtual FString GetInteractionMessage() override;
+	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_Interact(AActor* InteractingActor);
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_Interact(AActor* InteractingActor);

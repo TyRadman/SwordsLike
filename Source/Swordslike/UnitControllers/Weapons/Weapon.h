@@ -23,6 +23,9 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FString WeaponName;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UArrowComponent* StartArrow;
 	
@@ -46,6 +49,12 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FRotator RotationOffset;
+
+	/**
+	 * Determines whether the character should extend its army when moving around with the weapon. Mere visuals.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Visuals)
+	bool bIsCarryingHeavyWeapon;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = true))

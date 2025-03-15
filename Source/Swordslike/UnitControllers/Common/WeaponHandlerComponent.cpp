@@ -12,6 +12,7 @@
 UWeaponHandlerComponent::UWeaponHandlerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetIsReplicated(true);
 }
 
 void UWeaponHandlerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -19,6 +20,20 @@ void UWeaponHandlerComponent::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UWeaponHandlerComponent, CurrentWeapon);
+	DOREPLIFETIME(UWeaponHandlerComponent, bIsCarryingHeavyWeapon);
+}
+
+void UWeaponHandlerComponent::InitEntityComponent(ACharacter* Character)
+{
+	if(!Character)
+	{
+		PrintOnScreen_Local(TEXT("UWeaponHandlerComponent: No Character passed"));
+		return;
+	}
+
+	ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character);
+
+	AnimInstance = CustomCharacter->GetAnimInstance();
 }
 
 void UWeaponHandlerComponent::Setup(ASwordslikeCharacter* Character)
@@ -39,21 +54,14 @@ void UWeaponHandlerComponent::Setup(ASwordslikeCharacter* Character)
 
 	WeaponOwner = Character;
 
-	if (GetOwnerRole() < ROLE_Authority)
-	{
-		Server_SpawnDefaultWeapon(StartingWeapon);
-	}
-	else
-	{
-		Server_SpawnDefaultWeapon(StartingWeapon);
-	}
+	Server_SpawnDefaultWeapon(StartingWeapon);
 }
 
 void UWeaponHandlerComponent::Server_SpawnDefaultWeapon_Implementation(TSubclassOf<AWeapon> WeaponClass)
 {
-	if (GetOwnerRole() != ROLE_Authority)
+	if (!WeaponOwner || !WeaponClass)
 	{
-		PrintOnScreen(TEXT("ERROR: Weapon spawn attempted outside Authority!"), FColor::Red);
+		PrintOnScreen(TEXT("Invalid spawn parameters."), FColor::Red);
 		return;
 	}
 	
@@ -68,12 +76,17 @@ void UWeaponHandlerComponent::Server_SpawnDefaultWeapon_Implementation(TSubclass
 	{
 		PrintOnScreen(TEXT("Weapon spawned successfully on Server."), FColor::Green);
 		CurrentWeapon = SpawnedWeapon;
-		EquipWeapon(CurrentWeapon);
+		EquipWeapon(SpawnedWeapon);
 	}
 	else
 	{
 		PrintOnScreen(TEXT("Weapon spawn failed on Server!"), FColor::Red);
 	}
+}
+
+bool UWeaponHandlerComponent::Server_SpawnDefaultWeapon_Validate(TSubclassOf<AWeapon> WeaponClass)
+{
+	return true;
 }
 
 void UWeaponHandlerComponent::OnRep_CurrentWeapon()
@@ -87,7 +100,11 @@ void UWeaponHandlerComponent::OnRep_CurrentWeapon()
 
 void UWeaponHandlerComponent::EquipWeapon(AWeapon* Weapon)
 {
-	if(GetOwnerRole() < ROLE_Authority)
+	if(HasAuthority())
+	{
+		EquipWeaponProcess(Weapon);
+	}
+	else
 	{
 		Server_EquipWeapon(Weapon);
 	}
@@ -98,18 +115,26 @@ void UWeaponHandlerComponent::Server_EquipWeapon_Implementation(AWeapon* Weapon)
 	EquipWeaponProcess(Weapon);
 }
 
+bool UWeaponHandlerComponent::Server_EquipWeapon_Validate(AWeapon* Weapon)
+{
+	return true;
+}
+
 void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 {
 	if(!Weapon)
 	{
 		PrintOnScreen(FString::Printf(TEXT("WeaponHandler: No Weapon passed for EquipWeapon")));
+		return;
 	}
 	
 	if (!WeaponOwner || !WeaponOwner->GetCustomMesh())
 	{
-		PrintOnScreen(TEXT("WeaponOwner or CustomMesh is null"), FColor::Red);
+		PrintOnScreen(TEXT("WeaponHandler: WeaponOwner or CustomMesh is null"), FColor::Red);
 		return;
 	}
+
+	bIsCarryingHeavyWeapon = Weapon->bIsCarryingHeavyWeapon;
 	
 	CurrentWeapon = Weapon;
 	CurrentWeapon->AttachToComponent(
@@ -120,6 +145,8 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 
 	CurrentWeapon->SetActorRelativeLocation(CurrentWeapon->LocationOffset);
 	CurrentWeapon->SetActorRelativeRotation(CurrentWeapon->RotationOffset);
+
+	PlayEquipMontage();
 }
 
 float UWeaponHandlerComponent::GetWeaponStaminaCost() const
@@ -220,41 +247,84 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 {
 	for(const FHitResult Result : HitResults)
 	{
-	if(!Result.GetActor())
-	{
-		continue;
-	}
-
-	AActor* Actor = Result.GetActor();
-
-	TArray<UActorComponent*> Components;
-	Actor->GetComponents(Components);
-
-	for(UActorComponent* Component : Components)
-	{
-		if(!Component)
+		if(!Result.GetActor())
 		{
 			continue;
 		}
-		
-		if(IDamagable* TargetDamagable = Cast<IDamagable>(Component))
+
+		AActor* Actor = Result.GetActor();
+
+		TArray<UActorComponent*> Components;
+		Actor->GetComponents(Components);
+
+		for(UActorComponent* Component : Components)
 		{
-			// if the target has already been hit in this attack, then skip it
-			if(TargetsHit.Contains(TargetDamagable))
+			if(!Component)
 			{
+				continue;
+			}
+		
+			if(IDamagable* TargetDamagable = Cast<IDamagable>(Component))
+			{
+				// if the target has already been hit in this attack, then skip it
+				if(TargetsHit.Contains(TargetDamagable))
+				{
+					break;
+				}
+				
+				FDamageInfo DamageInfo;
+				DamageInfo.Damage = CurrentWeapon->DamagePerHit;
+				DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
+				DamageInfo.Instigator = WeaponOwner;
+				
+				TargetDamagable->TakeDamage(DamageInfo);
+				TargetsHit.Add(TargetDamagable);
 				break;
 			}
-				
-			FDamageInfo DamageInfo;
-			DamageInfo.Damage = CurrentWeapon->DamagePerHit;
-			DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
-			DamageInfo.Instigator = WeaponOwner;
-				
-			TargetDamagable->TakeDamage(DamageInfo);
-			TargetsHit.Add(TargetDamagable);
-			break;
 		}
 	}
 }
+
+#pragma region Animations
+void UWeaponHandlerComponent::PlayEquipMontage()
+{
+	PrintOnScreen(FString::Printf(TEXT("WeaponHandler: Playing animation 0")));
+	
+	if(!AnimInstance)
+	{
+		PrintOnScreen(FString::Printf(TEXT("WeaponHandler: No Anim Instance")));
+	}
+	
+	PlayMontage(EquipMontage);
 }
 
+void UWeaponHandlerComponent::PlayMontage(UAnimMontage* Montage)
+{
+	PrintOnScreen(FString::Printf(TEXT("WeaponHandler: Playing animation 1")));
+	AnimInstance->Montage_Play(Montage);
+
+	if(!HasAuthority())
+	{
+		Server_PlayMontage(Montage);
+	}
+	else
+	{
+		Multicast_PlayMontage(Montage);
+	}
+}
+
+void UWeaponHandlerComponent::Server_PlayMontage_Implementation(UAnimMontage* Montage)
+{
+	Multicast_PlayMontage(Montage);
+}
+
+void UWeaponHandlerComponent::Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
+{
+	// if(GetOwnerRole() == ROLE_AutonomousProxy)
+	// {
+	// 	return;
+	// }
+
+	AnimInstance->Montage_Play(Montage);
+}
+#pragma endregion

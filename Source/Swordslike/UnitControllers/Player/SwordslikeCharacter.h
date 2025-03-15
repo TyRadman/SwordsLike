@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,6 +9,8 @@
 
 #include "SwordslikeCharacter.generated.h"
 
+class UMasterHUD;
+class USphereComponent;
 class UInteractionComponent;
 enum class EParryState : uint8;
 class UOverheadHealthBarWidget;
@@ -117,6 +117,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UInteractionComponent* InteractionComponent;
+	
+	UCapsuleComponent* Capsule;
+	UMasterHUD* MasterHUD;
 
 	///////////////////////
 	/// WIDGETS
@@ -128,17 +131,17 @@ protected:
 	UWidgetComponent* OverheadHealthBar;
 	
 	UOverheadHealthBarWidget* OverHeadHUD;
+	UAnimInstance* AnimInstance;
 	
 	virtual void BeginPlay() override;
 
-protected:
 	void Move(const FInputActionValue& Value);
 
 	void Look(const FInputActionValue& Value);
 
 	void Interact();
 	
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -154,6 +157,10 @@ public:
 	FORCEINLINE UBaseParryComponent* GetParryComponent() const {return ParryComponent;}
 	FORCEINLINE UOverheadHealthBarWidget* GetOverHeadHUDComponent() const {return OverHeadHUD;}
 	FORCEINLINE UInteractionComponent* GetOverInteractionComponent() const {return InteractionComponent;}
+	FORCEINLINE UAnimInstance* GetAnimInstance() const {return AnimInstance;}
+	FORCEINLINE UCapsuleComponent* GetInteractionSphere() const {return Capsule;}
+	FORCEINLINE UMasterHUD* GetMasterHUD() const {return MasterHUD;}
+	
 
 	void OnDeath(const FDamageInfo& DamageInfo);
 	void SetSprintSpeed();
@@ -202,5 +209,10 @@ private:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UNiagaraComponent* ParrySparkVFX;
 
+public:
+	FString GetInteractionInput();
+
+private:
+	FString GetInputKey(UInputAction* InputAction);
 };
 

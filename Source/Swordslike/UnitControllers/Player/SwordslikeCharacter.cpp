@@ -20,9 +20,13 @@
 #include "TargetLockerComponent.h"
 #include "Common/LockableTargetComponent.h"
 #include "Common/WeaponHandlerComponent.h"
+#include "Components/SphereComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Swordslike/UI/HUD/HUDManager.h"
-#include "Swordslike/UI/HUD/NetworkOverheadDebugger.h"
+#include "Swordslike/UI/HUD/MasterHUD.h"
+#include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
 #include "Swordslike/UnitControllers/Player/LockWidgetController.h"
 
@@ -98,9 +102,39 @@ void ASwordslikeCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if(GetMesh())
+	{
+		AnimInstance = GetMesh()->GetAnimInstance();
+	}
+
+	if(GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		if(AHUD* HUD = GetWorld()->GetFirstPlayerController()->GetHUD())
+		{
+			if(AHUDManager* HUDManager = Cast<AHUDManager>(HUD))
+			{
+				if(HUDManager->GetMasterHUD())
+				{
+					MasterHUD = HUDManager->GetMasterHUD();
+				}
+			}
+		}
+	}
+	
 	if(UOverheadHealthBarWidget* CastOverHeadHUD = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
 	{
 		OverHeadHUD = CastOverHeadHUD;
+	}
+
+	if(InteractionComponent)
+	{
+		Capsule = GetComponentByClass<UCapsuleComponent>();
+		InteractionComponent->InitEntityComponent(this);
+	}
+
+	if(WeaponHandler)
+	{
+		WeaponHandler->InitEntityComponent(this);
 	}
 
 	if(ParryComponent)
@@ -163,6 +197,13 @@ void ASwordslikeCharacter::BeginPlay()
 			
 			LockableTargetComponent->OnLockableLocked.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::Show);
 			LockableTargetComponent->OnLockableUnlocked.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::Hide);
+			
+			if(GetLocalRole() == ROLE_AutonomousProxy)
+			{
+				MasterHUD->GetStatsHUD()->BindHealthBar(this);
+				MasterHUD->GetStatsHUD()->BindStaminaBar(this);
+				MasterHUD->GetStatsHUD()->BindPostureBar(this);
+			}
 		}
 		else
 		{
@@ -223,19 +264,6 @@ void ASwordslikeCharacter::BeginPlay()
 
 		// Hit react animation
 		Health->OnEntityHit.AddUObject(this, &ASwordslikeCharacter::OnCharacterHit);
-
-		if(GetLocalRole() == ROLE_AutonomousProxy)
-		{
-			if(AHUD* HUD = GetWorld()->GetFirstPlayerController()->GetHUD())
-			{
-				if(AHUDManager* HUDManager = Cast<AHUDManager>(HUD))
-				{
-					HUDManager->BindHealthBar(this);
-					HUDManager->BindStaminaBar(this);
-					HUDManager->BindPostureBar(this);
-				}
-			}
-		}
 	}
 	else
 	{
@@ -308,9 +336,11 @@ void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+		
+		if (InputSubsystem)
 		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			InputSubsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
 	
@@ -554,7 +584,6 @@ void ASwordslikeCharacter::OnAttackParried(const FDamageInfo& DamageInfo, EParry
 	ParrySparkVFX->SetWorldLocationAndRotation(WeaponMiddlePoint, Rotation);
 	ParrySparkVFX->Activate();
 }
-
 void ASwordslikeCharacter::OnCharacterHitRecovered()
 {
 	UE_LOG(LogTemp, Display, TEXT("Recover jump and movement"));
@@ -633,4 +662,50 @@ void ASwordslikeCharacter::SetCanMove(bool Value)
 void ASwordslikeCharacter::SetCanJump(bool Value)
 {
 	bCanJump = Value;
+}
+
+FString ASwordslikeCharacter::GetInteractionInput()
+{
+	return GetInputKey(InteractActionInput);
+}
+
+FString ASwordslikeCharacter::GetInputKey(UInputAction* InputAction)
+{
+	if (!InputAction)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("InputAction is null."));
+		return FString::Printf(TEXT("Hello"));
+	}
+
+	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+	if (!PlayerController)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerController not found."));
+		return FString::Printf(TEXT("Hello"));
+	}
+
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = 
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+
+	if (!InputSubsystem)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputLocalPlayerSubsystem not found."));
+		return FString::Printf(TEXT("Hello"));
+	}
+
+	TArray<FKey> MappedKeys = InputSubsystem->QueryKeysMappedToAction(InputAction);
+
+	for (const FKey& Key : MappedKeys)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Mapped Key: %s"), *Key.ToString());
+	}
+
+	if(MappedKeys.Num() > 0)
+	{
+		return MappedKeys[0].ToString();
+	}
+	else
+	{
+		return FString::Printf(TEXT("NoInputKey"));
+	}
 }

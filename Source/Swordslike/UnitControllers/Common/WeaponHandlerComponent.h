@@ -14,7 +14,7 @@ class UArrowComponent;
 class ASwordslikeCharacter;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class SWORDSLIKE_API UWeaponHandlerComponent : public UMyActorComponent
+class SWORDSLIKE_API UWeaponHandlerComponent : public UMyActorComponent, public IIEntityComponent
 {
 	GENERATED_BODY()
 
@@ -26,6 +26,8 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:	
+	virtual void InitEntityComponent(ACharacter* Character) override;
+
 	WeaponHitDelegate OnWeaponHitStarted;
 	void StartWeaponAttackDetection();
 	void StopWeaponAttackDetection();
@@ -35,8 +37,6 @@ public:
 	void EquipWeapon(AWeapon* Weapon);
 	float GetWeaponStaminaCost() const;
 	FVector GetWeaponMiddleLocation() const;
-
-	FORCEINLINE AWeapon* GetCurrentWeapon() const { return CurrentWeapon; }
 
 private:
 	bool bIsAttacking = false;
@@ -53,10 +53,10 @@ private:
 	UFUNCTION()
 	void OnRep_CurrentWeapon();
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SpawnDefaultWeapon(TSubclassOf<AWeapon> WeaponClass);
 	
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_EquipWeapon(AWeapon* Weapon);
 	void EquipWeaponProcess(AWeapon* Weapon);
 	
@@ -72,4 +72,23 @@ private:
 
 	void GetTargetsFromHitResults(TArray<FHitResult>& HitResults);
 	void CacheTargetsBetweenTwoPoints(const FVector& StartLocation, const FVector& EndLocation);
+
+	// equip animations
+	UAnimInstance* AnimInstance;
+	
+	UPROPERTY(EditDefaultsOnly, Category=Animations)
+	UAnimMontage* EquipMontage;
+	
+	void PlayEquipMontage();
+
+	void PlayMontage(UAnimMontage* Montage);
+	UFUNCTION(Server, Reliable)
+	void Server_PlayMontage(UAnimMontage* Montage);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayMontage(UAnimMontage* Montage);
+
+public:
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	bool bIsCarryingHeavyWeapon = false;
+	FORCEINLINE AWeapon* GetCurrentWeapon() const { return CurrentWeapon; }
 };
