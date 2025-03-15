@@ -31,7 +31,7 @@ void UInteractionComponent::InitEntityComponent(ACharacter* Character)
 			
 			SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &UInteractionComponent::OnOverlapBegin);
 			SphereComponent->OnComponentEndOverlap.AddDynamic(this, &UInteractionComponent::OnOverlapEnd);
-			PrintOnScreen(TEXT("UInteractionComponent: Setup"));
+			// PrintOnScreen(TEXT("UInteractionComponent: Setup"));
 
 			if(OwnerCharacter ->GetMasterHUD())
 			{

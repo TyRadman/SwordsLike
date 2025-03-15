@@ -182,6 +182,12 @@ void ASwordslikeCharacter::BeginPlay()
 	if(GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		OverheadHealthBar->SetWidget(nullptr);
+		
+		MasterHUD->GetStatsHUD()->SetHealthBarSize(PlayerStats->MaxHealthPoints);
+		MasterHUD->GetStatsHUD()->BindHealthBar(this);
+		MasterHUD->GetStatsHUD()->SetStaminaBarSize(PlayerStats->MaxStamina);
+		MasterHUD->GetStatsHUD()->BindStaminaBar(this);
+		MasterHUD->GetStatsHUD()->BindPostureBar(this);
 	}
 	else if(OverHeadHUD)
 	{
@@ -197,13 +203,6 @@ void ASwordslikeCharacter::BeginPlay()
 			
 			LockableTargetComponent->OnLockableLocked.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::Show);
 			LockableTargetComponent->OnLockableUnlocked.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::Hide);
-			
-			if(GetLocalRole() == ROLE_AutonomousProxy)
-			{
-				MasterHUD->GetStatsHUD()->BindHealthBar(this);
-				MasterHUD->GetStatsHUD()->BindStaminaBar(this);
-				MasterHUD->GetStatsHUD()->BindPostureBar(this);
-			}
 		}
 		else
 		{

@@ -36,6 +36,8 @@ public:
 
 	virtual void AddToCurrentHealth(const FDamageInfo& DamageInfo);
 	virtual void SetMaxHealth(float MaxHP);
+	
+	virtual float GetMaxHealth();
 	virtual void FullyChargeHealth();
 	virtual void OnDeath();
 	virtual bool IsAlive() override;

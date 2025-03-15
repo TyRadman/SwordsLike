@@ -38,7 +38,7 @@ void UWeaponHandlerComponent::InitEntityComponent(ACharacter* Character)
 
 void UWeaponHandlerComponent::Setup(ASwordslikeCharacter* Character)
 {
-	PrintOnScreen(TEXT("SetUp"));
+	// PrintOnScreen(TEXT("SetUp"));
 	
 	if (!Character)
 	{
@@ -93,7 +93,6 @@ void UWeaponHandlerComponent::OnRep_CurrentWeapon()
 {
 	if(CurrentWeapon)
 	{
-		PrintOnScreen(TEXT("OnRep_CurrentWeapon called: equipping on client"), FColor::Green);
 		EquipWeapon(CurrentWeapon);
 	}
 }

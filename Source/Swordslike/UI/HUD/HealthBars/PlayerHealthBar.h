@@ -25,7 +25,10 @@ public:
 	
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UProgressBar* PostureBar;
-
+	
+	void SetHealthBarSize(float MaxHealth);
+	void SetStaminaBarSize(float MaxStamina);
+	
 	void SetHealthBarValue(float CurrentHealth, float MaxHealth);
 	void SetStaminaBarValue(float CurrentStamina, float MaxStamina);
 	void SetPostureBarValue(float Current, float Max);
@@ -40,6 +43,9 @@ public:
 	void BindPostureBar(ACharacter* Character);
 
 protected:
-	// Override the Initialize function to set up the widget
 	virtual  void NativeConstruct() override;
+
+private:
+	const float PixelsPerHealthPoint = 4.f;
+	const float PixelsPerStaminaPoint = 32.f;
 };

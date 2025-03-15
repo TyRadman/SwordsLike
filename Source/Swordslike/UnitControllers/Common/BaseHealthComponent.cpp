@@ -72,6 +72,11 @@ void UBaseHealthComponent::SetMaxHealth(float MaxHP)
 	}
 }
 
+float UBaseHealthComponent::GetMaxHealth()
+{
+	return MaxHealth;
+}
+
 void UBaseHealthComponent::ServerSetMaxHealth_Implementation(float MaxHP)
 {
 	if (GetOwner()->GetLocalRole() == ROLE_Authority && GetOwnerRole() != ROLE_AutonomousProxy)
