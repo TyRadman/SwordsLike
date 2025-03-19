@@ -12,7 +12,6 @@
 UWeaponHandlerComponent::UWeaponHandlerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	SetIsReplicated(true);
 }
 
 void UWeaponHandlerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -31,9 +30,12 @@ void UWeaponHandlerComponent::InitEntityComponent(ACharacter* Character)
 		return;
 	}
 
-	ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character);
-
-	AnimInstance = CustomCharacter->GetAnimInstance();
+	if(ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character))
+	{
+		AnimInstance = CustomCharacter->GetAnimInstance();
+		OnWeaponHitStarted.AddUObject(CustomCharacter->GetSprintComponent(), &USprintComponent::OnWeaponHit);
+		WeaponOwner = CustomCharacter;
+	}
 }
 
 UAnimMontage* UWeaponHandlerComponent::GetAttackMontage() const
@@ -45,27 +47,6 @@ UAnimMontage* UWeaponHandlerComponent::GetAttackMontage() const
 	}
 
 	return CurrentWeapon->ComboMontage;
-}
-
-void UWeaponHandlerComponent::Setup(ASwordslikeCharacter* Character)
-{
-	// PrintOnScreen(TEXT("SetUp"));
-	
-	if (!Character)
-	{
-		PrintOnScreen(TEXT("ERROR: No Character passed to the weapon handler"), FColor::Red, 10.f);
-		return;
-	}
-
-	if(!StartingWeapon)
-	{
-		PrintOnScreen(TEXT("Weapon BP is missing."));
-		return;
-	}
-
-	WeaponOwner = Character;
-
-	Server_SpawnDefaultWeapon(StartingWeapon);
 }
 
 void UWeaponHandlerComponent::Server_SpawnDefaultWeapon_Implementation(TSubclassOf<AWeapon> WeaponClass)
@@ -81,11 +62,8 @@ void UWeaponHandlerComponent::Server_SpawnDefaultWeapon_Implementation(TSubclass
 	SpawnParams.Instigator = WeaponOwner->GetInstigator();
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	AWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass, SpawnParams);
-
-	if (SpawnedWeapon)
+	if (AWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass, SpawnParams))
 	{
-		PrintOnScreen(TEXT("Weapon spawned successfully on Server."), FColor::Green);
 		CurrentWeapon = SpawnedWeapon;
 		EquipWeapon(SpawnedWeapon);
 	}
@@ -110,6 +88,8 @@ void UWeaponHandlerComponent::OnRep_CurrentWeapon()
 
 void UWeaponHandlerComponent::EquipWeapon(AWeapon* Weapon)
 {
+		PrintOnScreen(FString::Printf(TEXT("WeaponHandler: Equipping weapon")));
+	
 	if(HasAuthority())
 	{
 		EquipWeaponProcess(Weapon);
@@ -140,7 +120,7 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 	
 	if (!WeaponOwner || !WeaponOwner->GetCustomMesh())
 	{
-		PrintOnScreen(TEXT("WeaponHandler: WeaponOwner or CustomMesh is null"), FColor::Red);
+		PrintOnScreen(TEXT("ERROR: WeaponHandler: WeaponOwner or CustomMesh is null"), FColor::Red);
 		return;
 	}
 
@@ -155,6 +135,7 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 
 	CurrentWeapon->SetActorRelativeLocation(CurrentWeapon->LocationOffset);
 	CurrentWeapon->SetActorRelativeRotation(CurrentWeapon->RotationOffset);
+	CurrentWeapon->OnWeaponEquipped();
 
 	PlayEquipMontage();
 }
@@ -285,7 +266,7 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				FDamageInfo DamageInfo;
 				DamageInfo.Damage = CurrentWeapon->DamagePerHit;
 				DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
-				DamageInfo.Instigator = WeaponOwner;
+				DamageInfo.DamageInstigator = WeaponOwner;
 				
 				TargetDamagable->TakeDamage(DamageInfo);
 				TargetsHit.Add(TargetDamagable);
@@ -298,8 +279,6 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 #pragma region Animations
 void UWeaponHandlerComponent::PlayEquipMontage()
 {
-	PrintOnScreen(FString::Printf(TEXT("WeaponHandler: Playing animation 0")));
-	
 	if(!AnimInstance)
 	{
 		PrintOnScreen(FString::Printf(TEXT("WeaponHandler: No Anim Instance")));
@@ -310,7 +289,6 @@ void UWeaponHandlerComponent::PlayEquipMontage()
 
 void UWeaponHandlerComponent::PlayMontage(UAnimMontage* Montage)
 {
-	PrintOnScreen(FString::Printf(TEXT("WeaponHandler: Playing animation 1")));
 	AnimInstance->Montage_Play(Montage);
 
 	if(!HasAuthority())

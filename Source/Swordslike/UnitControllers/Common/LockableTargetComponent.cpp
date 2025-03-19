@@ -1,10 +1,29 @@
 #include "LockableTargetComponent.h"
 
 #include "DamageInfo.h"
+#include "Player/SwordslikeCharacter.h"
+#include "Swordslike/UI/HUD/MasterHUD.h"
+#include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
 
 ULockableTargetComponent::ULockableTargetComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+}
+
+void ULockableTargetComponent::InitEntityComponent(ACharacter* Character)
+{
+	if(Character)
+	{
+		if(ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
+		{
+			if(UOverheadHealthBarWidget* HUD = PlayerCharacter->GetOverHeadHUDComponent())
+			{
+				// TODO: check if it's the owner, and don't enable it if so
+				OnLockableLocked.AddUObject(HUD, &UOverheadHealthBarWidget::Show);
+				OnLockableUnlocked.AddUObject(HUD, &UOverheadHealthBarWidget::Hide);
+			}
+		}
+	}
 }
 
 void ULockableTargetComponent::OnLocked()
@@ -21,11 +40,6 @@ void ULockableTargetComponent::OnUnlocked()
 	{
 		OnLockableUnlocked.Broadcast();
 	}
-}
-
-bool ULockableTargetComponent::IsValidTarget() const
-{
-	return IsValid;
 }
 
 void ULockableTargetComponent::OnDeath(const FDamageInfo& DamageInfo)

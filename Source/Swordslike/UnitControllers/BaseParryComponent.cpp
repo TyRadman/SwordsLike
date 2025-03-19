@@ -136,7 +136,7 @@ EParryState UBaseParryComponent::ValidateParry(const FDamageInfo& DamageInfo)
 		AnimInstance->Montage_JumpToSection(HitSectionName);
 	}
 	
-	AActor* AttackSource = DamageInfo.Instigator;
+	AActor* AttackSource = DamageInfo.DamageInstigator;
 
 	ASwordslikeCharacter* AttackerCharacter = Cast<ASwordslikeCharacter>(AttackSource);
 

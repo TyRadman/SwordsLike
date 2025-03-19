@@ -9,9 +9,6 @@
 AWeaponInteractable::AWeaponInteractable()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	// TODO: remove on cook
-	bReplicates = true;
 }
 
 void AWeaponInteractable::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -37,7 +34,7 @@ void AWeaponInteractable::BeginPlay()
 		if(WeaponInstance)
 		{
 			WeaponInstance->SetReplicates(true);
-			WeaponInstance->SetInteractable(this);
+			// WeaponInstance->SetInteractable(this);
 		}
 		else
 		{
@@ -48,7 +45,7 @@ void AWeaponInteractable::BeginPlay()
 
 void AWeaponInteractable::Interact(AActor* InteractingActor)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Interactable: Interact()"));
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Interactable: Interact()"));
 	
 	if (!InteractingActor)
 	{
@@ -114,7 +111,6 @@ void AWeaponInteractable::Multicast_Interact_Implementation(AActor* InteractingA
 	{
 		Collider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
-	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Weapon equipped - cosmetic effect"));
 }
 
 void AWeaponInteractable::Tick(float DeltaTime)
@@ -124,5 +120,11 @@ void AWeaponInteractable::Tick(float DeltaTime)
 
 FString AWeaponInteractable::GetInteractionMessage()
 {
+	if(!WeaponInstance)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+			TEXT("No weapon instance on the interactable."));
+	}
+	
 	return FString::Printf(TEXT("Pick up %s"), *WeaponInstance->WeaponName);
 }

@@ -37,4 +37,5 @@ public:
 protected:
 	// Override the Initialize function to set up the widget
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 };

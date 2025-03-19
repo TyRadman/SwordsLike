@@ -1,8 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
+#include "IEntityComponent.h"
 #include "Components/ActorComponent.h"
 #include "LockableTargetComponent.generated.h"
 
@@ -11,20 +10,22 @@ struct FDamageInfo;
 DECLARE_MULTICAST_DELEGATE(LockableTargetDelegate);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class SWORDSLIKE_API ULockableTargetComponent : public USceneComponent
+class SWORDSLIKE_API ULockableTargetComponent : public USceneComponent, public IIEntityComponent
 {
 	GENERATED_BODY()
 
 public:	
 	ULockableTargetComponent();
+	virtual void InitEntityComponent(ACharacter* Character) override;
 
 	LockableTargetDelegate OnLockableLocked;
 	LockableTargetDelegate OnLockableUnlocked;
 
 	void OnLocked();
 	void OnUnlocked();
-	bool IsValidTarget() const;
 	void OnDeath(const FDamageInfo& DamageInfo);
+	
+	FORCEINLINE bool IsValidTarget() const { return IsValid; }
 
 private:
 	/**

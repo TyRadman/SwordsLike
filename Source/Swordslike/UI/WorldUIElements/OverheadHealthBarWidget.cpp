@@ -42,3 +42,10 @@ void UOverheadHealthBarWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 }
+
+void UOverheadHealthBarWidget::NativeDestruct()
+{
+	RemoveFromParent();
+	
+	Super::NativeDestruct();
+}

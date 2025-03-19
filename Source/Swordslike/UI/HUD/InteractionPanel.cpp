@@ -9,11 +9,14 @@ void UInteractionPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	HideInteractionPanel();
+	PlayAnimation(FadeInAnimation);
+	// HideInteractionPanel();
 }
 
 void UInteractionPanel::DisplayInteractionPanel(ASwordslikeCharacter* Character)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Interaction HUD displaying UI")));
+	
 	if(!Character)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Character is missing")));
@@ -24,7 +27,7 @@ void UInteractionPanel::DisplayInteractionPanel(ASwordslikeCharacter* Character)
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("GetOverInteractionComponent is missing")));
 		return;
 	}
-	if(!Character->GetOverInteractionComponent()->CurrentInteractable)
+	if(!Character->GetOverInteractionComponent()->GetCurrentInteractable())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("CurrentInteractable is missing")));
 		return;
@@ -42,6 +45,6 @@ void UInteractionPanel::DisplayInteractionPanel(ASwordslikeCharacter* Character)
 
 void UInteractionPanel::HideInteractionPanel()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("hidden"));
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("hidden"));
 	PlayAnimation(FadeOutAnimation);
 }

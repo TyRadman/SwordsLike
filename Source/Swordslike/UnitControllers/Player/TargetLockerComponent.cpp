@@ -24,10 +24,10 @@ void UTargetLockerComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePr
 
 void UTargetLockerComponent::InitEntityComponent(ACharacter* Character)
 {
-	ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character);
-	
-	if (PlayerCharacter)
+	if (ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
 	{
+		AddToOnLockedTarget(PlayerCharacter, &ASwordslikeCharacter::OnTargetLockedOn);
+		
 		if(PlayerCharacter->GetFollowCamera())
 		{
 			Camera = PlayerCharacter->GetFollowCamera();

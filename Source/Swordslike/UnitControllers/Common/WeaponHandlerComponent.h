@@ -29,11 +29,11 @@ public:
 	virtual void InitEntityComponent(ACharacter* Character) override;
 	
 	UAnimMontage* GetAttackMontage() const;
+	FORCEINLINE bool HasWeapon() const { return CurrentWeapon != nullptr; ;}
 
 	WeaponHitDelegate OnWeaponHitStarted;
 	void StartWeaponAttackDetection();
 	void StopWeaponAttackDetection();
-	void Setup(ASwordslikeCharacter* Character);
 
 
 	void EquipWeapon(AWeapon* Weapon);

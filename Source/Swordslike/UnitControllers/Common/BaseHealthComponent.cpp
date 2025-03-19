@@ -1,9 +1,9 @@
 #include "BaseHealthComponent.h"
-
-#include <string>
-
 #include "DamageInfo.h"
+#include "LockableTargetComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/SwordslikeCharacter.h"
+#include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
 
 UBaseHealthComponent::UBaseHealthComponent()
 {
@@ -16,6 +16,28 @@ void UBaseHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 	DOREPLIFETIME(UBaseHealthComponent, bIsInvincible);
 	DOREPLIFETIME(UBaseHealthComponent, bIsAlive);
+}
+
+void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
+{
+	if(ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
+	{
+		OnEntityDeath.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnDeath);
+
+		if(ULockableTargetComponent* Lockable = PlayerCharacter->GetLockableTargetComponent())
+		{
+			OnEntityDeath.AddUObject(Lockable, &ULockableTargetComponent::OnDeath);
+		}
+
+		// Hit react animation
+		OnEntityHit.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnCharacterHit);
+
+		// TODO: only if the entity is not an owner
+		if(UOverheadHealthBarWidget* HUD = PlayerCharacter->GetOverHeadHUDComponent())
+		{
+			OnEntityHealthChanged.AddUObject(HUD, &UOverheadHealthBarWidget::SetHealthBarValue);
+		}
+	}
 }
 
 void UBaseHealthComponent::BeginPlay()

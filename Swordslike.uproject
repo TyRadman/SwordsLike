@@ -23,11 +23,11 @@
 			]
 		},
 		{
-			"Name": "OnlineSubsystemSteam",
+			"Name": "CurveExpression",
 			"Enabled": true
 		},
 		{
-			"Name": "CurveExpression",
+			"Name": "OnlineSubsystemSteam",
 			"Enabled": true
 		}
 	],

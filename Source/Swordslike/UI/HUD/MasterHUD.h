@@ -15,10 +15,7 @@ class SWORDSLIKE_API UMasterHUD : public UUserWidget
 {
 	GENERATED_BODY()
 
-public:
-	
-private:
-
+	virtual void NativeConstruct() override;
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UInteractionPanel* InteractionPanel;
 	

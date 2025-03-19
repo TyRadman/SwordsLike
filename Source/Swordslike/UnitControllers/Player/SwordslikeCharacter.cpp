@@ -1,5 +1,7 @@
 
 #include "SwordslikeCharacter.h"
+
+#include "AudioMixerDevice.h"
 #include "NiagaraComponent.h"
 #include "BaseEntityAnimationsComponent.h"
 #include "BaseEntityData.h"
@@ -76,10 +78,10 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 	
 	Animations = CreateDefaultSubobject<UBaseEntityAnimationsComponent>("Player Animations");
 
-	// UI
-	DebuggerText = CreateDefaultSubobject<UWidgetComponent>(TEXT("Overhead Debugger Widget"));
-	DebuggerText->SetupAttachment(RootComponent);
+	LockableTargetComponent = CreateDefaultSubobject<ULockableTargetComponent>(TEXT("Player Lockable"));
+	LockableTargetComponent->SetupAttachment(RootComponent);
 
+	// UI
 	OverheadHealthBar = CreateDefaultSubobject<UWidgetComponent>("Overhead Health Bar");
 	OverheadHealthBar->SetupAttachment(RootComponent);
 
@@ -102,16 +104,81 @@ void ASwordslikeCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CacheComponentReferences();
+	InitializeComponents();
+
+	if(LockIndicatorWidget)
+	{
+		if(GetLocalRole() == ROLE_Authority)
+		{
+			LockIndicatorWidget->HideIndicator();
+		}
+	}
+
+	///////////////////////
+	/// Widgets
+	//////////////////////
+	// disable the overhead health bar if this is the AutonomousProxy client 
+	if(IsLocallyControlled())
+	{
+		// TODO: comment that
+		// OverheadHealthBar->SetWidget(nullptr);
+
+		if(MasterHUD)
+		{
+			MasterHUD->GetStatsHUD()->SetHealthBarSize(PlayerStats->MaxHealthPoints);
+			MasterHUD->GetStatsHUD()->BindHealthBar(this);
+			MasterHUD->GetStatsHUD()->SetStaminaBarSize(PlayerStats->MaxStamina);
+			MasterHUD->GetStatsHUD()->BindStaminaBar(this);
+			MasterHUD->GetStatsHUD()->BindPostureBar(this);
+		}
+		
+		// TODO: remove that
+		if(OverHeadHUD)
+		{
+			FString Name = FString::Printf(TEXT("%s\n%s"),
+				*UEnum::GetValueAsString(GetLocalRole()),
+				*UEnum::GetValueAsString(GetRemoteRole()));
+			
+			OverHeadHUD->SetNameValue(FText::FromString(*Name));
+
+			// TODO: Ucomment
+			OverHeadHUD->Hide();
+		}
+	}
+
+	////////////////////////
+	// LOCAL SUBSCRIPTIONS
+	////////////////////////
+	if(Combat)
+	{
+		OnJumped.AddUObject(Combat, &UBaseCombatComponent::DisableRoll);
+		OnLanded.AddUObject(Combat, &UBaseCombatComponent::EnableRoll);
+	}
+
+	// SET INITIAL VALUES
+	SetInitialValues();
+}
+
+void ASwordslikeCharacter::CacheComponentReferences()
+{
 	if(GetMesh())
 	{
 		AnimInstance = GetMesh()->GetAnimInstance();
 	}
-
-	if(GetLocalRole() == ROLE_AutonomousProxy)
+	
+	Capsule = GetComponentByClass<UCapsuleComponent>();
+	
+	if(UOverheadHealthBarWidget* CastOverHeadHUD = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
+	{
+		OverHeadHUD = CastOverHeadHUD;
+	}
+	
+	if(IsLocallyControlled())
 	{
 		if(AHUD* HUD = GetWorld()->GetFirstPlayerController()->GetHUD())
 		{
-			if(AHUDManager* HUDManager = Cast<AHUDManager>(HUD))
+			if(const AHUDManager* HUDManager = Cast<AHUDManager>(HUD))
 			{
 				if(HUDManager->GetMasterHUD())
 				{
@@ -120,15 +187,12 @@ void ASwordslikeCharacter::BeginPlay()
 			}
 		}
 	}
-	
-	if(UOverheadHealthBarWidget* CastOverHeadHUD = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
-	{
-		OverHeadHUD = CastOverHeadHUD;
-	}
+}
 
+void ASwordslikeCharacter::InitializeComponents()
+{
 	if(InteractionComponent)
 	{
-		Capsule = GetComponentByClass<UCapsuleComponent>();
 		InteractionComponent->InitEntityComponent(this);
 	}
 
@@ -142,18 +206,9 @@ void ASwordslikeCharacter::BeginPlay()
 		ParryComponent->InitEntityComponent(this);
 	}
 
-	if(LockIndicatorWidget)
-	{
-		if(GetLocalRole() == ROLE_Authority)
-		{
-			LockIndicatorWidget->HideIndicator();
-		}
-	}
-
 	if(Sprint)
 	{
 		Sprint->InitEntityComponent(this);
-		OnJumped.AddUObject(Sprint, &USprintComponent::OnJumped);
 	}
 	
 	if(Animations)
@@ -166,122 +221,20 @@ void ASwordslikeCharacter::BeginPlay()
 		TargetLockerComponent->InitEntityComponent(this);
 	}
 
-	// CACHES
-	if(ULockableTargetComponent* Lockable = GetComponentByClass<ULockableTargetComponent>())
-	{
-		LockableTargetComponent = Lockable;
-	}
-
-	///////////////////////
-	/// Widgets
-	//////////////////////
-	// TODO: Extract this component from the project entirely in C++ and BP
-	DebuggerText->SetWidget(nullptr);
-
-	// disable the overhead health bar if this is the AutonomousProxy client 
-	if(GetLocalRole() == ROLE_AutonomousProxy)
-	{
-		OverheadHealthBar->SetWidget(nullptr);
-		
-		MasterHUD->GetStatsHUD()->SetHealthBarSize(PlayerStats->MaxHealthPoints);
-		MasterHUD->GetStatsHUD()->BindHealthBar(this);
-		MasterHUD->GetStatsHUD()->SetStaminaBarSize(PlayerStats->MaxStamina);
-		MasterHUD->GetStatsHUD()->BindStaminaBar(this);
-		MasterHUD->GetStatsHUD()->BindPostureBar(this);
-	}
-	else if(OverHeadHUD)
-	{
-		if(Health)
-		{
-			Health->OnEntityHealthChanged.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::SetHealthBarValue);
-			// GEngine->AddOnScreenDebugMessage(-1, 50.f,  FColor::Red, FString::Printf(TEXT("Healthbar / %s: Binded"), *GetActorNameOrLabel()));
-
-			FString Name = FString::Printf(TEXT("%s\n%s"), *UEnum::GetValueAsString(GetLocalRole()), *GetActorNameOrLabel());
-			OverHeadHUD->SetNameValue(FText::FromString(*Name));
-
-			OverHeadHUD->Hide();
-			
-			LockableTargetComponent->OnLockableLocked.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::Show);
-			LockableTargetComponent->OnLockableUnlocked.AddUObject(OverHeadHUD, &UOverheadHealthBarWidget::Hide);
-		}
-		else
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 50.f,  FColor::Red, FString::Printf(TEXT("Healthbar / %s: Failed to bind"), *GetActorNameOrLabel()));
-		}
-	}
-
-	///////////////////////
-	/// Subscriptions
-	///////////////////////
-
-	// TARGET LOCKER
-	if(TargetLockerComponent)
-	{
-		TargetLockerComponent->AddToOnLockedTarget(this, &ASwordslikeCharacter::OnTargetLockedOn);
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f,  FColor::Red, FString::Printf(TEXT("TargetLockerComponent is not NULL")));
-	}
-
-	// COMBAT
 	if(Combat)
 	{
-		if(Animations)
-		{
-			Combat->OnEntityRolled.AddUObject(Animations, &UBaseEntityAnimationsComponent::PlayRollMontage);
-			Combat->OnEntityRolled.AddUObject(Sprint, &USprintComponent::OnRolled);
-		}
-		
-		Combat->OnEntityRolled.AddUObject(this, &ASwordslikeCharacter::OnRollStarted);
-		Combat->OnEntityRolled.AddLambda([this]()
-		{
-			Health->SetIsInvincible(true);
-		});
-		
-		Combat->OnEntityRollFinished.AddUObject(this, &ASwordslikeCharacter::OnRollFinished);
-		Combat->OnEntityRollFinished.AddLambda([this]()
-		{
-			Health->SetIsInvincible(false);
-		});
-
-		Combat->SetRollDuration(Animations->GetRollAnimationDuration());
-
-		OnJumped.AddUObject(Combat, &UBaseCombatComponent::DisableRoll);
-		OnLanded.AddUObject(Combat, &UBaseCombatComponent::EnableRoll);
+		Combat->InitEntityComponent(this);
 	}
 
-	// HEALTH AND EVERYTHING THAT SUBSCRIBES TO IT
 	if(Health)
 	{
-		Health->OnEntityDeath.AddUObject(this, &ASwordslikeCharacter::OnDeath);
-
-		if(LockableTargetComponent)
-		{
-			Health->OnEntityDeath.AddUObject(LockableTargetComponent, &ULockableTargetComponent::OnDeath);
-		}
-
-		// Hit react animation
-		Health->OnEntityHit.AddUObject(this, &ASwordslikeCharacter::OnCharacterHit);
+		Health->InitEntityComponent(this);
 	}
-	else
+
+	if(LockableTargetComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("HealthComponent is NULL"));
+		LockableTargetComponent->InitEntityComponent(this);
 	}
-	
-	///////////////////////
-	/// Assignments
-	///////////////////////
-	if(WeaponHandler)
-	{
-		Combat->SetWeaponHandler(WeaponHandler);
-		WeaponHandler->Setup(this);
-
-		WeaponHandler->OnWeaponHitStarted.AddUObject(Sprint, &USprintComponent::OnWeaponHit);
-	}
-
-	// SET INITIAL VALUES
-	SetInitialValues();
 }
 
 void ASwordslikeCharacter::SetInitialValues()
@@ -468,7 +421,8 @@ void ASwordslikeCharacter::Tick(float DeltaTime)
 
 	if(GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		// GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Max Walk Speed: %f"), GetCharacterMovement()->MaxWalkSpeed));
+		const FString Message = FString::Printf(TEXT("%s"), MasterHUD? TEXT("HUD Exists") : TEXT("Missing HUD"));
+		GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Green, *Message);
 	}
 }
 
@@ -517,7 +471,7 @@ void ASwordslikeCharacter::Interact()
 {
 	if(!InteractionComponent)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("No interaction component"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Error: No interaction component"));
 		return;
 	}
 
@@ -640,27 +594,11 @@ void ASwordslikeCharacter::OnSprintEnded()
 }
 #pragma endregion
 
-#pragma region Getters
-FVector2D ASwordslikeCharacter::GetMovementVector() const
-{
-	return MovementVector;
-}
-#pragma endregion
 
 void ASwordslikeCharacter::StartAttackCycle()
 {
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ASwordslikeCharacter::Attack, 2.f, true);
-}
-
-void ASwordslikeCharacter::SetCanMove(bool Value)
-{
-	bCanMove = Value;
-}
-
-void ASwordslikeCharacter::SetCanJump(bool Value)
-{
-	bCanJump = Value;
 }
 
 FString ASwordslikeCharacter::GetInteractionInput()
@@ -673,14 +611,14 @@ FString ASwordslikeCharacter::GetInputKey(UInputAction* InputAction)
 	if (!InputAction)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("InputAction is null."));
-		return FString::Printf(TEXT("Hello"));
+		return FString::Printf(TEXT("InputAction is null."));
 	}
 
 	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 	if (!PlayerController)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PlayerController not found."));
-		return FString::Printf(TEXT("Hello"));
+		return FString::Printf(TEXT("PlayerController not found."));
 	}
 
 	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = 
@@ -689,7 +627,7 @@ FString ASwordslikeCharacter::GetInputKey(UInputAction* InputAction)
 	if (!InputSubsystem)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputLocalPlayerSubsystem not found."));
-		return FString::Printf(TEXT("Hello"));
+		return FString::Printf(TEXT("EnhancedInputLocalPlayerSubsystem not found."));
 	}
 
 	TArray<FKey> MappedKeys = InputSubsystem->QueryKeysMappedToAction(InputAction);

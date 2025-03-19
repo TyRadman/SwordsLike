@@ -1,11 +1,51 @@
 #include "BaseCombatComponent.h"
 
+#include "BaseEntityAnimationsComponent.h"
 #include "Common/WeaponHandlerComponent.h"
 #include "GameFramework/Character.h"
+#include "Player/SwordslikeCharacter.h"
 
 UBaseCombatComponent::UBaseCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+}
+
+void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)
+{
+	if(Character && Cast<ASwordslikeCharacter>(Character))
+	{
+		PlayerCharacter = Cast<ASwordslikeCharacter>(Character);
+		
+		if(UBaseEntityAnimationsComponent* Animations = PlayerCharacter->GetAnimation())
+		{
+			OnEntityRolled.AddUObject(Animations, &UBaseEntityAnimationsComponent::PlayRollMontage);
+			SetRollDuration(Animations->GetRollAnimationDuration());
+		}
+		
+		if(USprintComponent* Sprint = PlayerCharacter->GetSprintComponent())
+		{
+			OnEntityRolled.AddUObject(Sprint, &USprintComponent::OnRolled);
+		}
+		
+		OnEntityRolled.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnRollStarted);
+
+		if(PlayerCharacter->GetHealthComponent())
+		{
+			OnEntityRolled.AddLambda([this]()
+			{
+				PlayerCharacter->GetHealthComponent()->SetIsInvincible(true);
+			});
+			
+			OnEntityRollFinished.AddLambda([this]()
+			{
+				PlayerCharacter->GetHealthComponent()->SetIsInvincible(false);
+			});
+		}
+		
+		OnEntityRollFinished.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnRollFinished);
+		
+		SetWeaponHandler(PlayerCharacter->GetWeaponHandler());
+	}
 }
 
 void UBaseCombatComponent::BeginPlay()
@@ -35,7 +75,7 @@ void UBaseCombatComponent::BeginPlay()
 #pragma region Attack Action
 void UBaseCombatComponent::AttackAction()
 {
-	if(!bCanAttack)
+	if(!bCanAttack || !WeaponHandler->HasWeapon())
 	{
 		return;
 	}

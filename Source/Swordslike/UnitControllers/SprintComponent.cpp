@@ -24,6 +24,7 @@ void USprintComponent::InitEntityComponent(ACharacter* Character)
 		if(ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character))
 		{
 			EntityCharacter = CustomCharacter;
+			CustomCharacter->OnJumped.AddUObject(this, &USprintComponent::OnJumped);
 		}
 		else
 		{

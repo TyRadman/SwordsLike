@@ -16,5 +16,5 @@ public:
 	float PostureDamage = 1.f;
 
 	UPROPERTY(BlueprintReadOnly)
-	AActor* Instigator;
+	AActor* DamageInstigator;
 };

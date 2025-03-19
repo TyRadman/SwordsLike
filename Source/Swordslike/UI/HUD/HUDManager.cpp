@@ -16,7 +16,7 @@ AHUDManager::AHUDManager()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Widget Class not found"));
+		GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Red, TEXT("NO MASTER WIDGET CLASS"));
 	}
 }
 
@@ -32,5 +32,9 @@ void AHUDManager::CreateHealthBar()
 	if(MasterHUD)
 	{
 		MasterHUD->AddToViewport();
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Red, TEXT("NO MASTER WIDGET CLASS"));
 	}
 }

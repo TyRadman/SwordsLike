@@ -4,13 +4,25 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Swordslike/Combat/Interactable.h"
 #include "Weapon.generated.h"
 
+class USphereComponent;
 class AWeaponInteractable;
 class UArrowComponent;
 
+UENUM(BlueprintType)
+enum class EWeaponState : uint8
+{
+	EWS_Initial UMETA(DisplayName = "Initial"),
+	EWS_Equipped UMETA(DisplayName = "Equipped"),
+	EWS_Dropped UMETA(DisplayName = "Dropped"),
+	
+	EWS_MAX UMETA(DisplayName = "DefaultMAX"),
+};
+
 UCLASS()
-class SWORDSLIKE_API AWeapon : public AActor
+class SWORDSLIKE_API AWeapon : public AActor, public IInteractable
 {
 	GENERATED_BODY()
 	
@@ -22,9 +34,10 @@ protected:
 
 public:
 	virtual void Tick(float DeltaTime) override;
-	
+	void OnWeaponEquipped();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FString WeaponName;
+	FString WeaponName{TEXT("WeaponName")};
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UArrowComponent* StartArrow;
@@ -65,10 +78,23 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* SceneRoot;
-	
-	AWeaponInteractable* OwnerInteractable;
+
+	UPROPERTY(VisibleAnywhere, Category="Components")
+	USphereComponent* AreaSphere;
+
+	UPROPERTY(VisibleAnywhere)
+	EWeaponState WeaponState;
 
 public:
-	void SetInteractable(AWeaponInteractable* Interactable);
+	virtual void Interact(AActor* Interactor) override;
+	UFUNCTION(Server, Reliable)
+	void Server_Interact(AActor* InteractingActor);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Interact(AActor* InteractingActor);
+
+	void InteractionProcess(AActor* InteractingActor);
+
+	
+	virtual FString GetInteractionMessage() override;
 
 };

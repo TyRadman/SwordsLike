@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Damagable.h"
+#include "IEntityComponent.h"
 #include "Components/ActorComponent.h"
 #include "Swordslike/Core/MyActorComponent.h"
+#include "Common/DamageInfo.h"
 #include "BaseHealthComponent.generated.h"
-
-struct FDamageInfo;
 
 class FLifetimeProperty;
 
@@ -16,13 +16,13 @@ DECLARE_MULTICAST_DELEGATE_OneParam(HealthDelegate, const FDamageInfo& DamageInf
 DECLARE_MULTICAST_DELEGATE_TwoParams(OnEntityHealthChangedDelegate, float CurrentHP, float MaxHP);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class SWORDSLIKE_API UBaseHealthComponent : public UMyActorComponent, public IDamagable
+class SWORDSLIKE_API UBaseHealthComponent : public UMyActorComponent, public IDamagable, public IIEntityComponent
 {
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	UBaseHealthComponent();
+	virtual void InitEntityComponent(ACharacter* Character) override;
 
 protected:
 	// Called when the game starts

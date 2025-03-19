@@ -3,17 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "IEntityComponent.h"
 #include "Components/ActorComponent.h"
 #include "Swordslike/Core/MyActorComponent.h"
 #include "BaseCombatComponent.generated.h"
 
+class ASwordslikeCharacter;
 class UAnimInstance;
 class UWeaponHandlerComponent;
 
 DECLARE_MULTICAST_DELEGATE(RollDelegate);
 
 UCLASS(Abstract)
-class SWORDSLIKE_API UBaseCombatComponent : public UMyActorComponent
+class SWORDSLIKE_API UBaseCombatComponent : public UMyActorComponent, public IIEntityComponent
 {
 	GENERATED_BODY()
 
@@ -31,6 +33,8 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ForceStopAttack();
+	
+	virtual void InitEntityComponent(ACharacter* Character);
 
 protected:
 	virtual void BeginPlay() override;
@@ -40,6 +44,8 @@ protected:
 	
 	UFUNCTION()
 	virtual void OnAttackEnded(UAnimMontage* Anim, bool bInterrupted);
+
+	ASwordslikeCharacter* PlayerCharacter;
 
 public:
 	// TODO: To be move to the EntityAnimation component

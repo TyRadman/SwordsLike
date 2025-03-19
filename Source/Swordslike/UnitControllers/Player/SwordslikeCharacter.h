@@ -105,6 +105,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	USprintComponent* Sprint;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	ULockableTargetComponent* LockableTargetComponent;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Visuals, meta = (AllowPrivateAccess = "true"))
@@ -124,10 +125,7 @@ protected:
 
 	///////////////////////
 	/// WIDGETS
-	//////////////////////
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	UWidgetComponent* DebuggerText;
-	
+	///////////////////////
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* OverheadHealthBar;
 	
@@ -143,6 +141,9 @@ protected:
 	void Interact();
 	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+	void CacheComponentReferences();
+	void InitializeComponents();
 
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -161,30 +162,24 @@ public:
 	FORCEINLINE UAnimInstance* GetAnimInstance() const {return AnimInstance;}
 	FORCEINLINE UCapsuleComponent* GetInteractionSphere() const {return Capsule;}
 	FORCEINLINE UMasterHUD* GetMasterHUD() const {return MasterHUD;}
+	FORCEINLINE UBaseEntityAnimationsComponent* GetAnimation() const {return Animations;}
+	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent;}
 	
 
 	void OnDeath(const FDamageInfo& DamageInfo);
 	void SetSprintSpeed();
 	void ResetSpeed();
 
-	FVector2D GetMovementVector() const;
+	FORCEINLINE FVector2D GetMovementVector() const { return MovementVector; }
 
 private:
 	FVector2D MovementVector;
-	
-	void OnTargetLockedOn(bool IsLockedOn);
 
 	void SetInitialValues();
 
 	/**
 	 * Called when the entity takes damage
 	 */
-	void OnCharacterHit(const FDamageInfo& DamageInfo);
-	void OnCharacterHitRecovered();
-	void OnRollStarted();
-	void OnRollFinished();
-	void OnSprintStarted();
-	void OnSprintEnded();
 	
 	FTimerHandle HitRecoveryTimer;
 	const float RecoveryDuration = .5f;
@@ -198,13 +193,20 @@ private:
 	// TEST
 	void StartAttackCycle();
 
-	void SetCanMove(bool NewCanMove);
-	void SetCanJump(bool NewCanJump);
+	FORCEINLINE void SetCanMove(bool NewCanMove) {bCanMove = NewCanMove; }
+	FORCEINLINE void SetCanJump(bool NewCanJump) {bCanJump = NewCanJump; }
 
 public:
 	void OnKnockedDown();
 	void OnKnockedDownRecover();
 	void OnAttackParried(const FDamageInfo& DamageInfo, EParryState State);
+	void OnTargetLockedOn(bool IsLockedOn);
+	void OnCharacterHit(const FDamageInfo& DamageInfo);
+	void OnCharacterHitRecovered();
+	void OnRollStarted();
+	void OnRollFinished();
+	void OnSprintStarted();
+	void OnSprintEnded();
 
 private:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -212,6 +214,7 @@ private:
 
 public:
 	FString GetInteractionInput();
+	FString PlayerName;
 
 private:
 	FString GetInputKey(UInputAction* InputAction);
