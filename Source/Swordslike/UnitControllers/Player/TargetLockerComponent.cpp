@@ -11,22 +11,31 @@
 UTargetLockerComponent::UTargetLockerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	// TODO: ToRemoveOnCook
+	SetIsReplicatedByDefault(true);
 }
 
 void UTargetLockerComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// TODO: add this to notes
 	DOREPLIFETIME(UTargetLockerComponent, bIsLockedOnTarget);
 	DOREPLIFETIME(UTargetLockerComponent, LockedTarget);
+	DOREPLIFETIME(UTargetLockerComponent, LockedTargetHealth);
 }
 
 void UTargetLockerComponent::InitEntityComponent(ACharacter* Character)
 {
 	if (ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
 	{
-		AddToOnLockedTarget(PlayerCharacter, &ASwordslikeCharacter::OnTargetLockedOn);
+		if(!GetIsReplicated())
+		{
+			PrintOnScreen(TEXT("UTargetLockerComponent: NOT REPLICATED! SHOULD BE!"));
+		}
+		
+		// AddToOnLockedTarget(PlayerCharacter, &ASwordslikeCharacter::OnTargetLockedOn);
+		Server_OnLockStateChanged.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnTargetLockedOn);
 		
 		if(PlayerCharacter->GetFollowCamera())
 		{
@@ -34,7 +43,7 @@ void UTargetLockerComponent::InitEntityComponent(ACharacter* Character)
 		}
 		else
 		{
-			PrintOnScreen(TEXT("No Camera Found!"));
+			PrintOnScreen(TEXT("UTargetLockerComponent: No Camera Found!"));
 		}
 	
 		if(PlayerCharacter->GetLockOnWidget())
@@ -43,30 +52,16 @@ void UTargetLockerComponent::InitEntityComponent(ACharacter* Character)
 		}
 		else
 		{
-			PrintOnScreen_Local(TEXT("No LockIndicatorWidget Found!"));
+			PrintOnScreen(TEXT("UTargetLockerComponent: No LockIndicatorWidget Found!"), FColor::Red, 20.f);
 		}
+
+		CharacterController = Character->GetController();
+		SpringArm = PlayerCharacter->GetCameraBoom();
 	}
 	else
 	{
-		PrintOnScreen(TEXT("No Player Controller Found!"));
+		PrintOnScreen(TEXT("UTargetLockerComponent: No Player Controller Found!"));
 	}
-}
-
-void UTargetLockerComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	if(APawn* OwnerPawn = Cast<APawn>(GetOwner()))
-	{
-		CharacterController = OwnerPawn->GetController();
-	}
-	else
-	{
-		PrintOnScreen(TEXT("No CharacterController Found!"));
-	}
-	
-	// Cache the spring arm
-	SpringArm = GetOwner()->FindComponentByClass<USpringArmComponent>();
 }
 
 #pragma region Tick
@@ -74,14 +69,54 @@ void UTargetLockerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// if(!GetOwner()->HasAuthority())
+	// {
+	// 	return;
+	// }
+
 	if(CanPerformLock())
 	{
 		ValidateLock();
 		UpdateTargetLocation(DeltaTime);
 	}
+	else if(bIsLockedOnTarget)
+	{
+		// PrintOnScreen(TEXT("Can't perform lock while locked!"));
+	}
 }
 
-void UTargetLockerComponent::UpdateTargetLocation(float DeltaTime)
+bool UTargetLockerComponent::CanPerformLock() const
+{
+	// const FString RoleString = GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
+	// const FString NetRoleString = UEnum::GetValueAsString(GetOwner()->GetRemoteRole());
+	// FColor DebugColor = GetOwner()->HasAuthority()? FColor::Cyan : FColor::Orange;
+	//
+	// PrintOnScreen_Local(FString::Printf(TEXT("[%s, %s, %s] bIsLockedOnTarget value: %s"),
+	// 	*RoleString, *NetRoleString, *GetOwner()->GetActorNameOrLabel(),
+	// 	bIsLockedOnTarget ? TEXT("true") : TEXT("false")), DebugColor);
+	
+	if(!bIsLockedOnTarget)
+	{
+		// PrintOnScreen_Local(TEXT("No bIsLockedOnTarget"));
+		return false;
+	}
+	
+	if(!LockedTarget)
+	{
+		PrintOnScreen_Local(TEXT("No LockedTarget"));
+		return false;
+	}
+	
+	if(!CharacterController)
+	{
+		PrintOnScreen_Local(TEXT("No CharacterController"));
+		return false;
+	}
+
+	return true;
+}
+
+void UTargetLockerComponent::UpdateTargetLocation(const float DeltaTime)
 {
 	FVector TargetLocation = LockedTarget->GetComponentLocation();
 	FVector PlayerLocation = CharacterController->GetPawn()->GetActorLocation();
@@ -98,6 +133,9 @@ void UTargetLockerComponent::UpdateTargetLocation(float DeltaTime)
 	CharacterController->SetControlRotation(FinalRotation);
 }
 
+/**
+ * Validates whether the target can still be locked-on to by whether it's alive, with sight, and within range.
+ */
 void UTargetLockerComponent::ValidateLock()
 {
 	// if the target is not in range, start a timer
@@ -137,9 +175,14 @@ void UTargetLockerComponent::PerformLockAction()
 {
 	if(bIsLockedOnTarget && LockedTarget)
 	{
+		// const FString RoleString = GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
+		// PrintOnScreen_Local(FString::Printf(TEXT("[%s] Unlocked!"), *RoleString), FColor::Red);
 		Unlock();
 		return;
 	}
+	
+	// const FString RoleString = GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
+	// PrintOnScreen_Local(FString::Printf(TEXT("[%s] Unlocked!"), *RoleString), FColor::Orange);
 
 	LockOn();
 }
@@ -147,49 +190,119 @@ void UTargetLockerComponent::PerformLockAction()
 #pragma region Unlock Server
 void UTargetLockerComponent::Unlock()
 {
-	if(GetOwnerRole() < ROLE_Authority)
+	if(LockedTarget)
+	{
+		LockedTarget->OnUnlocked();
+	}
+	else
+	{
+		PrintOnScreen_Local(FString::Printf(TEXT("No target on unlock")));
+	}
+	
+	LockIndicatorWidget->HideIndicator();
+
+	if(!HasAuthority())
 	{
 		Server_Unlock();
 	}
 	else
 	{
-		Multicast_Unlock();
+		OnUnlockedTarget();
 	}
 }
 
 void UTargetLockerComponent::Server_Unlock_Implementation()
 {
-	// PrintOnScreen_Local(TEXT("SERVER: There is a target"), 10.f);
-	Multicast_Unlock();
-}
-
-// REPLICATED METHODS
-void UTargetLockerComponent::Multicast_Unlock_Implementation()
-{
-	// PrintOnScreen_Local(TEXT("Multicast: There is a target"), 10.f);
 	OnUnlockedTarget();
 }
 
 void UTargetLockerComponent::OnUnlockedTarget()
 {
 	bIsLockedOnTarget = false;
+	LockedTarget = nullptr;
 
-	if(LockedTarget)
+	Server_OnLockStateChanged.Broadcast(nullptr, false);
+}
+#pragma endregion 
+
+#pragma region Lock Server
+void UTargetLockerComponent::LockOn()
+{
+	if(ULockableTargetComponent* Target = FindTarget())
 	{
-		// PrintOnScreen_Local(TEXT("There is a target"), 10.f);
-		LockedTarget->OnUnlocked();
+		if(Local_OnLockStateChanged.IsBound())
+		{
+			Local_OnLockStateChanged.Broadcast(Target, true);
+		}
+		
+		Target->OnLocked();
+		LockIndicatorWidget->ShowIndicatorOnTarget(Target);
+		
+		if(!HasAuthority())
+		{
+			Server_LockOn(Target);
+		}
+		else
+		{
+			OnLockedTarget(Target);
+		}
 	}
 	else
 	{
-		PrintOnScreen_Local(TEXT("How on earth is there no target"), 10.f);
+		PrintOnScreen(TEXT("NO TARGET IN SIGHT"));
+	}
+}
+
+void UTargetLockerComponent::Server_LockOn_Implementation(ULockableTargetComponent* Target)
+{
+	if(Target)
+	{
+		OnLockedTarget(Target);
+	}
+	else
+	{
+		PrintOnScreen(TEXT("Server_LockOn_Implementation: No Target"));
+	}
+}
+
+void UTargetLockerComponent::OnLockedTarget(ULockableTargetComponent* Target)
+{
+	if(!Target)
+	{
+		PrintOnScreen(TEXT("OnLockedTarget: No Target"));
+		return;
 	}
 	
-	LockedTarget = nullptr;
-
-	LockIndicatorWidget->UnlockFromTarget();
-	OnLockStateChanged.Broadcast(bIsLockedOnTarget);
+	if(UBaseHealthComponent* Health = Target->GetOwner()->GetComponentByClass<UBaseHealthComponent>())
+	{
+		LockedTargetHealth = Health;
+	}
+	
+	bIsLockedOnTarget = true;
+	LockedTarget = Target;
+	Server_OnLockStateChanged.Broadcast(Target, true);
 }
-#pragma endregion 
+#pragma endregion  
+
+void UTargetLockerComponent::OnRep_bIsLockedOnTarget()
+{
+	if(!HasAuthority())
+	{
+		// if (bIsLockedOnTarget)
+		// {
+		// }
+		// else
+		// {
+		// }
+		
+		PrintOnScreen_Local(FString::Printf(TEXT("OnRep_IsLockedOn triggered, value: %s"),
+			bIsLockedOnTarget ? TEXT("true") : TEXT("false")), FColor::Green);
+	}
+	else
+	{
+		PrintOnScreen_Local(FString::Printf(TEXT("CHATGPT IS SPREADING MISINFORMATION")));
+	}
+}
 
 
 #pragma region Utilities
@@ -200,9 +313,14 @@ ULockableTargetComponent* UTargetLockerComponent::FindTarget()
 		return nullptr;
 	}
 
+	if(!CharacterController)
+	{
+		PrintOnScreen(TEXT("UTargetLockerComponent: No Player Controller Found!"));
+		return nullptr;
+	}
+
 	FVector PlayerLocation = GetOwner()->GetActorLocation();
-	FRotator CameraRotation = GetOwner()->GetInstigatorController()->GetControlRotation();
-	FVector ForwardVector = CameraRotation.Vector();
+	FVector ForwardVector = CharacterController->GetControlRotation().Vector();
 	TArray<ULockableTargetComponent*> ValidTargets;
 	
 	FCollisionQueryParams QueryParams;
@@ -254,28 +372,7 @@ ULockableTargetComponent* UTargetLockerComponent::FindTarget()
 	return nullptr;
 }
 
-bool UTargetLockerComponent::CanPerformLock() const
-{
-	if(!LockedTarget)
-	{
-		return false;
-	}
-	
-	if(!CharacterController)
-	{
-		return false;
-	}
-
-	
-	if(!LockedTarget)
-	{
-		return false;
-	}
-
-	return true;
-}
-
-bool UTargetLockerComponent::IsTargetInRange(ULockableTargetComponent* Target) const
+bool UTargetLockerComponent::IsTargetInRange(const ULockableTargetComponent* Target) const
 {
 	FVector StartLocation = Camera->GetComponentLocation();
 	FVector EndLocation = Target->GetComponentLocation();
@@ -307,92 +404,3 @@ bool UTargetLockerComponent::IsTargetInRange(ULockableTargetComponent* Target) c
 	return false;
 }
 #pragma endregion
-
-#pragma region Lock Server
-void UTargetLockerComponent::LockOn()
-{
-	ULockableTargetComponent* Target = FindTarget();
-
-	if(Target)
-	{
-		PrintOnScreen_Local(TEXT("A TARGET IS IN SIGHT"), FColor::Green);
-		Target->OnLocked();
-		
-		if(UBaseHealthComponent* Health = Target->GetOwner()->GetComponentByClass<UBaseHealthComponent>())
-		{
-			LockedTargetHealth = Health;
-		}
-		
-		bIsLockedOnTarget = true;
-		LockedTarget = Target;
-		OnLockedTarget();
-		
-		if(GetOwnerRole() < ROLE_Authority)
-		{
-			Server_LockOn(Target);
-		}
-		else
-		{
-			bIsLockedOnTarget = true;
-			LockedTarget = Target;
-			OnLockedTarget();
-			// Multicast_LockOn(Target);
-		}
-	}
-	else
-	{
-		PrintOnScreen_Local(TEXT("NO TARGET IN SIGHT"));
-	}
-}
-
-void UTargetLockerComponent::Server_LockOn_Implementation(ULockableTargetComponent* Target)
-{
-	if(Target)
-	{
-		bIsLockedOnTarget = true;
-		LockedTarget = Target;
-		Multicast_LockOn(Target);
-	}
-	else
-	{
-		PrintOnScreen_Local(TEXT("Server_LockOn_Implementation: No Target"));
-	}
-}
-
-void UTargetLockerComponent::Multicast_LockOn_Implementation(ULockableTargetComponent* Target)
-{
-	if(IsAutonomousProxy())
-	{
-		return;
-	}
-	
-	if(Target)
-	{
-		bIsLockedOnTarget = true;
-		LockedTarget = Target;
-		OnLockedTarget();
-	}
-	else
-	{
-		PrintOnScreen_Local(TEXT("Server_LockOn_Implementation: No Target"));
-	}
-}
-
-void UTargetLockerComponent::OnLockedTarget()
-{
-	LockIndicatorWidget->LockOnTarget(LockedTarget);
-	OnLockStateChanged.Broadcast(bIsLockedOnTarget);
-}
-#pragma endregion  
-
-void UTargetLockerComponent::OnRep_IsLockedOn()
-{
-	OnLockStateChanged.Broadcast(bIsLockedOnTarget);
-}
-
-#pragma region Externals
-void UTargetLockerComponent::SetLockIndicatorWidget(TObjectPtr<ULockWidgetController> LockIndicatorWidgetReference)
-{
-	LockIndicatorWidget = LockIndicatorWidgetReference;
-}
-#pragma endregion 

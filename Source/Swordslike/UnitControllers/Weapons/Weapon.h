@@ -7,6 +7,7 @@
 #include "Swordslike/Combat/Interactable.h"
 #include "Weapon.generated.h"
 
+class UNiagaraComponent;
 class USphereComponent;
 class AWeaponInteractable;
 class UArrowComponent;
@@ -81,9 +82,18 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category="Components")
 	USphereComponent* AreaSphere;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Components", meta=(AllowPrivateAccess = true))
+	UNiagaraComponent* TrailEffect;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Effects", meta=(AllowPrivateAccess = true))
+	UParticleSystemComponent* TrailPSC;
+
 
 	UPROPERTY(VisibleAnywhere)
 	EWeaponState WeaponState;
+
+	bool bIsEquipped = false;
 
 public:
 	virtual void Interact(AActor* Interactor) override;
@@ -93,8 +103,11 @@ public:
 	void Multicast_Interact(AActor* InteractingActor);
 
 	void InteractionProcess(AActor* InteractingActor);
-
 	
 	virtual FString GetInteractionMessage() override;
+
+	FORCEINLINE UStaticMeshComponent* GetMesh() const { return Mesh; }
+	FORCEINLINE UParticleSystemComponent* GetTrailEffect() const { return TrailPSC; }
+	
 
 };

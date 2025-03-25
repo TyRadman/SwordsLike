@@ -1,4 +1,6 @@
 #include "BaseHealthComponent.h"
+
+#include "BaseEntityData.h"
 #include "DamageInfo.h"
 #include "LockableTargetComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -37,6 +39,9 @@ void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
 		{
 			OnEntityHealthChanged.AddUObject(HUD, &UOverheadHealthBarWidget::SetHealthBarValue);
 		}
+		
+		SetMaxHealth(PlayerCharacter->GetPlayerStats()->MaxHealthPoints);
+		FullyChargeHealth();
 	}
 }
 

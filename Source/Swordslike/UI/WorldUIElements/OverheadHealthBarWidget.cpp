@@ -1,6 +1,31 @@
 #include "OverheadHealthBarWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "GameFramework/Character.h"
+#include "Player/SwordslikeCharacter.h"
+
+void UOverheadHealthBarWidget::InitEntityComponent(ACharacter* Character)
+{
+	if(Character)
+	{
+		if(!Character->IsLocallyControlled())
+		{
+			if(ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
+			{
+				FString Name = FString::Printf(TEXT("%s\n%s"),
+					*UEnum::GetValueAsString(Character->GetLocalRole()),
+					*UEnum::GetValueAsString(Character->GetRemoteRole()));
+			
+				SetNameValue(FText::FromString(*Name));
+				Hide();
+			}
+		}
+		else
+		{
+			Hide();
+		}
+	}
+}
 
 void UOverheadHealthBarWidget::SetHealthBarValue(float CurrentHealth, float MaxHealth)
 {

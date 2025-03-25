@@ -3,33 +3,28 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "IEntityComponent.h"
 #include "Components/ActorComponent.h"
 #include "Swordslike/Core/MyActorComponent.h"
 #include "LockWidgetController.generated.h"
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class SWORDSLIKE_API ULockWidgetController : public UMyActorComponent
+class SWORDSLIKE_API ULockWidgetController : public UMyActorComponent, public IIEntityComponent
 {
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	ULockWidgetController();
+	virtual void InitEntityComponent(ACharacter* Character) override;
 
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-
-public:	
 	UPROPERTY(EditDefaultsOnly, Category="Lock-On")
 	TSubclassOf<AActor> LockOnIndicatorClass;
 
 	UPROPERTY()
 	AActor* LockOnIndicatorInstance;
 
-	void LockOnTarget(USceneComponent* Target);
-	void UnlockFromTarget();
+	void ShowIndicatorOnTarget(USceneComponent* Target);
 	void HideIndicator();
 
 private:

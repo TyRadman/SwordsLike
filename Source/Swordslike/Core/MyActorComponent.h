@@ -24,7 +24,19 @@ protected:
 	void PrintOnScreen_Local(const FString& Message, float Duration) const;
 	void PrintOnScreen(const FString& Message) const;
 	void PrintOnScreen(const FString& Message, FColor Color) const;
-	void PrintOnScreen(const FString& Message, FColor Color, float Duration) const;
+	void PrintOnScreen(const FString& Message, FColor Color, float Duration);
+
+	FORCEINLINE bool IsLocallyControlled() const
+	{
+		if (APawn* Pawn = Cast<APawn>(GetOwner()))
+		{
+			if (AController* Controller = Pawn->GetController())
+			{
+				return Controller->IsLocalController();
+			}
+		}
+		return false;
+	}
 
 	/**
 	 * 

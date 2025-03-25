@@ -1,5 +1,6 @@
 #include "SprintComponent.h"
 
+#include "BaseEntityData.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/SwordslikeCharacter.h"
 #include "Weapons/Weapon.h"
@@ -25,6 +26,9 @@ void USprintComponent::InitEntityComponent(ACharacter* Character)
 		{
 			EntityCharacter = CustomCharacter;
 			CustomCharacter->OnJumped.AddUObject(this, &USprintComponent::OnJumped);
+			
+			SetMaxStamina(CustomCharacter->GetPlayerStats()->MaxStamina);
+			FullyRefillStamina();
 		}
 		else
 		{

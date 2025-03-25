@@ -91,19 +91,15 @@ void UInteractionComponent::OnRep_CurrentInteractable()
 
 void UInteractionComponent::Client_OnOverlapEvent_Implementation()
 {
-	PrintOnScreen_Local(TEXT("MULTICAST: Called"), FColor::Purple, 20.f);
-
 	if (OwnerCharacter && OwnerCharacter->IsLocallyControlled())
 	{
 
 		if(CurrentInteractable)
 		{
-			PrintOnScreen_Local(TEXT("MULTICAST: Start Delegate"), FColor::Green, 20.f);
 			OnInteractableOverlapStarted.Broadcast(OwnerCharacter);
 		}
 		else
 		{
-			PrintOnScreen_Local(TEXT("MULTICAST: End Delegate"), FColor::Green, 20.f);
 			OnInteractableOverlapEnded.Broadcast();
 		}
 	}

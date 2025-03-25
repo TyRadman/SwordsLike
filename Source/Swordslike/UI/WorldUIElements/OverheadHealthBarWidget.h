@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "IEntityComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "OverheadHealthBarWidget.generated.h"
 
@@ -13,11 +14,13 @@ class UTextBlock;
  * Displays an overhead health bar.
  */
 UCLASS()
-class SWORDSLIKE_API UOverheadHealthBarWidget : public UUserWidget
+class SWORDSLIKE_API UOverheadHealthBarWidget : public UUserWidget, public IIEntityComponent
 {
 	GENERATED_BODY()
 
 public:
+	virtual void InitEntityComponent(ACharacter* Character) override;
+	
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthBar;
 	

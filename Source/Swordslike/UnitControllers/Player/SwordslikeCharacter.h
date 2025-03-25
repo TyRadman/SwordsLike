@@ -58,6 +58,8 @@ private:
 	virtual void Tick(float DeltaTime) override;
 	
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
 
@@ -144,6 +146,7 @@ protected:
 
 	void CacheComponentReferences();
 	void InitializeComponents();
+	void SetDefaultReplicationProperties();
 
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -180,7 +183,6 @@ private:
 	/**
 	 * Called when the entity takes damage
 	 */
-	
 	FTimerHandle HitRecoveryTimer;
 	const float RecoveryDuration = .5f;
 
@@ -200,7 +202,16 @@ public:
 	void OnKnockedDown();
 	void OnKnockedDownRecover();
 	void OnAttackParried(const FDamageInfo& DamageInfo, EParryState State);
-	void OnTargetLockedOn(bool IsLockedOn);
+	
+	void OnTargetLockedOn(ULockableTargetComponent* Target, bool bIsLockedOn);
+	UFUNCTION(Server, Reliable)
+	void Server_OnTargetLockedOn(ULockableTargetComponent* Target, bool bIsLockedOn);
+	void HandleOnTargetLockedOn(ULockableTargetComponent* Target, const bool bIsLockedOn);
+	UPROPERTY(ReplicatedUsing = OnRep_bIsLockedOnTarget)
+	bool bIsLockedOnTarget = false;
+	UFUNCTION()
+	void OnRep_bIsLockedOnTarget();
+	
 	void OnCharacterHit(const FDamageInfo& DamageInfo);
 	void OnCharacterHitRecovered();
 	void OnRollStarted();

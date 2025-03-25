@@ -1,8 +1,5 @@
 #include "LockableTargetComponent.h"
-
-#include "DamageInfo.h"
 #include "Player/SwordslikeCharacter.h"
-#include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
 
 ULockableTargetComponent::ULockableTargetComponent()
@@ -45,5 +42,22 @@ void ULockableTargetComponent::OnUnlocked()
 void ULockableTargetComponent::OnDeath(const FDamageInfo& DamageInfo)
 {
 	IsValid = false;
+}
+
+// server methods must be removed
+void ULockableTargetComponent::Server_OnUnlocked_Implementation()
+{
+	if(OnLockableUnlocked.IsBound())
+	{
+		OnLockableUnlocked.Broadcast();
+	}
+}
+
+void ULockableTargetComponent::Server_OnLocked_Implementation()
+{
+	if(OnLockableLocked.IsBound())
+	{
+		OnLockableLocked.Broadcast();
+	}
 }
 

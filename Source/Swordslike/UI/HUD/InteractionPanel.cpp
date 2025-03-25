@@ -9,13 +9,12 @@ void UInteractionPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	PlayAnimation(FadeInAnimation);
-	// HideInteractionPanel();
+	HideInteractionPanel();
 }
 
 void UInteractionPanel::DisplayInteractionPanel(ASwordslikeCharacter* Character)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Interaction HUD displaying UI")));
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Interaction HUD displaying UI")));
 	
 	if(!Character)
 	{
@@ -37,7 +36,7 @@ void UInteractionPanel::DisplayInteractionPanel(ASwordslikeCharacter* Character)
 	{
 		FString Message = FString::Printf(TEXT("%s [%s]"), *Interactable->GetInteractionMessage(), *Character->GetInteractionInput());
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("%s"), *Message));
+		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("%s"), *Message));
 		MessageText->SetText(FText::FromString(*Message));
 		PlayAnimation(FadeInAnimation);
 	}

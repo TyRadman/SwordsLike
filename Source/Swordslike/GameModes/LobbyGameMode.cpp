@@ -19,8 +19,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 	
 	if(NumberOfPlayers == 2)
 	{
-		UWorld* World = GetWorld();
-		if(World)
+		if(UWorld* World = GetWorld())
 		{
 			bUseSeamlessTravel = true;
 			World->ServerTravel(FString(TEXT("/Game/Levels/Level_Arena_02?listen")));

@@ -19,7 +19,7 @@ void UWeaponHandlerComponent::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UWeaponHandlerComponent, CurrentWeapon);
-	DOREPLIFETIME(UWeaponHandlerComponent, bIsCarryingHeavyWeapon);
+	DOREPLIFETIME_CONDITION(UWeaponHandlerComponent, bIsCarryingHeavyWeapon, COND_OwnerOnly);
 }
 
 void UWeaponHandlerComponent::InitEntityComponent(ACharacter* Character)
@@ -49,47 +49,14 @@ UAnimMontage* UWeaponHandlerComponent::GetAttackMontage() const
 	return CurrentWeapon->ComboMontage;
 }
 
-void UWeaponHandlerComponent::Server_SpawnDefaultWeapon_Implementation(TSubclassOf<AWeapon> WeaponClass)
-{
-	if (!WeaponOwner || !WeaponClass)
-	{
-		PrintOnScreen(TEXT("Invalid spawn parameters."), FColor::Red);
-		return;
-	}
-	
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = WeaponOwner;
-	SpawnParams.Instigator = WeaponOwner->GetInstigator();
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	if (AWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass, SpawnParams))
-	{
-		CurrentWeapon = SpawnedWeapon;
-		EquipWeapon(SpawnedWeapon);
-	}
-	else
-	{
-		PrintOnScreen(TEXT("Weapon spawn failed on Server!"), FColor::Red);
-	}
-}
-
-bool UWeaponHandlerComponent::Server_SpawnDefaultWeapon_Validate(TSubclassOf<AWeapon> WeaponClass)
-{
-	return true;
-}
-
 void UWeaponHandlerComponent::OnRep_CurrentWeapon()
 {
-	if(CurrentWeapon)
-	{
-		EquipWeapon(CurrentWeapon);
-	}
+	PrintOnScreen(FString::Printf(TEXT("Weapon Set 2")));
 }
 
 void UWeaponHandlerComponent::EquipWeapon(AWeapon* Weapon)
 {
-		PrintOnScreen(FString::Printf(TEXT("WeaponHandler: Equipping weapon")));
-	
+	PrintOnScreen(FString::Printf(TEXT("Weapon Set 1")));
 	if(HasAuthority())
 	{
 		EquipWeaponProcess(Weapon);
@@ -126,7 +93,14 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 
 	bIsCarryingHeavyWeapon = Weapon->bIsCarryingHeavyWeapon;
 	
+	PrintOnScreen(FString::Printf(TEXT("Previous Weapon: %s"), 
+		CurrentWeapon ? *CurrentWeapon->GetName() : TEXT("None")));
+
 	CurrentWeapon = Weapon;
+
+	PrintOnScreen(FString::Printf(TEXT("New Weapon Set: %s"), 
+		CurrentWeapon ? *CurrentWeapon->GetName() : TEXT("None")));
+	
 	CurrentWeapon->AttachToComponent(
 		WeaponOwner->GetCustomMesh(),
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
@@ -198,8 +172,8 @@ void UWeaponHandlerComponent::GetTargetsInWeaponRange()
 		return;
 	}
 
-	FVector StartLocation = CurrentWeapon->StartArrow->GetComponentLocation();
-	FVector EndLocation = CurrentWeapon->EndArrow->GetComponentLocation();
+	const FVector StartLocation = CurrentWeapon->StartArrow->GetComponentLocation();
+	const FVector EndLocation = CurrentWeapon->EndArrow->GetComponentLocation();
 	
 	CacheTargetsBetweenTwoPoints(PreviousStartLocation, StartLocation);
 	CacheTargetsBetweenTwoPoints(PreviousEndLocation, EndLocation);
@@ -220,7 +194,7 @@ void UWeaponHandlerComponent::CacheTargetsBetweenTwoPoints(const FVector& StartL
 	QueryParams.AddIgnoredActor(GetOwner());
 	TArray<FHitResult> HitResults;
 	
-	bool bHitStart = GetWorld()->SweepMultiByObjectType(
+	const bool bHitStart = GetWorld()->SweepMultiByObjectType(
 		HitResults,
 		StartLocation,
 		EndLocation,
@@ -229,9 +203,12 @@ void UWeaponHandlerComponent::CacheTargetsBetweenTwoPoints(const FVector& StartL
 		FCollisionShape::MakeSphere(Radius),
 		QueryParams);
 
-	DrawDebugSweptSphere(GetWorld(), StartLocation, EndLocation, Radius, FColor::Red, false, .5f);
-	
-	GetTargetsFromHitResults(HitResults);
+	// DrawDebugSweptSphere(GetWorld(), StartLocation, EndLocation, Radius, FColor::Red, false, .5f);
+
+	if(bHitStart)
+	{
+		GetTargetsFromHitResults(HitResults);
+	}
 }
 
 void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitResults)

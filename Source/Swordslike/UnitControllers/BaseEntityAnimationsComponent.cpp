@@ -61,7 +61,7 @@ UAnimMontage* UBaseEntityAnimationsComponent::GetRollMontage()
 	}
 	
 	FVector2D MovementVector = OwnerCharacter->GetMovementVector();
-	bool IsLocked = OwnerCharacter->GetLockOnComponent()->bIsLockedOnTarget;
+	bool IsLocked = OwnerCharacter->GetLockOnComponent()->GetIsLocked();
 
 	if(!IsLocked)
 	{

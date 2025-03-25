@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "IEntityComponent.h"
 #include "SwordslikeCharacter.h"
-#include "Components/ActorComponent.h"
 #include "Swordslike/Combat/Interactable.h"
 #include "Swordslike/Core/MyActorComponent.h"
 #include "InteractionComponent.generated.h"

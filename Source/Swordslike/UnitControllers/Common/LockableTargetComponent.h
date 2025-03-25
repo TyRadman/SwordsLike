@@ -22,7 +22,11 @@ public:
 	LockableTargetDelegate OnLockableUnlocked;
 
 	void OnLocked();
+	UFUNCTION(Server, Reliable)
+	void Server_OnLocked();
 	void OnUnlocked();
+	UFUNCTION(Server, Reliable)
+	void Server_OnUnlocked();
 	void OnDeath(const FDamageInfo& DamageInfo);
 	
 	FORCEINLINE bool IsValidTarget() const { return IsValid; }

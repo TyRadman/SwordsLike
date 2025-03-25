@@ -54,15 +54,10 @@ private:
 	
 	UFUNCTION()
 	void OnRep_CurrentWeapon();
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_SpawnDefaultWeapon(TSubclassOf<AWeapon> WeaponClass);
 	
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_EquipWeapon(AWeapon* Weapon);
 	void EquipWeaponProcess(AWeapon* Weapon);
-	
-	AWeapon* DefaultWeapon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
 	TSubclassOf<AWeapon> StartingWeapon;

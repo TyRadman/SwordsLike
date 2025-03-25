@@ -26,6 +26,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Swordslike/UI/HUD/HUDManager.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
@@ -33,6 +34,13 @@
 #include "Swordslike/UnitControllers/Player/LockWidgetController.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
+
+void ASwordslikeCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASwordslikeCharacter, bIsLockedOnTarget);
+}
 
 ASwordslikeCharacter::ASwordslikeCharacter()
 {
@@ -107,46 +115,6 @@ void ASwordslikeCharacter::BeginPlay()
 	CacheComponentReferences();
 	InitializeComponents();
 
-	if(LockIndicatorWidget)
-	{
-		if(GetLocalRole() == ROLE_Authority)
-		{
-			LockIndicatorWidget->HideIndicator();
-		}
-	}
-
-	///////////////////////
-	/// Widgets
-	//////////////////////
-	// disable the overhead health bar if this is the AutonomousProxy client 
-	if(IsLocallyControlled())
-	{
-		// TODO: comment that
-		// OverheadHealthBar->SetWidget(nullptr);
-
-		if(MasterHUD)
-		{
-			MasterHUD->GetStatsHUD()->SetHealthBarSize(PlayerStats->MaxHealthPoints);
-			MasterHUD->GetStatsHUD()->BindHealthBar(this);
-			MasterHUD->GetStatsHUD()->SetStaminaBarSize(PlayerStats->MaxStamina);
-			MasterHUD->GetStatsHUD()->BindStaminaBar(this);
-			MasterHUD->GetStatsHUD()->BindPostureBar(this);
-		}
-		
-		// TODO: remove that
-		if(OverHeadHUD)
-		{
-			FString Name = FString::Printf(TEXT("%s\n%s"),
-				*UEnum::GetValueAsString(GetLocalRole()),
-				*UEnum::GetValueAsString(GetRemoteRole()));
-			
-			OverHeadHUD->SetNameValue(FText::FromString(*Name));
-
-			// TODO: Ucomment
-			OverHeadHUD->Hide();
-		}
-	}
-
 	////////////////////////
 	// LOCAL SUBSCRIPTIONS
 	////////////////////////
@@ -158,6 +126,7 @@ void ASwordslikeCharacter::BeginPlay()
 
 	// SET INITIAL VALUES
 	SetInitialValues();
+	SetDefaultReplicationProperties();
 }
 
 void ASwordslikeCharacter::CacheComponentReferences()
@@ -235,6 +204,29 @@ void ASwordslikeCharacter::InitializeComponents()
 	{
 		LockableTargetComponent->InitEntityComponent(this);
 	}
+
+	if(MasterHUD)
+	{
+		MasterHUD->InitEntityComponent(this);
+	}
+
+	if(OverHeadHUD)
+	{
+		OverHeadHUD->InitEntityComponent(this);
+	}
+
+	if(LockIndicatorWidget)
+	{
+		LockIndicatorWidget->InitEntityComponent(this);
+	}
+}
+
+/**
+ * This is called in case a new player joins the game to update the other players' instances' states if their replicated properties changed for whatever reason.
+ */
+void ASwordslikeCharacter::SetDefaultReplicationProperties()
+{
+	OnRep_bIsLockedOnTarget();
 }
 
 void ASwordslikeCharacter::SetInitialValues()
@@ -242,38 +234,30 @@ void ASwordslikeCharacter::SetInitialValues()
 	// CHARACTER MOVEMENT STATS
 	GetCharacterMovement()->MaxWalkSpeed = PlayerStats->MovementSpeed;
 	GetCharacterMovement()->JumpZVelocity = PlayerStats->JumpHeight;
-
-	if(Health)
-	{
-		Health->SetMaxHealth(PlayerStats->MaxHealthPoints);
-		Health->FullyChargeHealth();
-	}
-
-	if(Sprint)
-	{
-		Sprint->SetMaxStamina(PlayerStats->MaxStamina);
-		Sprint->FullyRefillStamina();
-	}
 }
 
 void ASwordslikeCharacter::SetSprintSpeed()
 {
-	if (GetLocalRole() < ROLE_Authority)
+	if (!HasAuthority())
 	{
 		Server_SetWalkSpeed(PlayerStats->SprintSpeed);
 	}
-	
-	GetCharacterMovement()->MaxWalkSpeed = PlayerStats->SprintSpeed;
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = PlayerStats->SprintSpeed;
+	}
 }
 
 void ASwordslikeCharacter::ResetSpeed()
 {
-	if (GetLocalRole() < ROLE_Authority)
+	if (!HasAuthority())
 	{
 		Server_SetWalkSpeed(PlayerStats->MovementSpeed);
 	}
-	
-	GetCharacterMovement()->MaxWalkSpeed = PlayerStats->MovementSpeed;
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = PlayerStats->MovementSpeed;
+	}
 }
 
 void ASwordslikeCharacter::Server_SetWalkSpeed_Implementation(float NewSpeed)
@@ -289,7 +273,7 @@ void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
-		
+ 		
 		if (InputSubsystem)
 		{
 			InputSubsystem->AddMappingContext(DefaultMappingContext, 0);
@@ -421,8 +405,8 @@ void ASwordslikeCharacter::Tick(float DeltaTime)
 
 	if(GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		const FString Message = FString::Printf(TEXT("%s"), MasterHUD? TEXT("HUD Exists") : TEXT("Missing HUD"));
-		GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Green, *Message);
+		// const FString Message = FString::Printf(TEXT("%s"), MasterHUD? TEXT("HUD Exists") : TEXT("Missing HUD"));
+		// GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Green, *Message);
 	}
 }
 
@@ -480,23 +464,42 @@ void ASwordslikeCharacter::Interact()
 #pragma endregion 
 
 #pragma region Externals
-void ASwordslikeCharacter::OnTargetLockedOn(bool IsLockedOn)
+void ASwordslikeCharacter::OnTargetLockedOn(ULockableTargetComponent* Target, const bool bIsLockedOn)
 {
-	if(Sprint->GetIsSprintingValue())
+	// if(Sprint->GetIsSprintingValue())
+	// {
+	// 	return;
+	// }
+
+	if(!HasAuthority())
 	{
-		return;
-	}
-	
-	if(IsLockedOn)
-	{
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-		GetCharacterMovement()->bUseControllerDesiredRotation = true;
+		Server_OnTargetLockedOn(Target, bIsLockedOn);
 	}
 	else
 	{
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+		bIsLockedOnTarget = bIsLockedOn;
+		OnRep_bIsLockedOnTarget();
 	}
+}
+
+void ASwordslikeCharacter::Server_OnTargetLockedOn_Implementation(ULockableTargetComponent* Target, const bool bIsLockedOn)
+{
+	bIsLockedOnTarget = bIsLockedOn;
+	OnRep_bIsLockedOnTarget();
+	// HandleOnTargetLockedOn(Target, bIsLockedOn);
+}
+
+void ASwordslikeCharacter::OnRep_bIsLockedOnTarget()
+{
+	GetCharacterMovement()->bOrientRotationToMovement = !bIsLockedOnTarget;
+	GetCharacterMovement()->bUseControllerDesiredRotation = bIsLockedOnTarget;
+}
+
+void ASwordslikeCharacter::HandleOnTargetLockedOn(ULockableTargetComponent* Target, const bool bIsLockedOn)
+{
+	const FString RoleString = GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
+	const FString IsLocked = bIsLockedOn ? TEXT("YES") : TEXT("NO");
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("[%s] Locked: %s"), *RoleString, *IsLocked));
 }
 
 void ASwordslikeCharacter::OnDeath(const FDamageInfo& DamageInfo)
@@ -537,6 +540,7 @@ void ASwordslikeCharacter::OnAttackParried(const FDamageInfo& DamageInfo, EParry
 	ParrySparkVFX->SetWorldLocationAndRotation(WeaponMiddlePoint, Rotation);
 	ParrySparkVFX->Activate();
 }
+
 void ASwordslikeCharacter::OnCharacterHitRecovered()
 {
 	UE_LOG(LogTemp, Display, TEXT("Recover jump and movement"));
@@ -575,7 +579,7 @@ void ASwordslikeCharacter::OnSprintStarted()
 {
 	Sprint->OnSprintStated();
 
-	if(TargetLockerComponent->bIsLockedOnTarget)
+	if(TargetLockerComponent->GetIsLocked())
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = true;
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
@@ -586,7 +590,7 @@ void ASwordslikeCharacter::OnSprintEnded()
 {
 	Sprint->OnSprintEnded();
 
-	if(TargetLockerComponent->bIsLockedOnTarget)
+	if(TargetLockerComponent->GetIsLocked())
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 		GetCharacterMovement()->bUseControllerDesiredRotation = true;

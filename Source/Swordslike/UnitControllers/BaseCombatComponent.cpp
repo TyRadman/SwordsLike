@@ -75,8 +75,15 @@ void UBaseCombatComponent::BeginPlay()
 #pragma region Attack Action
 void UBaseCombatComponent::AttackAction()
 {
-	if(!bCanAttack || !WeaponHandler->HasWeapon())
+	if(!bCanAttack)
 	{
+		PrintOnScreen_Local(TEXT("Can't attack"));
+		return;
+	}
+	
+	if(!WeaponHandler->HasWeapon())
+	{
+		PrintOnScreen_Local(TEXT("Has no weapon"));
 		return;
 	}
 	

@@ -15,15 +15,15 @@ void UMyActorComponent::BeginPlay()
 #pragma region Debug
 void UMyActorComponent::PrintOnScreen_Local(const FString& Message) const
 {
-	if(GetOwnerRole() == ROLE_AutonomousProxy)
+	if(IsLocallyControlled())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f,  FColor::Red, Message);
 	}
 }
 
 void UMyActorComponent::PrintOnScreen_Local(const FString& Message, FColor Color) const
-{
-	if(GetOwnerRole() == ROLE_AutonomousProxy)
+{ 
+	if(IsLocallyControlled())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, Color, Message);
 	}
@@ -31,7 +31,7 @@ void UMyActorComponent::PrintOnScreen_Local(const FString& Message, FColor Color
 
 void UMyActorComponent::PrintOnScreen_Local(const FString& Message, FColor Color, float Duration) const
 {
-	if(GetOwnerRole() == ROLE_AutonomousProxy)
+	if(IsLocallyControlled())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, Duration, Color, Message);
 	}
@@ -39,7 +39,7 @@ void UMyActorComponent::PrintOnScreen_Local(const FString& Message, FColor Color
 
 void UMyActorComponent::PrintOnScreen_Local(const FString& Message, float Duration) const
 {
-	if(GetOwnerRole() == ROLE_AutonomousProxy)
+	if(IsLocallyControlled())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, Duration, FColor::Black, Message);
 	}
@@ -55,7 +55,7 @@ void UMyActorComponent::PrintOnScreen(const FString& Message, FColor Color) cons
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, Color, Message);
 }
 
-void UMyActorComponent::PrintOnScreen(const FString& Message, FColor Color, float Duration) const
+void UMyActorComponent::PrintOnScreen(const FString& Message, FColor Color, float Duration)
 {
 	GEngine->AddOnScreenDebugMessage(-1, Duration, Color, Message);
 }
@@ -67,7 +67,7 @@ bool UMyActorComponent::HasAuthority() const
 
 bool UMyActorComponent::IsAutonomousProxy() const
 {
-	return GetOwnerRole() == ROLE_AutonomousProxy;
+	return IsLocallyControlled();
 }
 #pragma endregion
 

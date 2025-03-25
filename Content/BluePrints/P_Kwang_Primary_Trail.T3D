@@ -1,0 +1,157 @@
+Begin Object Class=/Script/Engine.ParticleSystem Name="P_Kwang_Primary_Trail" ExportPath="/Script/Engine.ParticleSystem'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail'"
+   Begin Object Class=/Script/Engine.ParticleModuleColor Name="ParticleModuleColor_0" ExportPath="/Script/Engine.ParticleModuleColor'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColor_0'"
+      Begin Object Class=/Script/Engine.DistributionFloatConstant Name="DistributionStartAlpha" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColor_0.DistributionStartAlpha'"
+      End Object
+      Begin Object Class=/Script/Engine.DistributionVectorConstant Name="DistributionStartColor" ExportPath="/Script/Engine.DistributionVectorConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColor_0.DistributionStartColor'"
+      End Object
+   End Object
+   Begin Object Class=/Script/Engine.ParticleModuleLifetime Name="ParticleModuleLifetime_0" ExportPath="/Script/Engine.ParticleModuleLifetime'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleLifetime_0'"
+      Begin Object Class=/Script/Engine.DistributionFloatConstant Name="DistributionFloatConstant_0" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleLifetime_0.DistributionFloatConstant_0'"
+      End Object
+   End Object
+   Begin Object Class=/Script/Engine.ParticleModuleRequired Name="ParticleModuleRequired_0" ExportPath="/Script/Engine.ParticleModuleRequired'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleRequired_0'"
+      Begin Object Class=/Script/Engine.DistributionFloatConstant Name="RequiredDistributionSpawnRate" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleRequired_0.RequiredDistributionSpawnRate'"
+      End Object
+   End Object
+   Begin Object Class=/Script/Engine.ParticleModuleSpawn Name="ParticleModuleSpawn_0" ExportPath="/Script/Engine.ParticleModuleSpawn'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSpawn_0'"
+      Begin Object Class=/Script/Engine.DistributionFloatConstant Name="BurstScaleDistribution" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSpawn_0.BurstScaleDistribution'"
+      End Object
+      Begin Object Class=/Script/Engine.DistributionFloatConstant Name="RequiredDistributionSpawnRate" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSpawn_0.RequiredDistributionSpawnRate'"
+      End Object
+      Begin Object Class=/Script/Engine.DistributionFloatConstant Name="RequiredDistributionSpawnRateScale" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSpawn_0.RequiredDistributionSpawnRateScale'"
+      End Object
+   End Object
+   Begin Object Class=/Script/Engine.ParticleModuleColorScaleOverLife Name="ParticleModuleColorScaleOverLife_0" ExportPath="/Script/Engine.ParticleModuleColorScaleOverLife'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColorScaleOverLife_0'"
+      Begin Object Class=/Script/Engine.DistributionFloatConstantCurve Name="DistributionFloatConstantCurve_1" ExportPath="/Script/Engine.DistributionFloatConstantCurve'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColorScaleOverLife_0.DistributionFloatConstantCurve_1'"
+      End Object
+      Begin Object Class=/Script/Engine.DistributionVectorConstantCurve Name="DistributionVectorConstantCurve_0" ExportPath="/Script/Engine.DistributionVectorConstantCurve'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColorScaleOverLife_0.DistributionVectorConstantCurve_0'"
+      End Object
+   End Object
+   Begin Object Class=/Script/Engine.ParticleModuleSize Name="ParticleModuleSize_0" ExportPath="/Script/Engine.ParticleModuleSize'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSize_0'"
+      Begin Object Class=/Script/Engine.DistributionVectorUniform Name="DistributionStartSize" ExportPath="/Script/Engine.DistributionVectorUniform'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSize_0.DistributionStartSize'"
+      End Object
+   End Object
+   Begin Object Class=/Script/Engine.InterpCurveEdSetup Name="InterpCurveEdSetup_0" ExportPath="/Script/Engine.InterpCurveEdSetup'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:InterpCurveEdSetup_0'"
+   End Object
+   Begin Object Class=/Script/Engine.ParticleSpriteEmitter Name="ParticleSpriteEmitter_0" ExportPath="/Script/Engine.ParticleSpriteEmitter'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleSpriteEmitter_0'"
+      Begin Object Class=/Script/Engine.ParticleLODLevel Name="ParticleLODLevel_0" ExportPath="/Script/Engine.ParticleLODLevel'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleSpriteEmitter_0.ParticleLODLevel_0'"
+      End Object
+   End Object
+   Begin Object Class=/Script/Engine.ParticleModuleTypeDataAnimTrail Name="ParticleModuleTypeDataAnimTrail_0" ExportPath="/Script/Engine.ParticleModuleTypeDataAnimTrail'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleTypeDataAnimTrail_0'"
+   End Object
+   Begin Object Name="ParticleModuleColor_0" ExportPath="/Script/Engine.ParticleModuleColor'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColor_0'"
+      Begin Object Name="DistributionStartAlpha" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColor_0.DistributionStartAlpha'"
+         Constant=0.500000
+         bBakedDataSuccesfully=True
+      End Object
+      Begin Object Name="DistributionStartColor" ExportPath="/Script/Engine.DistributionVectorConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColor_0.DistributionStartColor'"
+         Constant=(X=1.000000,Y=1.000000,Z=1.000000)
+         bIsDirty=False
+         bBakedDataSuccesfully=True
+      End Object
+      StartColor=(MinValue=1.000000,MaxValue=1.000000,MinValueVec=(X=1.000000,Y=1.000000,Z=1.000000),MaxValueVec=(X=1.000000,Y=1.000000,Z=1.000000),Distribution="/Script/Engine.DistributionVectorConstant'DistributionStartColor'",Table=(Values=(1.000000,1.000000,1.000000),Op=1,EntryCount=1,EntryStride=3))
+      StartAlpha=(MinValue=0.500000,MaxValue=0.500000,Distribution="/Script/Engine.DistributionFloatConstant'DistributionStartAlpha'",Table=(Values=(0.500000),Op=1,EntryCount=1,EntryStride=1))
+      LODValidity=1
+      ModuleEditorColor=(B=0,G=195,R=144,A=255)
+   End Object
+   Begin Object Name="ParticleModuleLifetime_0" ExportPath="/Script/Engine.ParticleModuleLifetime'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleLifetime_0'"
+      Begin Object Name="DistributionFloatConstant_0" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleLifetime_0.DistributionFloatConstant_0'"
+         Constant=0.350000
+         bBakedDataSuccesfully=True
+      End Object
+      Lifetime=(MinValue=0.350000,MaxValue=0.350000,Distribution="/Script/Engine.DistributionFloatConstant'DistributionFloatConstant_0'",Table=(Values=(0.350000),Op=1,EntryCount=1,EntryStride=1))
+      LODValidity=1
+      ModuleEditorColor=(B=0,G=218,R=99,A=255)
+   End Object
+   Begin Object Name="ParticleModuleRequired_0" ExportPath="/Script/Engine.ParticleModuleRequired'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleRequired_0'"
+      Begin Object Name="RequiredDistributionSpawnRate" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleRequired_0.RequiredDistributionSpawnRate'"
+      End Object
+      Material="/Script/Engine.Material'/Game/ParagonKwang/FX/Materials/Trails/M_Kwang_Sword_Trail.M_Kwang_Sword_Trail'"
+      bUseLegacyEmitterTime=False
+      SpawnRate=(Distribution="/Script/Engine.DistributionFloatConstant'RequiredDistributionSpawnRate'")
+      RandomImageTime=1.000000
+      LODValidity=1
+      ModuleEditorColor=(B=159,G=183,R=0,A=255)
+   End Object
+   Begin Object Name="ParticleModuleSpawn_0" ExportPath="/Script/Engine.ParticleModuleSpawn'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSpawn_0'"
+      Begin Object Name="BurstScaleDistribution" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSpawn_0.BurstScaleDistribution'"
+         Constant=1.000000
+      End Object
+      Begin Object Name="RequiredDistributionSpawnRate" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSpawn_0.RequiredDistributionSpawnRate'"
+         Constant=20.000000
+         bBakedDataSuccesfully=True
+      End Object
+      Begin Object Name="RequiredDistributionSpawnRateScale" ExportPath="/Script/Engine.DistributionFloatConstant'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSpawn_0.RequiredDistributionSpawnRateScale'"
+         Constant=1.000000
+         bBakedDataSuccesfully=True
+      End Object
+      Rate=(MinValue=20.000000,MaxValue=20.000000,Distribution="/Script/Engine.DistributionFloatConstant'RequiredDistributionSpawnRate'",Table=(Values=(20.000000),Op=1,EntryCount=1,EntryStride=1))
+      RateScale=(MinValue=1.000000,MaxValue=1.000000,Distribution="/Script/Engine.DistributionFloatConstant'RequiredDistributionSpawnRateScale'",Table=(Values=(1.000000),Op=1,EntryCount=1,EntryStride=1))
+      BurstScale=(Distribution="/Script/Engine.DistributionFloatConstant'BurstScaleDistribution'")
+      LODValidity=1
+      ModuleEditorColor=(B=212,G=0,R=116,A=255)
+   End Object
+   Begin Object Name="ParticleModuleColorScaleOverLife_0" ExportPath="/Script/Engine.ParticleModuleColorScaleOverLife'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColorScaleOverLife_0'"
+      Begin Object Name="DistributionFloatConstantCurve_1" ExportPath="/Script/Engine.DistributionFloatConstantCurve'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColorScaleOverLife_0.DistributionFloatConstantCurve_1'"
+         ConstantCurve=(Points=((OutVal=1.000000),(InVal=1.000000)))
+         bBakedDataSuccesfully=True
+      End Object
+      Begin Object Name="DistributionVectorConstantCurve_0" ExportPath="/Script/Engine.DistributionVectorConstantCurve'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleColorScaleOverLife_0.DistributionVectorConstantCurve_0'"
+         ConstantCurve=(Points=((OutVal=(X=2.000000,Y=1.000000,Z=0.050000)),(InVal=0.500000,OutVal=(X=0.350000,Y=0.394169,Z=1.000000)),(InVal=1.000000)))
+         bIsDirty=False
+         bBakedDataSuccesfully=True
+      End Object
+      ColorScaleOverLife=(MaxValue=2.000000,MaxValueVec=(X=2.000000,Y=1.000000,Z=1.000000),Distribution="/Script/Engine.DistributionVectorConstantCurve'DistributionVectorConstantCurve_0'",Table=(TimeScale=31.000000,Values=(2.000000,1.000000,0.050000,1.893548,0.960914,0.111290,1.787097,0.921828,0.172581,1.680645,0.882742,0.233871,1.574194,0.843656,0.295161,1.467742,0.804571,0.356452,1.361290,0.765485,0.417742,1.254839,0.726399,0.479032,1.148387,0.687313,0.540323,1.041935,0.648227,0.601613,0.935484,0.609141,0.662903,0.829032,0.570055,0.724194,0.722581,0.530970,0.785484,0.616129,0.491884,0.846774,0.509678,0.452798,0.908064,0.403226,0.413712,0.969355,0.338710,0.381454,0.967742,0.316129,0.356024,0.903226,0.293548,0.330593,0.838710,0.270968,0.305163,0.774193,0.248387,0.279733,0.709678,0.225807,0.254303,0.645161,0.203226,0.228872,0.580645,0.180645,0.203442,0.516129,0.158065,0.178012,0.451613,0.135484,0.152582,0.387097,0.112903,0.127151,0.322581,0.090323,0.101721,0.258064,0.067742,0.076291,0.193549,0.045161,0.050861,0.129032,0.022581,0.025430,0.064516,0.000000,0.000000,0.000000),Op=1,EntryCount=32,EntryStride=3))
+      AlphaScaleOverLife=(MaxValue=1.000000,Distribution="/Script/Engine.DistributionFloatConstantCurve'DistributionFloatConstantCurve_1'",Table=(TimeScale=1.000000,Values=(1.000000,0.000000),Op=1,EntryCount=2,EntryStride=1))
+      LODValidity=1
+      ModuleEditorColor=(B=213,G=0,R=113,A=255)
+   End Object
+   Begin Object Name="ParticleModuleSize_0" ExportPath="/Script/Engine.ParticleModuleSize'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSize_0'"
+      Begin Object Name="DistributionStartSize" ExportPath="/Script/Engine.DistributionVectorUniform'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleSize_0.DistributionStartSize'"
+         Max=(X=25.000000,Y=25.000000,Z=25.000000)
+         Min=(X=25.000000,Y=25.000000,Z=25.000000)
+         bIsDirty=False
+         bBakedDataSuccesfully=True
+      End Object
+      StartSize=(MinValue=25.000000,MaxValue=25.000000,MinValueVec=(X=25.000000,Y=25.000000,Z=25.000000),MaxValueVec=(X=25.000000,Y=25.000000,Z=25.000000),Distribution="/Script/Engine.DistributionVectorUniform'DistributionStartSize'",Table=(Values=(25.000000,25.000000,25.000000),Op=1,EntryCount=1,EntryStride=3))
+      LODValidity=1
+      ModuleEditorColor=(B=194,G=0,R=147,A=255)
+   End Object
+   Begin Object Name="InterpCurveEdSetup_0" ExportPath="/Script/Engine.InterpCurveEdSetup'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:InterpCurveEdSetup_0'"
+   End Object
+   Begin Object Name="ParticleSpriteEmitter_0" ExportPath="/Script/Engine.ParticleSpriteEmitter'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleSpriteEmitter_0'"
+      Begin Object Name="ParticleLODLevel_0" ExportPath="/Script/Engine.ParticleLODLevel'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleSpriteEmitter_0.ParticleLODLevel_0'"
+         RequiredModule="/Script/Engine.ParticleModuleRequired'P_Kwang_Primary_Trail:ParticleModuleRequired_0'"
+         Modules(0)="/Script/Engine.ParticleModuleLifetime'P_Kwang_Primary_Trail:ParticleModuleLifetime_0'"
+         Modules(1)="/Script/Engine.ParticleModuleSize'P_Kwang_Primary_Trail:ParticleModuleSize_0'"
+         Modules(2)="/Script/Engine.ParticleModuleColor'P_Kwang_Primary_Trail:ParticleModuleColor_0'"
+         Modules(3)="/Script/Engine.ParticleModuleColorScaleOverLife'P_Kwang_Primary_Trail:ParticleModuleColorScaleOverLife_0'"
+         Begin Object Name="ParticleModuleTypeDataAnimTrail_0" ExportPath="/Script/Engine.ParticleModuleTypeDataAnimTrail'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleTypeDataAnimTrail_0'"
+            TilingDistance=100.000000
+            DistanceTessellationStepSize=20.000000
+            LODValidity=1
+            ModuleEditorColor=(B=125,G=0,R=206,A=255)
+         End Object
+         TypeDataModule="/Script/Engine.ParticleModuleTypeDataAnimTrail'P_Kwang_Primary_Trail:ParticleModuleTypeDataAnimTrail_0'"
+         SpawnModule="/Script/Engine.ParticleModuleSpawn'P_Kwang_Primary_Trail:ParticleModuleSpawn_0'"
+         PeakActiveParticles=9
+      End Object
+      bUseLegacySpawningBehavior=True
+      EmitterEditorColor=(B=222,G=87,R=0,A=255)
+      LODLevels(0)="/Script/Engine.ParticleLODLevel'ParticleLODLevel_0'"
+   End Object
+   Begin Object Name="ParticleModuleTypeDataAnimTrail_0" ExportPath="/Script/Engine.ParticleModuleTypeDataAnimTrail'/Game/ParagonKwang/FX/Particles/Abilities/Primary/FX/P_Kwang_Primary_Trail.P_Kwang_Primary_Trail:ParticleModuleTypeDataAnimTrail_0'"
+      TilingDistance=100.000000
+      DistanceTessellationStepSize=20.000000
+      LODValidity=1
+      ModuleEditorColor=(B=125,G=0,R=206,A=255)
+   End Object
+   Emitters(0)="/Script/Engine.ParticleSpriteEmitter'ParticleSpriteEmitter_0'"
+   CurveEdSetup="/Script/Engine.InterpCurveEdSetup'InterpCurveEdSetup_0'"
+   LODDistances(0)=0.000000
+   LODSettings(0)=()
+   FixedRelativeBoundingBox=(Min=(X=-2000.000000,Y=-2000.000000,Z=-2000.000000),Max=(X=2000.000000,Y=2000.000000,Z=2000.000000),IsValid=True)
+   bUseFixedRelativeBoundingBox=True
+   bShouldResetPeakCounts=True
+   CustomOcclusionBounds=(Min=(X=0.000000,Y=0.000000,Z=0.000000),Max=(X=0.000000,Y=0.000000,Z=0.000000),IsValid=True)
+End Object
