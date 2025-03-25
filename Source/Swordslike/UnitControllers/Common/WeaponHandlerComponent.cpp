@@ -3,7 +3,6 @@
 
 #include "DamageInfo.h"
 #include "Damagable.h"
-#include "KismetTraceUtils.h"
 #include "Components/ArrowComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/SwordslikeCharacter.h"
@@ -51,30 +50,26 @@ UAnimMontage* UWeaponHandlerComponent::GetAttackMontage() const
 
 void UWeaponHandlerComponent::OnRep_CurrentWeapon()
 {
-	PrintOnScreen(FString::Printf(TEXT("Weapon Set 2")));
+	// PrintOnScreen(FString::Printf(TEXT("Weapon Set 2")));
 }
 
 void UWeaponHandlerComponent::EquipWeapon(AWeapon* Weapon)
 {
-	PrintOnScreen(FString::Printf(TEXT("Weapon Set 1")));
-	if(HasAuthority())
+	// PrintOnScreen(FString::Printf(TEXT("Weapon Set 1")));
+	
+	if(!HasAuthority())
 	{
-		EquipWeaponProcess(Weapon);
+		Server_EquipWeapon(Weapon);
 	}
 	else
 	{
-		Server_EquipWeapon(Weapon);
+		EquipWeaponProcess(Weapon);
 	}
 }
 
 void UWeaponHandlerComponent::Server_EquipWeapon_Implementation(AWeapon* Weapon)
 {
 	EquipWeaponProcess(Weapon);
-}
-
-bool UWeaponHandlerComponent::Server_EquipWeapon_Validate(AWeapon* Weapon)
-{
-	return true;
 }
 
 void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
@@ -93,15 +88,15 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 
 	bIsCarryingHeavyWeapon = Weapon->bIsCarryingHeavyWeapon;
 	
-	PrintOnScreen(FString::Printf(TEXT("Previous Weapon: %s"), 
-		CurrentWeapon ? *CurrentWeapon->GetName() : TEXT("None")));
+	// PrintOnScreen(FString::Printf(TEXT("Previous Weapon: %s"), 
+	// 	CurrentWeapon ? *CurrentWeapon->GetName() : TEXT("None")));
 
 	CurrentWeapon = Weapon;
 
-	PrintOnScreen(FString::Printf(TEXT("New Weapon Set: %s"), 
-		CurrentWeapon ? *CurrentWeapon->GetName() : TEXT("None")));
+	// PrintOnScreen(FString::Printf(TEXT("New Weapon Set: %s"), 
+	// 	CurrentWeapon ? *CurrentWeapon->GetName() : TEXT("None")));
 	
-	CurrentWeapon->AttachToComponent(
+	Weapon->AttachToComponent(
 		WeaponOwner->GetCustomMesh(),
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		FName("swordsocket_r")
@@ -128,40 +123,15 @@ void UWeaponHandlerComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if(!HasAuthority())
+	{
+		return;
+	}
+	
 	if(bIsAttacking)
 	{
 		GetTargetsInWeaponRange();
 	}
-}
-
-void UWeaponHandlerComponent::StartWeaponAttackDetection()
-{
-	if (!CurrentWeapon)
-	{
-		PrintOnScreen(TEXT("CurrentWeapon is null"), FColor::Red);
-		return;
-	}
-
-	if (!CurrentWeapon->StartArrow || !CurrentWeapon->EndArrow)
-	{
-		PrintOnScreen(TEXT("Weapon arrows are null"), FColor::Red);
-		return;
-	}
-	
-	if(OnWeaponHitStarted.IsBound())
-	{
-		OnWeaponHitStarted.Broadcast(CurrentWeapon);
-	}
-	
-	PreviousStartLocation = CurrentWeapon->StartArrow->GetComponentLocation();
-	PreviousEndLocation = CurrentWeapon->EndArrow->GetComponentLocation();
-	bIsAttacking = true;
-}
-
-void UWeaponHandlerComponent::StopWeaponAttackDetection()
-{
-	bIsAttacking = false;
-	TargetsHit.Empty();
 }
 
 void UWeaponHandlerComponent::GetTargetsInWeaponRange()
@@ -249,8 +219,42 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				TargetsHit.Add(TargetDamagable);
 				break;
 			}
+			else
+			{
+				// PrintOnScreen(TEXT("No damagable"));
+			}
 		}
 	}
+}
+
+void UWeaponHandlerComponent::StartWeaponAttackDetection()
+{
+	if (!CurrentWeapon)
+	{
+		PrintOnScreen(TEXT("CurrentWeapon is null"), FColor::Red);
+		return;
+	}
+
+	if (!CurrentWeapon->StartArrow || !CurrentWeapon->EndArrow)
+	{
+		PrintOnScreen(TEXT("Weapon arrows are null"), FColor::Red);
+		return;
+	}
+	
+	if(OnWeaponHitStarted.IsBound())
+	{
+		OnWeaponHitStarted.Broadcast(CurrentWeapon);
+	}
+	
+	PreviousStartLocation = CurrentWeapon->StartArrow->GetComponentLocation();
+	PreviousEndLocation = CurrentWeapon->EndArrow->GetComponentLocation();
+	bIsAttacking = true;
+}
+
+void UWeaponHandlerComponent::StopWeaponAttackDetection()
+{
+	bIsAttacking = false;
+	TargetsHit.Empty();
 }
 
 #pragma region Animations
@@ -285,11 +289,6 @@ void UWeaponHandlerComponent::Server_PlayMontage_Implementation(UAnimMontage* Mo
 
 void UWeaponHandlerComponent::Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
 {
-	// if(GetOwnerRole() == ROLE_AutonomousProxy)
-	// {
-	// 	return;
-	// }
-
 	AnimInstance->Montage_Play(Montage);
 }
 #pragma endregion

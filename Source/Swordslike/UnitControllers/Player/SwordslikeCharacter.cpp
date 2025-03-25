@@ -502,7 +502,7 @@ void ASwordslikeCharacter::HandleOnTargetLockedOn(ULockableTargetComponent* Targ
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("[%s] Locked: %s"), *RoleString, *IsLocked));
 }
 
-void ASwordslikeCharacter::OnDeath(const FDamageInfo& DamageInfo)
+void ASwordslikeCharacter::OnDeath()
 {
 	GetCharacterMovement()->DisableMovement();
 	GetMesh()->SetSimulatePhysics(true);
@@ -510,8 +510,25 @@ void ASwordslikeCharacter::OnDeath(const FDamageInfo& DamageInfo)
 
 void ASwordslikeCharacter::OnCharacterHit(const FDamageInfo& DamageInfo)
 {
+	if(!HasAuthority())
+	{
+		Server_OnCharacterHit(DamageInfo);
+	}
+	else
+	{
+		PerformOnCharacterHit(DamageInfo);
+	}
+}
+
+void ASwordslikeCharacter::Server_OnCharacterHit_Implementation(const FDamageInfo& DamageInfo)
+{
+	PerformOnCharacterHit(DamageInfo);
+}
+
+void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
+{
 	// get the parry state
-	EParryState ParryState = ParryComponent->ValidateParry(DamageInfo);
+	const EParryState ParryState = ParryComponent->ValidateParry(DamageInfo);
 
 	// posture will take damage regardless on whether the character parried or not
 	ParryComponent->DamagePosture(DamageInfo);
@@ -528,6 +545,10 @@ void ASwordslikeCharacter::OnCharacterHit(const FDamageInfo& DamageInfo)
 			Animations->PlayHitReactMontage();
 			GetWorldTimerManager().SetTimer(HitRecoveryTimer, this, &ASwordslikeCharacter::OnCharacterHitRecovered, RecoveryDuration, false);
 		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Parry is preventing damage")));
 	}
 }
 

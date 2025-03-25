@@ -5,11 +5,15 @@
 #include "LockableTargetComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/SwordslikeCharacter.h"
+#include "Swordslike/UI/HUD/MasterHUD.h"
+#include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
 
 UBaseHealthComponent::UBaseHealthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	SetIsReplicatedByDefault(true);
 }
 
 void UBaseHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -18,6 +22,8 @@ void UBaseHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 	DOREPLIFETIME(UBaseHealthComponent, bIsInvincible);
 	DOREPLIFETIME(UBaseHealthComponent, bIsAlive);
+	DOREPLIFETIME(UBaseHealthComponent, CurrentHealth);
+	DOREPLIFETIME(UBaseHealthComponent, MaxHealth);
 }
 
 void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
@@ -39,111 +45,108 @@ void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
 		{
 			OnEntityHealthChanged.AddUObject(HUD, &UOverheadHealthBarWidget::SetHealthBarValue);
 		}
-		
-		SetMaxHealth(PlayerCharacter->GetPlayerStats()->MaxHealthPoints);
-		FullyChargeHealth();
+
+		if(const UMasterHUD* MasterHUD = PlayerCharacter->GetMasterHUD())
+		{
+			if(UPlayerHealthBar* PlayerHUD = MasterHUD->GetStatsHUD())
+			{
+			PrintOnScreen_Local(FString::Printf(TEXT("Subscribed successfully")));
+				OnEntityHealthChanged.AddUObject(PlayerHUD, &UPlayerHealthBar::SetHealthBarValue);
+				PlayerHUD->SetHealthBarValue(1.f, 1.f);
+			}
+		}
+		else
+		{
+			PrintOnScreen_Local(FString::Printf(TEXT("No Master HUD")));
+			return;
+		}
+
+		const float StartingHealth = PlayerCharacter->GetPlayerStats()->MaxHealthPoints;
+		SetMaxHealth(StartingHealth);
+		FDamageInfo DamageInfo;
+		DamageInfo.Damage = -StartingHealth;
+		AddToCurrentHealth(DamageInfo);
 	}
 }
 
-void UBaseHealthComponent::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-#pragma region Network Functions
-#pragma region Take Damage
 void UBaseHealthComponent::TakeDamage(const FDamageInfo& Info)
 {
-	if(bIsInvincible)
-	{
-		return;
-	}
-
 	if(!HasAuthority())
 	{
-		ServerTakeDamage(Info);
+		Server_TakeDamage(Info);
 	}
-}
-
-void UBaseHealthComponent::ServerTakeDamage_Implementation(const FDamageInfo& Info)
-{
-	if(bIsInvincible)
-	{
-		return;
-	}
-	
-	// PrintOnScreen(FString::Printf(TEXT("SERVER1: %s ATTACKED %s"), *Info.Instigator->GetActorNameOrLabel(), *GetOwner()->GetActorNameOrLabel()));
-	ApplyDamage(Info);
-	MulticastTakeDamage(Info);
-}
-
-void UBaseHealthComponent::MulticastTakeDamage_Implementation(const FDamageInfo& Info)
-{
-	if(!HasAuthority())
+	else
 	{
 		ApplyDamage(Info);
 	}
 }
-#pragma endregion
 
-#pragma region Set Max Health
+void UBaseHealthComponent::Server_TakeDamage_Implementation(const FDamageInfo& Info)
+{
+	ApplyDamage(Info);
+}
+
+void UBaseHealthComponent::ApplyDamage(const FDamageInfo& DamageInfo)
+{
+	if(bIsInvincible)
+	{
+		return;
+	}
+	
+	OnEntityHit.Broadcast(DamageInfo);
+}
+
 void UBaseHealthComponent::SetMaxHealth(float MaxHP)
 {
 	// PrintOnScreen_Local(FString::Printf(TEXT("CLIENT Max Health: %f"), MaxHP), 20.f);
-	
-	ApplyMaxHealth(MaxHP);
-	
-	if(GetOwner()->GetLocalRole() < ROLE_Authority)
+	if(!HasAuthority())
 	{
-		ServerSetMaxHealth(MaxHP);
+		Server_SetMaxHealth(MaxHP);
+	}
+	else
+	{
+		ApplyMaxHealth(MaxHP);
 	}
 }
 
-float UBaseHealthComponent::GetMaxHealth()
-{
-	return MaxHealth;
-}
-
-void UBaseHealthComponent::ServerSetMaxHealth_Implementation(float MaxHP)
-{
-	if (GetOwner()->GetLocalRole() == ROLE_Authority && GetOwnerRole() != ROLE_AutonomousProxy)
-	{
-		MulticastSetMaxHealth(MaxHP);
-	}
-}
-
-void UBaseHealthComponent::MulticastSetMaxHealth_Implementation(float MaxHP)
+void UBaseHealthComponent::Server_SetMaxHealth_Implementation(float MaxHP)
 {
 	ApplyMaxHealth(MaxHP);
 }
-#pragma endregion 
-#pragma endregion Network Functions
 
-#pragma region Utilities
-void UBaseHealthComponent::ApplyDamage(const FDamageInfo& DamageInfo)
+void UBaseHealthComponent::ApplyMaxHealth(const float MaxHP)
 {
-	OnEntityHit.Broadcast(DamageInfo);
+	MaxHealth = MaxHP;
 }
 
 void UBaseHealthComponent::AddToCurrentHealth(const FDamageInfo& DamageInfo)
 {
+	if(!HasAuthority())
+	{
+		Server_AddToCurrentHealth(DamageInfo);
+	}
+	else
+	{
+		PerformAddToCurrentHealth(DamageInfo);
+	}
+}
+
+void UBaseHealthComponent::Server_AddToCurrentHealth_Implementation(const FDamageInfo& DamageInfo)
+{
+	PerformAddToCurrentHealth(DamageInfo);
+}
+
+void UBaseHealthComponent::PerformAddToCurrentHealth(const FDamageInfo& DamageInfo)
+{
 	CurrentHealth = FMath::Clamp(CurrentHealth - DamageInfo.Damage, 0.0f, MaxHealth);
-	OnEntityHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+	OnRep_CurrentHealth();
 
 	if (CurrentHealth <= 0)
 	{
 		// PrintOnScreen_Local(FString::Printf(TEXT("CLIENT (DEATH): %f / %f"), CurrentHealth, MaxHealth));
 		bIsAlive = false;
-		OnEntityDeath.Broadcast(DamageInfo);
+		OnRep_bIsAlive();
 	}
-}
-
-void UBaseHealthComponent::FullyChargeHealth()
-{
-	CurrentHealth = MaxHealth;
-	
-	// PrintOnScreen_Local(FString::Printf(TEXT("CLIENT Starting Health: %f / %f"), CurrentHealth, MaxHealth), 20.f);
-	OnEntityHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
 void UBaseHealthComponent::OnDeath()
@@ -151,26 +154,19 @@ void UBaseHealthComponent::OnDeath()
 	
 }
 
-bool UBaseHealthComponent::IsAlive()
+void UBaseHealthComponent::OnRep_MaxHealth()
 {
-	return bIsAlive;
+	// const float HealthPercentage = CurrentHealth / MaxHealth;
+	// CurrentHealth = MaxHealth * HealthPercentage;
 }
 
-void UBaseHealthComponent::ApplyMaxHealth(float MaxHP)
+void UBaseHealthComponent::OnRep_CurrentHealth()
 {
-	float HealthPercentage = CurrentHealth / MaxHealth;
-	MaxHealth = MaxHP;
-	CurrentHealth = MaxHealth * HealthPercentage;
+	PrintOnScreen(FString::Printf(TEXT("OnRep: %f / %f"), CurrentHealth, MaxHealth));
 	OnEntityHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
-void UBaseHealthComponent::SetIsInvincible(bool IsInvincible)
+void UBaseHealthComponent::OnRep_bIsAlive()
 {
-	bIsInvincible = IsInvincible;
+	OnEntityDeath.Broadcast();
 }
-
-bool UBaseHealthComponent::IsInvincible() const
-{
-	return bIsInvincible;
-}
-#pragma endregion Utilities

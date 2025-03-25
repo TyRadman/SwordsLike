@@ -169,7 +169,7 @@ public:
 	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent;}
 	
 
-	void OnDeath(const FDamageInfo& DamageInfo);
+	void OnDeath();
 	void SetSprintSpeed();
 	void ResetSpeed();
 
@@ -213,6 +213,10 @@ public:
 	void OnRep_bIsLockedOnTarget();
 	
 	void OnCharacterHit(const FDamageInfo& DamageInfo);
+	UFUNCTION(Server, Reliable)
+	void Server_OnCharacterHit(const FDamageInfo& DamageInfo);
+	void PerformOnCharacterHit(const FDamageInfo& DamageInfo);
+	
 	void OnCharacterHitRecovered();
 	void OnRollStarted();
 	void OnRollFinished();

@@ -34,8 +34,9 @@ void UPlayerHealthBar::SetHealthBarValue(float CurrentHealth, float MaxHealth)
 {
 	if(HealthBar)
 	{
-		float amount = CurrentHealth / MaxHealth;
-		HealthBar->SetPercent(amount);
+		const float Amount = CurrentHealth / MaxHealth;
+		HealthBar->SetPercent(Amount);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f / %f"), CurrentHealth, MaxHealth));
 	}
 	else
 	{
@@ -66,25 +67,6 @@ void UPlayerHealthBar::SetPostureBarValue(float Current, float Max)
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "PostureBar is NULL");
-	}
-}
-
-void UPlayerHealthBar::BindHealthBar(ACharacter* Character)
-{
-	if(Character)
-	{
-		ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character);
-
-		if(PlayerCharacter && PlayerCharacter->GetHealthComponent())
-		{
-			PlayerCharacter->GetHealthComponent()->OnEntityHealthChanged.AddUObject(this, &UPlayerHealthBar::SetHealthBarValue);
-		}
-
-		SetHealthBarValue(1.f, 1.f);
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "No Character");
 	}
 }
 

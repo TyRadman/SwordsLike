@@ -1,14 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "BaseEntityAnimationsComponent.h"
 #include "GameFramework/Character.h"
 #include "Player/SwordslikeCharacter.h"
 
-// Sets default values for this component's properties
 UBaseEntityAnimationsComponent::UBaseEntityAnimationsComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetIsReplicatedByDefault(true);
 }
 
 void UBaseEntityAnimationsComponent::InitEntityComponent(ACharacter* Character)
@@ -19,30 +16,24 @@ void UBaseEntityAnimationsComponent::InitEntityComponent(ACharacter* Character)
 		{
 			OwnerCharacter = CustomCharacter;
 		}
+
+		if(const ACharacter* Character1 = Cast<ACharacter>(GetOwner()))
+		{
+			AnimInstance = Character1->GetMesh()->GetAnimInstance();
+		}
 	}
 }
 
 void UBaseEntityAnimationsComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	
 }
 
-float UBaseEntityAnimationsComponent::GetRollAnimationDuration() const
-{
-	// PrintOnScreen(FString::Printf(TEXT("Length of a roll: %f"), RollMontage_F->GetPlayLength()));
-	return RollMontage_F->GetPlayLength();
-}
-
-
-// Called when the game starts
 void UBaseEntityAnimationsComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if(ACharacter* Character = Cast<ACharacter>(GetOwner()))
-	{
-		AnimInstance = Character->GetMesh()->GetAnimInstance();
-	}
 }
 
 #pragma region Hit React Animation
@@ -53,15 +44,15 @@ void UBaseEntityAnimationsComponent::PlayHitReactMontage()
 #pragma endregion 
 
 #pragma region Roll Animation
-UAnimMontage* UBaseEntityAnimationsComponent::GetRollMontage()
+UAnimMontage* UBaseEntityAnimationsComponent::GetRollMontage() const
 {
 	if(!OwnerCharacter)
 	{
 		return RollMontage_F;
 	}
-	
-	FVector2D MovementVector = OwnerCharacter->GetMovementVector();
-	bool IsLocked = OwnerCharacter->GetLockOnComponent()->GetIsLocked();
+
+	const FVector2D MovementVector = OwnerCharacter->GetMovementVector();
+	const bool IsLocked = OwnerCharacter->GetLockOnComponent()->GetIsLocked();
 
 	if(!IsLocked)
 	{
@@ -80,16 +71,22 @@ UAnimMontage* UBaseEntityAnimationsComponent::GetRollMontage()
 
 void UBaseEntityAnimationsComponent::PlayRollMontage()
 {
-	UAnimMontage* Anim = GetRollMontage();
-	PlayMontage(Anim);
+	PlayMontage(GetRollMontage());
+}
+#pragma endregion 
 
-	if(GetOwnerRole() < ROLE_Authority)
+#pragma region Utilies
+void UBaseEntityAnimationsComponent::PlayMontage(UAnimMontage* Montage)
+{
+	PerformPlayMontage(Montage);
+	
+	if(!HasAuthority())
 	{
-		Server_PlayRollMontage(Anim);
+		Server_PlayRollMontage(Montage);
 	}
 	else
 	{
-		Multicast_PlayRollMontage(Anim);
+		Multicast_PlayRollMontage(Montage);
 	}
 }
 
@@ -100,12 +97,10 @@ void UBaseEntityAnimationsComponent::Server_PlayRollMontage_Implementation(UAnim
 
 void UBaseEntityAnimationsComponent::Multicast_PlayRollMontage_Implementation(UAnimMontage* Montage)
 {
-	PlayMontage(Montage);
+	PerformPlayMontage(Montage);
 }
-#pragma endregion 
 
-#pragma region Utilies
-void UBaseEntityAnimationsComponent::PlayMontage(UAnimMontage* Montage)
+void UBaseEntityAnimationsComponent::PerformPlayMontage(UAnimMontage* Montage)
 {
 	AnimInstance->Montage_Play(Montage);
 }

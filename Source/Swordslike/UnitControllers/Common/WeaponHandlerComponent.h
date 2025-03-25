@@ -55,7 +55,7 @@ private:
 	UFUNCTION()
 	void OnRep_CurrentWeapon();
 	
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_EquipWeapon(AWeapon* Weapon);
 	void EquipWeaponProcess(AWeapon* Weapon);
 

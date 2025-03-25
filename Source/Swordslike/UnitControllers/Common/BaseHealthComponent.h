@@ -13,6 +13,7 @@
 class FLifetimeProperty;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(HealthDelegate, const FDamageInfo& DamageInfo);
+DECLARE_MULTICAST_DELEGATE(DeathDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(OnEntityHealthChangedDelegate, float CurrentHP, float MaxHP);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -25,8 +26,6 @@ public:
 	virtual void InitEntityComponent(ACharacter* Character) override;
 
 protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:	
@@ -35,17 +34,21 @@ public:
 	virtual void TakeDamage(const FDamageInfo& Info) override;
 
 	virtual void AddToCurrentHealth(const FDamageInfo& DamageInfo);
+	UFUNCTION(Server, Reliable)
+	void Server_AddToCurrentHealth(const FDamageInfo& DamageInfo);
+	void PerformAddToCurrentHealth(const FDamageInfo& DamageInfo);
+	
 	virtual void SetMaxHealth(float MaxHP);
 	
-	virtual float GetMaxHealth();
-	virtual void FullyChargeHealth();
+	FORCEINLINE virtual float GetMaxHealth() const { return MaxHealth; }
+	FORCEINLINE virtual void FullyChargeHealth() { CurrentHealth = MaxHealth; }
 	virtual void OnDeath();
-	virtual bool IsAlive() override;
+	FORCEINLINE virtual bool IsAlive() override { return bIsAlive; } 
 
 	/**
 	 * Called upon the entity's death. Use AddUObject for now.
 	 */
-	HealthDelegate OnEntityDeath;
+	DeathDelegate OnEntityDeath;
 
 	/**
 	 * Called every time the entity's health amount changes.
@@ -54,38 +57,40 @@ public:
 
 	HealthDelegate OnEntityHit;
 
-	void SetIsInvincible(bool IsInvincible);
-	bool IsInvincible() const;
+	FORCEINLINE void SetIsInvincible(const bool IsInvincible) { bIsInvincible = IsInvincible;}
+	FORCEINLINE bool IsInvincible() const { return bIsInvincible; }
 	
 
 protected:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(ReplicatedUsing = OnRep_MaxHealth)
 	float MaxHealth;
+	UFUNCTION()
+	void OnRep_MaxHealth();
 
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentHealth)
 	float CurrentHealth;
+	UFUNCTION()
+	void OnRep_CurrentHealth();
 
 	UPROPERTY(Replicated)
 	bool bIsInvincible = false;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_bIsAlive)
 	bool bIsAlive = true;
+	UFUNCTION()
+	void OnRep_bIsAlive();
 	
 #pragma region Take Damage
 	UFUNCTION(Server, Reliable)
-	virtual void ServerTakeDamage(const FDamageInfo& Info);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastTakeDamage(const FDamageInfo& Info);
+	virtual void Server_TakeDamage(const FDamageInfo& Info);
 #pragma endregion
 
 #pragma region Set Max Health
 	UFUNCTION(Server, Reliable)
-	virtual void ServerSetMaxHealth(float MaxHP);
-
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastSetMaxHealth(float MaxHP);
+	virtual void Server_SetMaxHealth(float MaxHP);
+	
 #pragma endregion
 
-	void ApplyMaxHealth(float MaxHP);
+	void ApplyMaxHealth(const float MaxHP);
 	void ApplyDamage(const FDamageInfo& DamageInfo);
 };

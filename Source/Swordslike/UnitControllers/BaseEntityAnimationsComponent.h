@@ -23,7 +23,7 @@ public:
 	virtual void InitEntityComponent(ACharacter* Character) override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	float GetRollAnimationDuration() const;
+	FORCEINLINE float GetRollAnimationDuration() const {return RollMontage_F->GetPlayLength();}
 
 protected:
 	virtual void BeginPlay() override;
@@ -45,7 +45,7 @@ public:
 	UPROPERTY(EditAnywhere, Category=Animations)
 	UAnimMontage* RollMontage_R;
 	
-	UAnimMontage* GetRollMontage();
+	UAnimMontage* GetRollMontage() const;
 
 	void PlayRollMontage();
 
@@ -62,6 +62,7 @@ private:
 
 	// utilities
 	void PlayMontage(UAnimMontage* Montage);
+	void PerformPlayMontage(UAnimMontage* Montage);
 
 	ASwordslikeCharacter* OwnerCharacter;
 };

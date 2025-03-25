@@ -21,7 +21,6 @@ void UMasterHUD::InitEntityComponent(ACharacter* Character)
 			if(ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
 			{
 				GetStatsHUD()->SetHealthBarSize(PlayerCharacter->GetPlayerStats()->MaxHealthPoints);
-				GetStatsHUD()->BindHealthBar(PlayerCharacter);
 				GetStatsHUD()->SetStaminaBarSize(PlayerCharacter->GetPlayerStats()->MaxStamina);
 				GetStatsHUD()->BindStaminaBar(PlayerCharacter);
 				GetStatsHUD()->BindPostureBar(PlayerCharacter);

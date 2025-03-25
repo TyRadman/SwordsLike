@@ -32,13 +32,7 @@ public:
 	void SetHealthBarValue(float CurrentHealth, float MaxHealth);
 	void SetStaminaBarValue(float CurrentStamina, float MaxStamina);
 	void SetPostureBarValue(float Current, float Max);
-
 	
-	/**
-	 * Binds the character's health amount to the HUD health bar.
-	 * @param Character The character controller that has a BaseHealthComponent or a derived class from it.
-	 */
-	void BindHealthBar(ACharacter* Character);
 	void BindStaminaBar(ACharacter* Character);
 	void BindPostureBar(ACharacter* Character);
 

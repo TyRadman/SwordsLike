@@ -295,8 +295,8 @@ void UTargetLockerComponent::OnRep_bIsLockedOnTarget()
 		// {
 		// }
 		
-		PrintOnScreen_Local(FString::Printf(TEXT("OnRep_IsLockedOn triggered, value: %s"),
-			bIsLockedOnTarget ? TEXT("true") : TEXT("false")), FColor::Green);
+		// PrintOnScreen_Local(FString::Printf(TEXT("OnRep_IsLockedOn triggered, value: %s"),
+		// 	bIsLockedOnTarget ? TEXT("true") : TEXT("false")), FColor::Green);
 	}
 	else
 	{

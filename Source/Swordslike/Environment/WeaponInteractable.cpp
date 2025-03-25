@@ -59,7 +59,6 @@ void AWeaponInteractable::Interact(AActor* InteractingActor)
 		return;
 	}
 	
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Interact running on Server"));
 	InteractionProcess(InteractingActor);
 }
 

@@ -39,7 +39,7 @@ void ULockableTargetComponent::OnUnlocked()
 	}
 }
 
-void ULockableTargetComponent::OnDeath(const FDamageInfo& DamageInfo)
+void ULockableTargetComponent::OnDeath()
 {
 	IsValid = false;
 }

@@ -27,7 +27,7 @@ public:
 	void OnUnlocked();
 	UFUNCTION(Server, Reliable)
 	void Server_OnUnlocked();
-	void OnDeath(const FDamageInfo& DamageInfo);
+	void OnDeath();
 	
 	FORCEINLINE bool IsValidTarget() const { return IsValid; }
 
