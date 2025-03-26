@@ -43,30 +43,44 @@ void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
 		// TODO: only if the entity is not an owner
 		if(UOverheadHealthBarWidget* HUD = PlayerCharacter->GetOverHeadHUDComponent())
 		{
-			OnEntityHealthChanged.AddUObject(HUD, &UOverheadHealthBarWidget::SetHealthBarValue);
+			OnEntityHealthChanged.AddUObject(HUD, &UOverheadHealthBarWidget::SetHealthOverheadBarValue);
 		}
 
-		if(const UMasterHUD* MasterHUD = PlayerCharacter->GetMasterHUD())
+		if(PlayerCharacter->IsLocallyControlled())
 		{
-			if(UPlayerHealthBar* PlayerHUD = MasterHUD->GetStatsHUD())
+			if(const UMasterHUD* MasterHUD = PlayerCharacter->GetMasterHUD())
 			{
-			PrintOnScreen_Local(FString::Printf(TEXT("Subscribed successfully")));
-				OnEntityHealthChanged.AddUObject(PlayerHUD, &UPlayerHealthBar::SetHealthBarValue);
-				PlayerHUD->SetHealthBarValue(1.f, 1.f);
+				if(UPlayerHealthBar* PlayerHUD = MasterHUD->GetStatsHUD())
+				{
+					OnEntityHealthChanged.AddUObject(PlayerHUD, &UPlayerHealthBar::SetHealthBarValue);
+					PlayerHUD->SetHealthBarValue(1.f, 1.f);
+				}
 			}
-		}
-		else
-		{
-			PrintOnScreen_Local(FString::Printf(TEXT("No Master HUD")));
-			return;
+			else
+			{
+				PrintOnScreen_Local(FString::Printf(TEXT("UBaseHealthComponent: No Master HUD")));
+			}
 		}
 
 		const float StartingHealth = PlayerCharacter->GetPlayerStats()->MaxHealthPoints;
-		SetMaxHealth(StartingHealth);
-		FDamageInfo DamageInfo;
-		DamageInfo.Damage = -StartingHealth;
-		AddToCurrentHealth(DamageInfo);
+		PrintOnScreen(FString::Printf(TEXT("%s Health: %f"), *UEnum::GetValueAsString(GetOwnerRole()), StartingHealth), FColor::Orange, 20.f);
+
+		if(!HasAuthority())
+		{
+			Server_SetStartingHealth(StartingHealth);
+		}
+		else
+		{
+			MaxHealth = StartingHealth;
+			CurrentHealth = StartingHealth;
+		}
 	}
+}
+
+void UBaseHealthComponent::Server_SetStartingHealth_Implementation(float Health)
+{
+	MaxHealth = Health;
+	CurrentHealth = Health;
 }
 
 void UBaseHealthComponent::TakeDamage(const FDamageInfo& Info)
@@ -98,7 +112,6 @@ void UBaseHealthComponent::ApplyDamage(const FDamageInfo& DamageInfo)
 
 void UBaseHealthComponent::SetMaxHealth(float MaxHP)
 {
-	// PrintOnScreen_Local(FString::Printf(TEXT("CLIENT Max Health: %f"), MaxHP), 20.f);
 	if(!HasAuthority())
 	{
 		Server_SetMaxHealth(MaxHP);
@@ -143,7 +156,6 @@ void UBaseHealthComponent::PerformAddToCurrentHealth(const FDamageInfo& DamageIn
 
 	if (CurrentHealth <= 0)
 	{
-		// PrintOnScreen_Local(FString::Printf(TEXT("CLIENT (DEATH): %f / %f"), CurrentHealth, MaxHealth));
 		bIsAlive = false;
 		OnRep_bIsAlive();
 	}
@@ -162,7 +174,6 @@ void UBaseHealthComponent::OnRep_MaxHealth()
 
 void UBaseHealthComponent::OnRep_CurrentHealth()
 {
-	PrintOnScreen(FString::Printf(TEXT("OnRep: %f / %f"), CurrentHealth, MaxHealth));
 	OnEntityHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 

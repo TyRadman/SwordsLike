@@ -23,7 +23,6 @@ void UMasterHUD::InitEntityComponent(ACharacter* Character)
 				GetStatsHUD()->SetHealthBarSize(PlayerCharacter->GetPlayerStats()->MaxHealthPoints);
 				GetStatsHUD()->SetStaminaBarSize(PlayerCharacter->GetPlayerStats()->MaxStamina);
 				GetStatsHUD()->BindStaminaBar(PlayerCharacter);
-				GetStatsHUD()->BindPostureBar(PlayerCharacter);
 			}
 		}
 	}

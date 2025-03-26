@@ -12,11 +12,11 @@ void UOverheadHealthBarWidget::InitEntityComponent(ACharacter* Character)
 		{
 			if(ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
 			{
-				FString Name = FString::Printf(TEXT("%s\n%s"),
-					*UEnum::GetValueAsString(Character->GetLocalRole()),
-					*UEnum::GetValueAsString(Character->GetRemoteRole()));
+				const FString Name = FString::Printf(TEXT("%s\n%s"),
+				                                     *UEnum::GetValueAsString(Character->GetLocalRole()),
+				                                     *UEnum::GetValueAsString(Character->GetRemoteRole()));
 			
-				SetNameValue(FText::FromString(*Name));
+				SetOverheadNameValue(FText::FromString(*Name));
 				Hide();
 			}
 		}
@@ -27,25 +27,25 @@ void UOverheadHealthBarWidget::InitEntityComponent(ACharacter* Character)
 	}
 }
 
-void UOverheadHealthBarWidget::SetHealthBarValue(float CurrentHealth, float MaxHealth)
+void UOverheadHealthBarWidget::SetHealthOverheadBarValue(const float CurrentHealth, const float MaxHealth)
 {
 	if(HealthBar)
 	{
-		float amount = CurrentHealth / MaxHealth;
-		HealthBar->SetPercent(amount);
+		const float Amount = CurrentHealth / MaxHealth;
+		HealthBar->SetPercent(Amount);
 	}
 }
 
-void UOverheadHealthBarWidget::SetPostureBarValue(float Current, float Max)
+void UOverheadHealthBarWidget::SetPostureOverheadBarValue(const float Current, const float Max)
 {
 	if(PostureBar)
 	{
-		float amount = Current / Max;
-		PostureBar->SetPercent(amount);
+		const float Amount = Current / Max;
+		PostureBar->SetPercent(Amount);
 	}
 }
 
-void UOverheadHealthBarWidget::SetNameValue(FText NameText)
+void UOverheadHealthBarWidget::SetOverheadNameValue(const FText& NameText)
 {
 	if (NameTextBlock)
 	{

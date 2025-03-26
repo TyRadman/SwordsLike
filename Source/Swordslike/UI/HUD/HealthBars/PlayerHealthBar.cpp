@@ -14,7 +14,7 @@ void UPlayerHealthBar::NativeConstruct()
 	Super::NativeConstruct();
 }
 
-void UPlayerHealthBar::SetHealthBarSize(float MaxHealth)
+void UPlayerHealthBar::SetHealthBarSize(const float MaxHealth)
 {
 	if (UCanvasPanelSlot* PanelSlot = Cast<UCanvasPanelSlot>(HealthBar->Slot))
 	{
@@ -22,7 +22,7 @@ void UPlayerHealthBar::SetHealthBarSize(float MaxHealth)
 	}
 }
 
-void UPlayerHealthBar::SetStaminaBarSize(float MaxStamina)
+void UPlayerHealthBar::SetStaminaBarSize(const float MaxStamina)
 {
 	if (UCanvasPanelSlot* PanelSlot = Cast<UCanvasPanelSlot>(StaminaBar->Slot))
 	{
@@ -30,13 +30,13 @@ void UPlayerHealthBar::SetStaminaBarSize(float MaxStamina)
 	}
 }
 
-void UPlayerHealthBar::SetHealthBarValue(float CurrentHealth, float MaxHealth)
+void UPlayerHealthBar::SetHealthBarValue(const float CurrentHealth, const float MaxHealth)
 {
 	if(HealthBar)
 	{
 		const float Amount = CurrentHealth / MaxHealth;
 		HealthBar->SetPercent(Amount);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f / %f"), CurrentHealth, MaxHealth));
+		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f / %f"), CurrentHealth, MaxHealth));
 	}
 	else
 	{
@@ -44,11 +44,11 @@ void UPlayerHealthBar::SetHealthBarValue(float CurrentHealth, float MaxHealth)
 	}
 }
 
-void UPlayerHealthBar::SetStaminaBarValue(float CurrentHealth, float MaxHealth)
+void UPlayerHealthBar::SetStaminaBarValue(const float CurrentStamina, const float MaxStamina)
 {
 	if(StaminaBar)
 	{
-		float amount = CurrentHealth / MaxHealth;
+		float amount = CurrentStamina / MaxStamina;
 		StaminaBar->SetPercent(amount);
 	}
 	else
@@ -57,7 +57,7 @@ void UPlayerHealthBar::SetStaminaBarValue(float CurrentHealth, float MaxHealth)
 	}
 }
 
-void UPlayerHealthBar::SetPostureBarValue(float Current, float Max)
+void UPlayerHealthBar::SetPostureBarValue(const float Current, const float Max)
 {
 	if(PostureBar)
 	{
@@ -82,25 +82,6 @@ void UPlayerHealthBar::BindStaminaBar(ACharacter* Character)
 		}
 
 		SetStaminaBarValue(1.f, 1.f);
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "No Character");
-	}
-}
-
-void UPlayerHealthBar::BindPostureBar(ACharacter* Character)
-{
-	if(Character)
-	{
-		ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character);
-		
-		if(PlayerCharacter && PlayerCharacter->GetParryComponent())
-		{
-			PlayerCharacter->GetParryComponent()->OnPostureChanged.AddUObject(this, &UPlayerHealthBar::SetPostureBarValue);
-		}
-
-		SetPostureBarValue(1.f, 1.f);
 	}
 	else
 	{

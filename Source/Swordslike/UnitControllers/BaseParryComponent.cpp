@@ -5,7 +5,11 @@
 #include "Net/UnrealNetwork.h"
 #include "Player/PlayerCombatComponent.h"
 #include "Player/SwordslikeCharacter.h"
+#include "Swordslike/UI/HUD/MasterHUD.h"
+#include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
+
+class UPlayerHealthBar;
 
 UBaseParryComponent::UBaseParryComponent()
 {
@@ -17,6 +21,8 @@ void UBaseParryComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePrope
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UBaseParryComponent, CurrentPosture);
+	DOREPLIFETIME(UBaseParryComponent, MaxPosture);
+	DOREPLIFETIME(UBaseParryComponent, CurrentParryState);
 }
 
 void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
@@ -28,30 +34,49 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 	}
 
 	ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character);
-
-	OwnerCharacter = Character;
-	AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance();
-
-	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &UBaseParryComponent::OnParryNotifyStart);
-
-	// subscriptions
 	if(!CustomCharacter)
 	{
 		PrintOnScreen_Local(TEXT("No Character passed to the Parry Component"));
 		return;
 	}
-	
-	SetMaxPosture(CustomCharacter->GetPlayerStats()->MaxPosture);
-	FullyRefillPosture();
 
-	KnockDownRecoveryTime = KnockDownMontage->GetPlayLength();
-	
+	OwnerCharacter = Character;
+	AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance();
+
+	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &UBaseParryComponent::OnParryNotifyStart);
 	OnKnockedDown.AddUObject(CustomCharacter, &ASwordslikeCharacter::OnKnockedDown);
 	OnKnockedDownRecover.AddUObject(CustomCharacter, &ASwordslikeCharacter::OnKnockedDownRecover);
-
-	OnParrySuccessful.AddUObject(CustomCharacter, &ASwordslikeCharacter::OnAttackParried);
+	OnParrySuccessful_Local.AddUObject(CustomCharacter, &ASwordslikeCharacter::OnAttackParried);
 	
-	OnPostureChanged.AddUObject(CustomCharacter->GetOverHeadHUDComponent(), &UOverheadHealthBarWidget::SetPostureBarValue);
+	//////////
+	/// UI
+	//////////
+	if(GetOwnerRole() == ROLE_AutonomousProxy || HasAuthority())
+	{
+		if(const UMasterHUD* MasterHUD = CustomCharacter->GetMasterHUD())
+		{
+			if(UPlayerHealthBar* PlayerHUD = MasterHUD->GetStatsHUD())
+			{
+				OnPostureChanged.AddUObject(PlayerHUD, &UPlayerHealthBar::SetPostureBarValue);
+				PlayerHUD->SetPostureBarValue(1.f, 1.f);
+			}
+		}
+	}
+	
+	if(GetOwnerRole() == ROLE_SimulatedProxy)
+	{
+		if(UOverheadHealthBarWidget* OverheadWidget = CustomCharacter->GetOverHeadHUDComponent())
+		{
+			OnPostureChanged.AddUObject(OverheadWidget, &UOverheadHealthBarWidget::SetPostureOverheadBarValue);
+		}
+	}
+
+	///////////
+	/// Initialization
+	///////////
+	SetMaxPosture(CustomCharacter->GetPlayerStats()->MaxPosture);
+	FullyRefillPosture();
+	KnockDownRecoveryTime = KnockDownMontage->GetPlayLength();
 }
 
 void UBaseParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -147,12 +172,10 @@ EParryState UBaseParryComponent::ValidateParry(const FDamageInfo& DamageInfo)
 	}
 	
 	// check if the damage instigate is within the parry range
-	FVector OwnerForward = OwnerCharacter->GetActorForwardVector();
-	FVector DirectionToAttacker = (AttackSource->GetActorLocation() - OwnerCharacter->GetActorLocation()).GetSafeNormal();
+	const FVector OwnerForward = OwnerCharacter->GetActorForwardVector();
+	const FVector DirectionToAttacker = (AttackSource->GetActorLocation() - OwnerCharacter->GetActorLocation()).GetSafeNormal();
 
-	float DotProduct = FVector::DotProduct(OwnerForward, DirectionToAttacker);
-	
-	if(DotProduct < 0.5f)
+	if(const float DotProduct = FVector::DotProduct(OwnerForward, DirectionToAttacker); DotProduct < 0.5f)
 	{
 		CurrentParryState =  EParryState::None;
 	}
@@ -183,20 +206,42 @@ void UBaseParryComponent::OnParryNotifyStart(FName NotifyName, const FBranchingP
  * Is triggered when the posture takes damage whether by parried attacks or by no parried attacks. NOTE: perfect parries will not trigger any logic here.
  * @param DamageInfo 
  */
-void UBaseParryComponent::DamagePosture(FDamageInfo DamageInfo)
+void UBaseParryComponent::DamagePosture(const FDamageInfo DamageInfo)
 {
-	// if a parry took place, then broadcast the delegate
-	if(CurrentParryState != EParryState::None)
+	OnParry();
+	
+	if(!HasAuthority())
 	{
-		if(OnParrySuccessful.IsBound())
-		{
-			OnParrySuccessful.Broadcast(DamageInfo, CurrentParryState);
-		}
+		Server_DamagePosture(DamageInfo);
+	}
+	else
+	{
+		Multicast_DamagePosture(DamageInfo);
+		PerformDamagePosture(DamageInfo);
+	}
+}
+
+void UBaseParryComponent::Server_DamagePosture_Implementation(const FDamageInfo DamageInfo)
+{
+	Multicast_DamagePosture(DamageInfo);
+	PerformDamagePosture(DamageInfo);
+}
+
+void UBaseParryComponent::Multicast_DamagePosture_Implementation(const FDamageInfo DamageInfo)
+{
+	if(IsAutonomousProxy())
+	{
+		return;
 	}
 	
+	OnParry();
+}
+
+void UBaseParryComponent::PerformDamagePosture(const FDamageInfo DamageInfo)
+{
 	if(CurrentParryState != EParryState::Perfect)
 	{
-		float Multiplier = PostureMultipliers[CurrentParryState];
+		const float Multiplier = PostureMultipliers[CurrentParryState];
 		AddToCurrentPosture(-DamageInfo.PostureDamage * Multiplier);
 
 		// disable and enable posture recovery
@@ -218,14 +263,29 @@ void UBaseParryComponent::DamagePosture(FDamageInfo DamageInfo)
 	}
 }
 
-void UBaseParryComponent::AddToCurrentPosture(float Amount)
+void UBaseParryComponent::OnParry()
+{
+	// play parry particles
+	if(CurrentParryState != EParryState::None)
+	{
+		if(OnParrySuccessful_Local.IsBound())
+		{
+			OnParrySuccessful_Local.Broadcast();
+		}
+	}
+}
+
+void UBaseParryComponent::AddToCurrentPosture(const float Amount)
 {
 	// PrintOnScreen_Local(FString::Printf(TEXT("AddToCurrentPosture: %f"), CurrentPosture));
-	
-	if (GetOwnerRole() < ROLE_Authority)
+	if (!HasAuthority())
 	{
 		Server_AddToCurrentPosture(Amount);
-		return;  // Stop client execution here
+	}
+	else
+	{
+		PerformAddToCurrentPosture(Amount);
+		OnRep_CurrentPosture();
 	}
 
 	// Update Posture only on the server
@@ -234,10 +294,15 @@ void UBaseParryComponent::AddToCurrentPosture(float Amount)
 
 }
 
-void UBaseParryComponent::Server_AddToCurrentPosture_Implementation(float Amount)
+void UBaseParryComponent::Server_AddToCurrentPosture_Implementation(const float Amount)
+{
+	PerformAddToCurrentPosture(Amount);
+	OnRep_CurrentPosture();
+}
+
+void UBaseParryComponent::PerformAddToCurrentPosture(const float Amount)
 {
 	CurrentPosture = FMath::Min(CurrentPosture + Amount, MaxPosture);
-	OnRep_CurrentPosture();
 }
 
 void UBaseParryComponent::OnRep_CurrentPosture()
@@ -246,7 +311,6 @@ void UBaseParryComponent::OnRep_CurrentPosture()
 	if(CurrentPosture <= 0)
 	{
 		CurrentPosture = 0.f;
-		
 		PerformKnockDown();
 	}
 	
@@ -254,6 +318,16 @@ void UBaseParryComponent::OnRep_CurrentPosture()
 	{
 		OnPostureChanged.Broadcast(CurrentPosture, MaxPosture);
 	}
+}
+
+void UBaseParryComponent::OnRep_MaxPosture()
+{
+	
+}
+
+void UBaseParryComponent::OnRep_CurrentParryState()
+{
+	
 }
 
 void UBaseParryComponent::PerformKnockDown()
@@ -299,10 +373,9 @@ void UBaseParryComponent::RecoverFromKnockDown()
 	}
 }
 
-
-void UBaseParryComponent::SetMaxPosture(float Amount)
+void UBaseParryComponent::SetMaxPosture(const float NewAmount)
 {
-	MaxPosture = Amount;
+	MaxPosture = NewAmount;
 }
 
 void UBaseParryComponent::FullyRefillPosture()

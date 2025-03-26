@@ -26,15 +26,14 @@ public:
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UProgressBar* PostureBar;
 	
-	void SetHealthBarSize(float MaxHealth);
-	void SetStaminaBarSize(float MaxStamina);
+	void SetHealthBarSize(const float MaxHealth);
+	void SetStaminaBarSize(const float MaxStamina);
 	
-	void SetHealthBarValue(float CurrentHealth, float MaxHealth);
-	void SetStaminaBarValue(float CurrentStamina, float MaxStamina);
-	void SetPostureBarValue(float Current, float Max);
+	void SetHealthBarValue(const float CurrentHealth, const float MaxHealth);
+	void SetStaminaBarValue(const float CurrentStamina, const float MaxStamina);
+	void SetPostureBarValue(const float Current, const float Max);
 	
 	void BindStaminaBar(ACharacter* Character);
-	void BindPostureBar(ACharacter* Character);
 
 protected:
 	virtual  void NativeConstruct() override;

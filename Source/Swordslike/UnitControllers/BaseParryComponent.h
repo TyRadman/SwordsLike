@@ -16,8 +16,10 @@ enum class EParryState : uint8
 	Normal = 3
 };
 
+class ASwordslikeCharacter;
+
 DECLARE_MULTICAST_DELEGATE(ParryDelegate);
-DECLARE_MULTICAST_DELEGATE_TwoParams(SuccessfulParryDelegate, const FDamageInfo& DamageInfo, EParryState State);
+DECLARE_MULTICAST_DELEGATE(SuccessfulParryDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(PostureDelegateTwoParams, float Current, float Max);
 DECLARE_MULTICAST_DELEGATE(PostureDelegate);
 
@@ -26,8 +28,14 @@ class SWORDSLIKE_API UBaseParryComponent : public UMyActorComponent, public IIEn
 {
 	GENERATED_BODY()
 
+	friend class ASwordslikeCharacter;
+
 protected:
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentParryState)
 	EParryState CurrentParryState;
+	UFUNCTION()
+	void OnRep_CurrentParryState();
+
 
 public:	
 	UBaseParryComponent();
@@ -37,7 +45,6 @@ public:
 
 	virtual void Parry();
 	virtual void EndParry();
-	void DamagePosture(FDamageInfo DamageInfo);
 
 	/**
 	 * Determines whether a successful parry took place when a hit is received.
@@ -88,17 +95,32 @@ private:
 	const FName EndSectionName = FName("End");
 	const FName HitSectionName = FName("Hit");
 
+	//////////////
 	// POSTURE
+	//////////////
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentPosture)
 	float CurrentPosture;
-
 	UFUNCTION()
 	void OnRep_CurrentPosture();
-
-	UFUNCTION(Server, Reliable)
-	void Server_AddToCurrentPosture(float Amount);
 	
+	UPROPERTY(ReplicatedUsing = OnRep_MaxPosture)
 	float MaxPosture;
+	UFUNCTION()
+	void OnRep_MaxPosture();
+
+	void DamagePosture(const FDamageInfo DamageInfo);
+	UFUNCTION(Server, Reliable)
+	void Server_DamagePosture(const FDamageInfo DamageInfo);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_DamagePosture(const FDamageInfo DamageInfo);
+	void PerformDamagePosture(const FDamageInfo DamageInfo);
+	void OnParry();
+	
+	void AddToCurrentPosture(const float Amount);
+	UFUNCTION(Server, Reliable)
+	void Server_AddToCurrentPosture(const float Amount);
+	void PerformAddToCurrentPosture(const float Amount);
+	
 
 	const float PostureRecoveryRate = 0.5f;
 	const float DelayBeforePostureRecovery = 1.f;
@@ -112,16 +134,16 @@ private:
 	
 
 public:
-	void SetMaxPosture(float MaxPosture);
-	void AddToCurrentPosture(float Amount);
+	void SetMaxPosture(const float NewAmount);
 	void FullyRefillPosture();
 	bool bIsKnockedDown = false;
 	bool bIsParrying = false;
 
 	ParryDelegate OnParryStartedEvent;
 	ParryDelegate OnParryEndedEvent;
-	SuccessfulParryDelegate OnParrySuccessful;
-	
+	SuccessfulParryDelegate OnParrySuccessful_Local;
+
+	// so far only for UI updates
 	PostureDelegateTwoParams OnPostureChanged;
 	PostureDelegate OnKnockedDown;
 	PostureDelegate OnKnockedDownRecover;

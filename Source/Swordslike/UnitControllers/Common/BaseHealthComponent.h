@@ -24,6 +24,8 @@ class SWORDSLIKE_API UBaseHealthComponent : public UMyActorComponent, public IDa
 public:	
 	UBaseHealthComponent();
 	virtual void InitEntityComponent(ACharacter* Character) override;
+	UFUNCTION(Server, Reliable)
+	void Server_SetStartingHealth(float Health);
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

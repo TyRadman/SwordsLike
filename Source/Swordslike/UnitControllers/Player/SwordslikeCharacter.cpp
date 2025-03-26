@@ -142,16 +142,19 @@ void ASwordslikeCharacter::CacheComponentReferences()
 	{
 		OverHeadHUD = CastOverHeadHUD;
 	}
-	
-	if(IsLocallyControlled())
+
+	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
-		if(AHUD* HUD = GetWorld()->GetFirstPlayerController()->GetHUD())
+		if (PlayerController->IsLocalController())
 		{
-			if(const AHUDManager* HUDManager = Cast<AHUDManager>(HUD))
+			if (AHUD* HUD = PlayerController->GetHUD())
 			{
-				if(HUDManager->GetMasterHUD())
+				if(const AHUDManager* HUDManager = Cast<AHUDManager>(HUD))
 				{
-					MasterHUD = HUDManager->GetMasterHUD();
+					if(HUDManager->GetMasterHUD())
+					{
+						MasterHUD = HUDManager->GetMasterHUD();
+					}
 				}
 			}
 		}
@@ -552,12 +555,10 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 	}
 }
 
-void ASwordslikeCharacter::OnAttackParried(const FDamageInfo& DamageInfo, EParryState State)
+void ASwordslikeCharacter::OnAttackParried()
 {
-	// GEngine->AddOnScreenDebugMessage(-1, 5.f,  FColor::Red, FString::Printf(TEXT("PARRIED A %s PARRY"), *UEnum::GetValueAsString(State)));
-	
-	FVector WeaponMiddlePoint = WeaponHandler->GetWeaponMiddleLocation();
-	FRotator Rotation =  GetActorForwardVector().ToOrientationRotator();
+	const FVector WeaponMiddlePoint = WeaponHandler->GetWeaponMiddleLocation();
+	const FRotator Rotation =  GetActorForwardVector().ToOrientationRotator();
 	ParrySparkVFX->SetWorldLocationAndRotation(WeaponMiddlePoint, Rotation);
 	ParrySparkVFX->Activate();
 }

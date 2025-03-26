@@ -30,9 +30,9 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* NameTextBlock;
 	
-	void SetHealthBarValue(float CurrentHealth, float MaxHealth);
-	void SetPostureBarValue(float Current, float Max);
-	void SetNameValue(FText NameText);
+	void SetHealthOverheadBarValue(const float CurrentHealth, const float MaxHealth);
+	void SetPostureOverheadBarValue(const float Current, const float Max);
+	void SetOverheadNameValue(const FText& NameText);
 
 	void Show();
 	void Hide();

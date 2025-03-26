@@ -201,7 +201,7 @@ private:
 public:
 	void OnKnockedDown();
 	void OnKnockedDownRecover();
-	void OnAttackParried(const FDamageInfo& DamageInfo, EParryState State);
+	void OnAttackParried();
 	
 	void OnTargetLockedOn(ULockableTargetComponent* Target, bool bIsLockedOn);
 	UFUNCTION(Server, Reliable)

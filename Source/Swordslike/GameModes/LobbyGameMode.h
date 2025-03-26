@@ -14,5 +14,8 @@ class SWORDSLIKE_API ALobbyGameMode : public AGameMode
 
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	UPROPERTY(EditDefaultsOnly)
+	int32 RequiredPlayersCount = 2;
 	
 };
