@@ -31,6 +31,7 @@
 #include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
+#include "Swordslike/UI/WorldUIElements/WeaponAttackIndicatorWidget.h"
 #include "Swordslike/UnitControllers/Player/LockWidgetController.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -92,6 +93,9 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 	// UI
 	OverheadHealthBar = CreateDefaultSubobject<UWidgetComponent>("Overhead Health Bar");
 	OverheadHealthBar->SetupAttachment(RootComponent);
+	WeaponAttackIndicatorWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("Play Weapon Attack Indicator");
+	WeaponAttackIndicatorWidgetComponent->SetupAttachment(RootComponent);
+	
 
 	CustomMesh = CreateDefaultSubobject<USkeletalMeshComponent>("Custom Mesh");
 	CustomMesh->SetupAttachment(GetMesh());
@@ -146,6 +150,15 @@ void ASwordslikeCharacter::CacheComponentReferences()
 	if(UOverheadHealthBarWidget* CastOverHeadHUD = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
 	{
 		OverHeadHUD = CastOverHeadHUD;
+	}
+
+	if(UWeaponAttackIndicatorWidget* AttackIndicator = Cast<UWeaponAttackIndicatorWidget>(WeaponAttackIndicatorWidgetComponent->GetUserWidgetObject()))
+	{
+		WeaponAttackIndicator = AttackIndicator;
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Couldn't get the indicator"));
 	}
 
 	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -221,6 +234,11 @@ void ASwordslikeCharacter::InitializeComponents()
 	if(OverHeadHUD)
 	{
 		OverHeadHUD->InitEntityComponent(this);
+	}
+
+	if(WeaponAttackIndicator)
+	{
+		WeaponAttackIndicator->InitEntityComponent(this);
 	}
 
 	if(LockIndicatorWidget)

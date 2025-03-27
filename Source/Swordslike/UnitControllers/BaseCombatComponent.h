@@ -8,6 +8,7 @@
 #include "Swordslike/Core/MyActorComponent.h"
 #include "BaseCombatComponent.generated.h"
 
+class UWeaponAttackIndicatorWidget;
 class ASwordslikeCharacter;
 class UAnimInstance;
 class UWeaponHandlerComponent;
@@ -69,8 +70,25 @@ public:
 	void PerformNextAttack();
 	void DisableInput();
 
+	void StartAttackWarning(const float Duration);
+	UFUNCTION(Server, Reliable)
+	void Server_StartWarning(const float Duration);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_StartWarning(const float Duration);
+	void PerformStartAttackWarninig(const float Duration);
+	
+	void EndAttackWarning();
+	UFUNCTION(Server, Reliable)
+	void Server_EndAttackWarning();
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_EndAttackWarning();
+	void PerformEndAttackWarning();
+	const float AnticipationMultiplier = 0.4f;
+	const float AttackWarningRadius = 750.f;
+
 private:
 	TObjectPtr<UAnimInstance> AnimInstance;
+	UAnimMontage* CurrentAttackMontage;
 
 protected:
 	bool bCanAttack = false;
@@ -85,6 +103,7 @@ protected:
 	float RollDuration = 0.7f;
 	
 	TObjectPtr<UWeaponHandlerComponent> WeaponHandler;
+	UWeaponAttackIndicatorWidget* AttackIndicatorWidget;
 
 	// EXTERNALS
 public:

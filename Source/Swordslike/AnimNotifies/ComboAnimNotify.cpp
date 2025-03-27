@@ -50,6 +50,11 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 			CombatComp->PerformNextAttack();
 			break;
 		}
+	case ECombatNotifyType::IndicatorTime:
+		{
+			CombatComp->StartAttackWarning(TotalDuration);
+			break;
+		}
 	}
 }
 
@@ -94,6 +99,11 @@ void UComboAnimNotify::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequence
 	case ECombatNotifyType::Input:
 		{
 			CombatComp->DisableInput();
+			break;
+		}
+	case ECombatNotifyType::IndicatorTime:
+		{
+			CombatComp->EndAttackWarning();
 			break;
 		}
 	}

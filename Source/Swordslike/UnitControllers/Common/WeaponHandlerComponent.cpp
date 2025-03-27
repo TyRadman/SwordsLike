@@ -3,8 +3,10 @@
 #include "DamageInfo.h"
 #include "Damagable.h"
 #include "Components/ArrowComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/SwordslikeCharacter.h"
+#include "Swordslike/UI/WorldUIElements/WeaponAttackIndicatorWidget.h"
 #include "Weapons/Weapon.h"
 
 UWeaponHandlerComponent::UWeaponHandlerComponent()
@@ -124,6 +126,27 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 	CurrentWeapon->SetActorRelativeLocation(CurrentWeapon->LocationOffset);
 	CurrentWeapon->SetActorRelativeRotation(CurrentWeapon->RotationOffset);
 	CurrentWeapon->OnWeaponEquipped();
+
+	if(UWidgetComponent* WeaponIndicator = WeaponOwner->GetAttackIndicatorWidgetComponent())
+	{
+		if(CurrentWeapon->GetMesh())
+		{
+			WeaponIndicator->AttachToComponent(
+				CurrentWeapon->GetMesh(),
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+				FName("Indicator"));
+
+			PrintOnScreen(TEXT("Successfully attached the widget"));
+		}
+		else
+		{
+			PrintOnScreen(TEXT("UWeaponHandlerComponent ERROR: no mesh on weapon"));
+		}
+	}
+	else
+	{
+		PrintOnScreen(TEXT("UWeaponHandlerComponent ERROR: no Widget on player"));
+	}
 
 	PlayEquipMontage();
 }

@@ -4,6 +4,7 @@
 #include "Common/WeaponHandlerComponent.h"
 #include "GameFramework/Character.h"
 #include "Player/SwordslikeCharacter.h"
+#include "Swordslike/UI/WorldUIElements/WeaponAttackIndicatorWidget.h"
 
 UBaseCombatComponent::UBaseCombatComponent()
 {
@@ -50,6 +51,15 @@ void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)
 		OnEntityRollFinished.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnRollFinished);
 		
 		SetWeaponHandler(PlayerCharacter->GetWeaponHandler());
+
+		if(UWeaponAttackIndicatorWidget* AttackIndicator = PlayerCharacter->GetAttackIndicatorWidget())
+		{
+			AttackIndicatorWidget = AttackIndicator;
+		}
+		else
+		{
+			PrintOnScreen_Local(TEXT("No widget on start"));
+		}
 		
 		AActor* Owner = GetOwner();
 		if (const ACharacter* Char = Cast<ACharacter>(Owner))
@@ -92,18 +102,15 @@ void UBaseCombatComponent::AttackAction()
 	
 	if(!bIsAttacking && !AnimInstance->Montage_IsPlaying(WeaponHandler->GetAttackMontage()))
 	{
-		PrintOnScreen_Local(TEXT("Started attacking"));
 		bIsAttacking = true;
 		PlayNextAnimation();
 	}
 	else if(bCanPerformCombo)
 	{
-		PrintOnScreen_Local(TEXT("Combo"));
 		bIsPerformingCombo = true;
 
 		if(bIdealNextAttackPointPassed)
 		{
-			PrintOnScreen_Local(TEXT("Late Combo"));
 			bIdealNextAttackPointPassed = false;
 			PlayNextAnimation();
 		}
@@ -145,18 +152,19 @@ void UBaseCombatComponent::Multicast_PlayMontage_Implementation()
 
 void UBaseCombatComponent::PerformPlayAttackAnimation()
 {
-	if(UAnimMontage* AttackMontage = WeaponHandler->GetNextAttackMontage(); AttackMontage != nullptr)
+	CurrentAttackMontage = WeaponHandler->GetNextAttackMontage();
+	if(CurrentAttackMontage != nullptr)
 	{
 		if(ComboCount > 0)
 		{
 			bIsEndOfCombo = false;
 			FAlphaBlendArgs BlendArgs;
 			BlendArgs.BlendTime = 0.2f;
-			AnimInstance->Montage_StopWithBlendOut(BlendArgs, AttackMontage);
+			AnimInstance->Montage_StopWithBlendOut(BlendArgs, CurrentAttackMontage);
 		}
 
 		ComboCount++;
-		AnimInstance->Montage_Play(AttackMontage);
+		AnimInstance->Montage_Play(CurrentAttackMontage);
 	}
 }
 
@@ -174,19 +182,95 @@ void UBaseCombatComponent::PerformNextAttack()
 	
 	if(bIsPerformingCombo)
 	{
-		PrintOnScreen_Local(TEXT("Combo 2"));
 		bIdealNextAttackPointPassed = false;
 		PlayNextAnimation();
-	}
-	else
-	{
-		PrintOnScreen_Local(TEXT("Combo 2 failed"));
 	}
 }
 
 void UBaseCombatComponent::DisableInput()
 {
 	bIsPerformingCombo = false;
+}
+
+void UBaseCombatComponent::StartAttackWarning(const float Duration)
+{
+	if(!HasAuthority())
+	{
+		Server_StartWarning(Duration);
+	}
+	else
+	{
+		Multicast_StartWarning(Duration);
+	}
+}
+
+void UBaseCombatComponent::Server_StartWarning_Implementation(const float Duration)
+{
+	Multicast_StartWarning(Duration);
+}
+
+void UBaseCombatComponent::Multicast_StartWarning_Implementation(const float Duration)
+{
+	if (!IsAutonomousProxy())
+	{
+		const APawn* LocalPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
+		if (const AActor* OwnerActor = GetOwner(); LocalPawn && OwnerActor)
+		{
+			const float Distance = FVector::Dist(LocalPawn->GetActorLocation(), OwnerActor->GetActorLocation());
+			PrintOnScreen(FString::Printf(TEXT("Distance: %f"), Distance));
+			if (Distance <= AttackWarningRadius)
+			{
+				PerformStartAttackWarninig(Duration);
+			}
+		}
+		else
+		{
+			PrintOnScreen(FString::Printf(TEXT("Missing local or combat owner")));
+		}
+	}
+}
+
+void UBaseCombatComponent::PerformStartAttackWarninig(const float Duration)
+{
+	if(AttackIndicatorWidget && CurrentAttackMontage)
+	{
+		AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationMultiplier);
+		AttackIndicatorWidget->Shrink(Duration / AnticipationMultiplier);
+	}
+	else
+	{
+		PrintOnScreen_Local(TEXT("No widget"));
+	}
+}
+
+void UBaseCombatComponent::EndAttackWarning()
+{
+	if(!HasAuthority())
+	{
+		Server_EndAttackWarning();
+	}
+	else
+	{
+		Multicast_EndAttackWarning();
+	}
+}
+
+void UBaseCombatComponent::Server_EndAttackWarning_Implementation()
+{
+	Multicast_EndAttackWarning();
+}
+
+void UBaseCombatComponent::Multicast_EndAttackWarning_Implementation()
+{
+	if (!IsAutonomousProxy())
+	{
+		PerformEndAttackWarning();
+	}
+}
+
+void UBaseCombatComponent::PerformEndAttackWarning()
+{
+	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, 1.0f);
 }
 #pragma endregion
 

@@ -10,7 +10,8 @@ enum class ECombatNotifyType : uint8
 {
 	Damage UMETA(DisplayName = "Damage"),
 	Input UMETA(DisplayName = "Allow Input"),
-	PerformNextAttack UMETA(DisplayName = "Perform Next Attack")
+	PerformNextAttack UMETA(DisplayName = "Perform Next Attack"),
+	IndicatorTime UMETA(DisplayName = "Indicator Time")
 };
 
 /**

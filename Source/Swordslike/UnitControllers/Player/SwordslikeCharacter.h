@@ -9,6 +9,7 @@
 
 #include "SwordslikeCharacter.generated.h"
 
+class UWeaponAttackIndicatorWidget;
 class UBaseCombatComponent;
 class UMasterHUD;
 class USphereComponent;
@@ -130,6 +131,9 @@ protected:
 	///////////////////////
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* OverheadHealthBar;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UWidgetComponent* WeaponAttackIndicatorWidgetComponent;
+	UWeaponAttackIndicatorWidget* WeaponAttackIndicator;
 	
 	UOverheadHealthBarWidget* OverHeadHUD;
 	UAnimInstance* AnimInstance;
@@ -167,6 +171,8 @@ public:
 	FORCEINLINE UMasterHUD* GetMasterHUD() const {return MasterHUD;}
 	FORCEINLINE UBaseEntityAnimationsComponent* GetAnimation() const {return Animations;}
 	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent;}
+	FORCEINLINE UWeaponAttackIndicatorWidget* GetAttackIndicatorWidget() const {return WeaponAttackIndicator;}
+	FORCEINLINE UWidgetComponent* GetAttackIndicatorWidgetComponent() const {return WeaponAttackIndicatorWidgetComponent;}
 	
 
 	void OnDeath();
