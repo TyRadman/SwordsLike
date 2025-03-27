@@ -3,6 +3,8 @@
 #include "BaseEntityData.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/SwordslikeCharacter.h"
+#include "Swordslike/UI/HUD/MasterHUD.h"
+#include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
 #include "Weapons/Weapon.h"
 
 USprintComponent::USprintComponent()
@@ -15,7 +17,7 @@ void USprintComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(USprintComponent, bIsSprinting);
+	// DOREPLIFETIME(USprintComponent, bIsSprinting);
 }
 
 void USprintComponent::InitEntityComponent(ACharacter* Character)
@@ -25,10 +27,17 @@ void USprintComponent::InitEntityComponent(ACharacter* Character)
 		if(ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character))
 		{
 			EntityCharacter = CustomCharacter;
-			CustomCharacter->OnJumped.AddUObject(this, &USprintComponent::OnJumped);
-			
 			SetMaxStamina(CustomCharacter->GetPlayerStats()->MaxStamina);
 			FullyRefillStamina();
+
+			if(const UMasterHUD* MasterHUD = CustomCharacter->GetMasterHUD())
+			{
+				if(UPlayerHealthBar* PlayerStatsHUD = MasterHUD->GetStatsHUD())
+				{
+					OnEntityStaminaChanged.AddUObject(PlayerStatsHUD, &UPlayerHealthBar::SetStaminaBarValue);
+					PlayerStatsHUD->SetStaminaBarValue(1.f, 1.f);
+				}
+			}
 		}
 		else
 		{
@@ -41,11 +50,6 @@ void USprintComponent::InitEntityComponent(ACharacter* Character)
 	}
 }
 
-void USprintComponent::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
 void USprintComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -54,8 +58,9 @@ void USprintComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, 
 	{
 		AddToCurrentStamina(-DeltaTime);
 
-		if(CurrentStamina == 0.f)
+		if(CurrentStamina <= 0.f)
 		{
+			PrintOnScreen_Local(FString::Printf(TEXT("Sprint: Stopped sprint, stamina: %f"), CurrentStamina));
 			OnSprintEnded();
 		}
 	}
@@ -70,35 +75,25 @@ void USprintComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, 
 	}
 }
 
-float USprintComponent::GetCurrentStamina() const
-{
-	return  CurrentStamina;	
-}
-
-float USprintComponent::GetMaxStamina() const
-{
-	return MaxStamina;
-}
-
-void USprintComponent::SetMaxStamina(float MaxAmount)
-{
-	MaxStamina = MaxAmount;
-	OnStaminaUpdated();
-}
-
-void USprintComponent::SetCurrentStamina(float Amount)
-{
-	CurrentStamina = FMath::Clamp(Amount, 0, MaxStamina);
-	OnStaminaUpdated();
-}
-
-void USprintComponent::AddToCurrentStamina(float Amount)
+void USprintComponent::AddToCurrentStamina(const float Amount)
 {
 	CurrentStamina = FMath::Clamp(CurrentStamina + Amount, 0, MaxStamina);
 	OnStaminaUpdated();
 }
 
-void USprintComponent::AddToMaxStamina(float Amount)
+void USprintComponent::SetMaxStamina(const float MaxAmount)
+{
+	MaxStamina = MaxAmount;
+	OnStaminaUpdated();
+}
+
+void USprintComponent::SetCurrentStamina(const float Amount)
+{
+	CurrentStamina = FMath::Clamp(Amount, 0, MaxStamina);
+	OnStaminaUpdated();
+}
+
+void USprintComponent::AddToMaxStamina(const float Amount)
 {
 	MaxStamina += Amount;
 	OnStaminaUpdated();
@@ -119,6 +114,7 @@ void USprintComponent::OnWeaponHit(AWeapon* Weapon)
 	}
 	
 	AddToCurrentStamina(-Weapon->StaminaPerHit);
+
 	StartRefill();
 }
 
@@ -142,17 +138,6 @@ void USprintComponent::OnStaminaUpdated()
 	}
 }
 
-void USprintComponent::StartRefill()
-{
-	StopRefill();
-	
-	GetWorld()->GetTimerManager().SetTimer(
-		RefillDelayTimer,
-		[this](){bCanRefill = true;},
-		DelayBeforeRegeneration,
-		false);
-}
-
 void USprintComponent::StopRefill()
 {
 	bCanRefill = false;
@@ -163,50 +148,76 @@ void USprintComponent::StopRefill()
 	}
 }
 
-void USprintComponent::OnSprintStated()
+void USprintComponent::StartRefill()
 {
 	if(bIsSprinting)
 	{
 		return;
 	}
 	
+	// StopRefill();
 	bCanRefill = false;
-    bIsSprinting = true; 
 	
-	if (GetOwnerRole() < ROLE_Authority)
+	GetWorld()->GetTimerManager().SetTimer(
+		RefillDelayTimer,
+		[this](){bCanRefill = true;},
+		DelayBeforeRegeneration,
+		false);
+}
+
+void USprintComponent::OnSprintStated()
+{
+	bIsSprinting = true;
+	
+	// bCanRefill = false;
+	StopRefill();
+	
+	if (!HasAuthority())
 	{
 		Server_SetSprinting(true);
 	}
-	
-	EntityCharacter.Get()->SetSprintSpeed();
-}
-
-void USprintComponent::Server_SetSprinting_Implementation(bool bNewIsSprinting)
-{
-	bIsSprinting = bNewIsSprinting;
-}
-
-bool USprintComponent::Server_SetSprinting_Validate(bool bNewIsSprinting)
-{
-	return true;
+	else
+	{
+		PerformStartSprinting();
+	}
 }
 
 void USprintComponent::OnSprintEnded()
 {
-	if(!bIsSprinting)
-	{
-		return;
-	}
-
-	// start the timer to allow stamina regeneration
+	bIsSprinting = false;
+	
 	StartRefill();
 	
-    bIsSprinting = false; 
-	
-	if (GetOwnerRole() < ROLE_Authority)
+	if (!HasAuthority())
 	{
 		Server_SetSprinting(false);
 	}
-	
+	else
+	{
+		PerformStopSprinting();
+	}
+}
+
+void USprintComponent::Server_SetSprinting_Implementation(const bool bNewIsSprinting)
+{
+	if(bNewIsSprinting)
+	{
+		PerformStartSprinting();
+	}
+	else
+	{
+		PerformStopSprinting();
+	}
+}
+
+void USprintComponent::PerformStartSprinting()
+{
+	// bIsSprinting = true;
+	EntityCharacter->SetSprintSpeed();
+}
+
+void USprintComponent::PerformStopSprinting()
+{
+	// bIsSprinting = false;
 	EntityCharacter->ResetSpeed();
 }

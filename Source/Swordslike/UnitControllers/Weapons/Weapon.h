@@ -34,7 +34,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	virtual void Tick(float DeltaTime) override;
 	void OnWeaponEquipped();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -72,6 +71,9 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Visuals)
 	UAnimMontage* ComboMontage;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Visuals)
+	TArray<UAnimMontage*> ComboMontages;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = true))

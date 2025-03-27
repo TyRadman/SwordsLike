@@ -232,6 +232,6 @@ public:
 	FString PlayerName;
 
 private:
-	FString GetInputKey(UInputAction* InputAction);
+	FString GetInputKey(const UInputAction* InputAction);
 };
 

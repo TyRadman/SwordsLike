@@ -124,6 +124,11 @@ void ASwordslikeCharacter::BeginPlay()
 		OnLanded.AddUObject(Combat, &UBaseCombatComponent::EnableRoll);
 	}
 
+	if(Sprint)
+	{
+		OnJumped.AddUObject(Sprint, &USprintComponent::OnJumped);
+	}
+	
 	// SET INITIAL VALUES
 	SetInitialValues();
 	SetDefaultReplicationProperties();
@@ -241,25 +246,29 @@ void ASwordslikeCharacter::SetInitialValues()
 
 void ASwordslikeCharacter::SetSprintSpeed()
 {
+	const float Speed = PlayerStats->SprintSpeed;
+	
 	if (!HasAuthority())
 	{
-		Server_SetWalkSpeed(PlayerStats->SprintSpeed);
+		Server_SetWalkSpeed(Speed);
 	}
 	else
 	{
-		GetCharacterMovement()->MaxWalkSpeed = PlayerStats->SprintSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = Speed;
 	}
 }
 
 void ASwordslikeCharacter::ResetSpeed()
 {
+	const float Speed = PlayerStats->MovementSpeed;
+	
 	if (!HasAuthority())
 	{
-		Server_SetWalkSpeed(PlayerStats->MovementSpeed);
+		Server_SetWalkSpeed(Speed);
 	}
 	else
 	{
-		GetCharacterMovement()->MaxWalkSpeed = PlayerStats->MovementSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = Speed;
 	}
 }
 
@@ -601,11 +610,11 @@ void ASwordslikeCharacter::OnSprintStarted()
 {
 	Sprint->OnSprintStated();
 
-	if(TargetLockerComponent->GetIsLocked())
-	{
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-		GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	}
+	// if(TargetLockerComponent->GetIsLocked())
+	// {
+	// 	GetCharacterMovement()->bOrientRotationToMovement = true;
+	// 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	// }
 }
 
 void ASwordslikeCharacter::OnSprintEnded()
@@ -632,7 +641,7 @@ FString ASwordslikeCharacter::GetInteractionInput()
 	return GetInputKey(InteractActionInput);
 }
 
-FString ASwordslikeCharacter::GetInputKey(UInputAction* InputAction)
+FString ASwordslikeCharacter::GetInputKey(const UInputAction* InputAction)
 {
 	if (!InputAction)
 	{

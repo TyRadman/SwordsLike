@@ -1,6 +1,5 @@
 
 #include "WeaponHandlerComponent.h"
-
 #include "DamageInfo.h"
 #include "Damagable.h"
 #include "Components/ArrowComponent.h"
@@ -48,6 +47,34 @@ UAnimMontage* UWeaponHandlerComponent::GetAttackMontage() const
 	return CurrentWeapon->ComboMontage;
 }
 
+UAnimMontage* UWeaponHandlerComponent::GetNextAttackMontage()
+{
+	if(!CurrentWeapon)
+	{
+		PrintOnScreen_Local(TEXT("UWeaponHandlerComponent: ERROR, no weapon"));
+		return nullptr;
+	}
+
+	if(CurrentAttackAnimationIndex >= CurrentWeapon->ComboMontages.Num())
+	{
+		return nullptr;
+	}
+	
+	UAnimMontage* NextMontage = CurrentWeapon->ComboMontages[CurrentAttackAnimationIndex];
+	CurrentAttackAnimationIndex++;
+	return NextMontage;
+}
+
+void UWeaponHandlerComponent::ResetAttackMontages()
+{
+	CurrentAttackAnimationIndex = 0;
+}
+
+const UAnimMontage* UWeaponHandlerComponent::GetCurrentAttackMontage()
+{
+	return CurrentWeapon->ComboMontages[CurrentAttackAnimationIndex];
+}
+
 void UWeaponHandlerComponent::OnRep_CurrentWeapon()
 {
 	// PrintOnScreen(FString::Printf(TEXT("Weapon Set 2")));
@@ -55,8 +82,6 @@ void UWeaponHandlerComponent::OnRep_CurrentWeapon()
 
 void UWeaponHandlerComponent::EquipWeapon(AWeapon* Weapon)
 {
-	// PrintOnScreen(FString::Printf(TEXT("Weapon Set 1")));
-	
 	if(!HasAuthority())
 	{
 		Server_EquipWeapon(Weapon);
@@ -87,14 +112,8 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 	}
 
 	bIsCarryingHeavyWeapon = Weapon->bIsCarryingHeavyWeapon;
-	
-	// PrintOnScreen(FString::Printf(TEXT("Previous Weapon: %s"), 
-	// 	CurrentWeapon ? *CurrentWeapon->GetName() : TEXT("None")));
 
 	CurrentWeapon = Weapon;
-
-	// PrintOnScreen(FString::Printf(TEXT("New Weapon Set: %s"), 
-	// 	CurrentWeapon ? *CurrentWeapon->GetName() : TEXT("None")));
 	
 	Weapon->AttachToComponent(
 		WeaponOwner->GetCustomMesh(),

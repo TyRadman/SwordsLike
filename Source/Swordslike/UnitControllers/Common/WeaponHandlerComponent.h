@@ -29,6 +29,10 @@ public:
 	virtual void InitEntityComponent(ACharacter* Character) override;
 	
 	UAnimMontage* GetAttackMontage() const;
+	UAnimMontage* GetNextAttackMontage();
+	void ResetAttackMontages();
+	const UAnimMontage* GetCurrentAttackMontage();
+	int32 CurrentAttackAnimationIndex = 0;
 	FORCEINLINE bool HasWeapon() const { return CurrentWeapon != nullptr; ;}
 
 	WeaponHitDelegate OnWeaponHitStarted;

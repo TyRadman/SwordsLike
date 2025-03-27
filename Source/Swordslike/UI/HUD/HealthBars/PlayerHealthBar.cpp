@@ -69,22 +69,3 @@ void UPlayerHealthBar::SetPostureBarValue(const float Current, const float Max)
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "PostureBar is NULL");
 	}
 }
-
-void UPlayerHealthBar::BindStaminaBar(ACharacter* Character)
-{
-	if(Character)
-	{
-		ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character);
-
-		if(PlayerCharacter && PlayerCharacter->GetSprintComponent())
-		{
-			PlayerCharacter->GetSprintComponent()->OnEntityStaminaChanged.AddUObject(this, &UPlayerHealthBar::SetStaminaBarValue);
-		}
-
-		SetStaminaBarValue(1.f, 1.f);
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "No Character");
-	}
-}

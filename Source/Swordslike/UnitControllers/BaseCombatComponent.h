@@ -22,11 +22,6 @@ class SWORDSLIKE_API UBaseCombatComponent : public UMyActorComponent, public IIE
 public:	
 	UBaseCombatComponent();
 	
-	UFUNCTION(Server, Reliable)
-	void Server_PlayMontage();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PlayMontage();
 	
 	UFUNCTION(Server, Reliable)
 	void Server_ForceStopAttack();
@@ -37,24 +32,27 @@ public:
 	virtual void InitEntityComponent(ACharacter* Character);
 
 protected:
-	virtual void BeginPlay() override;
-	
-	virtual void PlayAttackAnimation();
+	void PlayNextAnimation();
+	UFUNCTION(Server, Reliable)
+	void Server_PlayMontage();
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayMontage();
+	void PerformPlayAttackAnimation();
 
+	int32 ComboCount = 0;
 	
 	UFUNCTION()
 	virtual void OnAttackEnded(UAnimMontage* Anim, bool bInterrupted);
 
+	bool bIsEndOfCombo = true;
+	
 	ASwordslikeCharacter* PlayerCharacter;
 
 public:
-	// TODO: To be move to the EntityAnimation component
-	// UPROPERTY(EditDefaultsOnly, Category="Animations")
-	// TObjectPtr<UAnimMontage> AttackAnimationMontage;
 	UPROPERTY(EditDefaultsOnly, Category="Animations")
 	TObjectPtr<UAnimMontage> AttackInterruptionMontage;
 
-	void SetWeaponHandler(TObjectPtr<UWeaponHandlerComponent> Handler);
+	void SetWeaponHandler(const TObjectPtr<UWeaponHandlerComponent>& Handler);
 	FORCEINLINE UWeaponHandlerComponent* GetWeaponHandler() const {return WeaponHandler;}
 
 	/**
@@ -62,12 +60,13 @@ public:
 	 */
 	RollDelegate OnEntityRolled;
 	RollDelegate OnEntityRollFinished;
-	void SetCanRoll(bool CanRoll);
+	FORCEINLINE void SetCanRoll(const bool CanRoll) {bCanRoll = CanRoll;}
 	
 	virtual void ForceStopAttack();
 	virtual void PerformForceStop();
 
 	void AllowInput();
+	void PerformNextAttack();
 	void DisableInput();
 
 private:
@@ -77,6 +76,7 @@ protected:
 	bool bCanAttack = false;
 	bool bIsAttacking = false;
 	bool bIsPerformingCombo = false;
+	bool bIdealNextAttackPointPassed = false;
 	bool bCanPerformCombo = false;
 
 	bool bCanRoll = false;
@@ -90,11 +90,11 @@ protected:
 public:
 	virtual void AttackAction();
 	
-	void EnableRoll();
-	void DisableRoll();
+	FORCEINLINE void EnableRoll() { bCanRoll = true; }
+	FORCEINLINE void DisableRoll() { bCanRoll = false; }
 	// ROLLING
 	virtual void Roll();
 	virtual void RollRecover();
-	void SetRollDuration(float Duration);
+	FORCEINLINE void SetRollDuration(const float Duration) {RollDuration = Duration;}
 	
 };

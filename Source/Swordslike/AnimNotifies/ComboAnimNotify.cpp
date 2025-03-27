@@ -45,6 +45,11 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 			CombatComp->AllowInput();
 			break;
 		}
+	case ECombatNotifyType::PerformNextAttack:
+		{
+			CombatComp->PerformNextAttack();
+			break;
+		}
 	}
 }
 

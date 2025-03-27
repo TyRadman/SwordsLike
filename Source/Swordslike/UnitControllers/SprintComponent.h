@@ -22,7 +22,6 @@ public:
 	USprintComponent();
 
 protected:
-	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -31,12 +30,12 @@ public:
 	void OnSprintEnded();
 	
 	virtual void InitEntityComponent(ACharacter* Character) override;
-	void SetMaxStamina(float MaxAmount);
-	float GetCurrentStamina() const;
-	float GetMaxStamina() const;
-	void SetCurrentStamina(float Amount);
-	void AddToCurrentStamina(float Amount);
-	void AddToMaxStamina(float Amount);
+	void SetMaxStamina(const float MaxAmount);
+	FORCEINLINE float GetCurrentStamina() const { return  CurrentStamina; }
+	FORCEINLINE float GetMaxStamina() const {return MaxStamina;}
+	void SetCurrentStamina(const float Amount);
+	void AddToCurrentStamina(const float Amount);
+	void AddToMaxStamina(const float Amount);
 	void FullyRefillStamina();
 
 	void OnWeaponHit(AWeapon* Weapon);
@@ -46,9 +45,8 @@ public:
 	StaminaDelegate OnEntityStaminaChanged;
 
 private:
-	UPROPERTY(Replicated)
+	// UPROPERTY(Replicated)
 	bool bIsSprinting = false;
-
 
 	TObjectPtr<ASwordslikeCharacter> EntityCharacter;
 	void OnStaminaUpdated();
@@ -73,11 +71,10 @@ public:
 	static constexpr float ROLL_STAMINA_COST = 1.0f;
 
 	UFUNCTION(BlueprintCallable)
-	bool GetIsSprintingValue() const
-	{
-		return bIsSprinting;
-	}
+	FORCEINLINE bool GetIsSprintingValue() const { return bIsSprinting; }
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_SetSprinting(bool bNewIsSprinting);
+	UFUNCTION(Server, Reliable)
+	void Server_SetSprinting(const bool bNewIsSprinting);
+	auto PerformStartSprinting() -> void;
+	void PerformStopSprinting();
 };

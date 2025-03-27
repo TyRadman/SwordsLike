@@ -9,7 +9,8 @@ UENUM(BlueprintType)
 enum class ECombatNotifyType : uint8
 {
 	Damage UMETA(DisplayName = "Damage"),
-	Input UMETA(DisplayName = "Allow Input")
+	Input UMETA(DisplayName = "Allow Input"),
+	PerformNextAttack UMETA(DisplayName = "Perform Next Attack")
 };
 
 /**

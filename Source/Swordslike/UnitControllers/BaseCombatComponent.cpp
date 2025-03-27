@@ -8,14 +8,19 @@
 UBaseCombatComponent::UBaseCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetIsReplicatedByDefault(true);
 }
 
 void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)
 {
-	if(Character && Cast<ASwordslikeCharacter>(Character))
+	if(!Character)
 	{
-		PlayerCharacter = Cast<ASwordslikeCharacter>(Character);
-		
+		return;
+	}
+	
+	if(ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character))
+	{
+		PlayerCharacter = CustomCharacter;
 		if(UBaseEntityAnimationsComponent* Animations = PlayerCharacter->GetAnimation())
 		{
 			OnEntityRolled.AddUObject(Animations, &UBaseEntityAnimationsComponent::PlayRollMontage);
@@ -45,34 +50,26 @@ void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)
 		OnEntityRollFinished.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnRollFinished);
 		
 		SetWeaponHandler(PlayerCharacter->GetWeaponHandler());
-	}
-}
-
-void UBaseCombatComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	SetIsReplicated(true);
-	
-	AActor* Owner = GetOwner();
-
-	if (ACharacter* Char = Cast<ACharacter>(Owner))
-	{
-		UAnimInstance* Anim = Char->GetMesh()->GetAnimInstance();
-
-		if(Anim)
+		
+		AActor* Owner = GetOwner();
+		if (const ACharacter* Char = Cast<ACharacter>(Owner))
 		{
-			AnimInstance = Anim;
+			if(UAnimInstance* Anim = Char->GetMesh()->GetAnimInstance())
+			{
+				AnimInstance = Anim;
+			}
 		}
-	}
 	
-	AnimInstance->OnMontageEnded.AddDynamic(this, &UBaseCombatComponent::OnAttackEnded);
-
-	bCanAttack = true;
-	bCanRoll = true;
+		AnimInstance->OnMontageEnded.AddDynamic(this, &UBaseCombatComponent::OnAttackEnded);
+		bCanAttack = true;
+		bCanRoll = true;
+	}
 }
 
 #pragma region Attack Action
+/**
+ * The input action for attacks.
+ */
 void UBaseCombatComponent::AttackAction()
 {
 	if(!bCanAttack)
@@ -87,9 +84,43 @@ void UBaseCombatComponent::AttackAction()
 		return;
 	}
 	
-	PlayAttackAnimation();
+	if(!AnimInstance)
+	{
+		PrintOnScreen_Local(TEXT("Has no AnimInstance"));
+		return;
+	}
 	
-	if (GetOwnerRole() < ROLE_Authority)
+	if(!bIsAttacking && !AnimInstance->Montage_IsPlaying(WeaponHandler->GetAttackMontage()))
+	{
+		PrintOnScreen_Local(TEXT("Started attacking"));
+		bIsAttacking = true;
+		PlayNextAnimation();
+	}
+	else if(bCanPerformCombo)
+	{
+		PrintOnScreen_Local(TEXT("Combo"));
+		bIsPerformingCombo = true;
+
+		if(bIdealNextAttackPointPassed)
+		{
+			PrintOnScreen_Local(TEXT("Late Combo"));
+			bIdealNextAttackPointPassed = false;
+			PlayNextAnimation();
+		}
+	}
+	else
+	{
+		PrintOnScreen_Local(TEXT("Something went wrong"));
+	}
+}
+#pragma endregion
+
+#pragma region Animation
+void UBaseCombatComponent::PlayNextAnimation()
+{
+	PerformPlayAttackAnimation();
+	
+	if (!HasAuthority())
 	{
 		Server_PlayMontage();
 	}
@@ -108,27 +139,24 @@ void UBaseCombatComponent::Multicast_PlayMontage_Implementation()
 {
 	if(!IsAutonomousProxy())
 	{
-		PlayAttackAnimation();
+		PerformPlayAttackAnimation();
 	}
 }
-#pragma endregion
 
-#pragma region Animation
-void UBaseCombatComponent::PlayAttackAnimation()
+void UBaseCombatComponent::PerformPlayAttackAnimation()
 {
-	if(!AnimInstance)
+	if(UAnimMontage* AttackMontage = WeaponHandler->GetNextAttackMontage(); AttackMontage != nullptr)
 	{
-		return;
-	}
-	
-	if(!bIsAttacking)
-	{
-		bIsAttacking = true;
-		AnimInstance->Montage_Play(WeaponHandler->GetAttackMontage());
-	}
-	else if(bCanPerformCombo)
-	{
-		bIsPerformingCombo = true;
+		if(ComboCount > 0)
+		{
+			bIsEndOfCombo = false;
+			FAlphaBlendArgs BlendArgs;
+			BlendArgs.BlendTime = 0.2f;
+			AnimInstance->Montage_StopWithBlendOut(BlendArgs, AttackMontage);
+		}
+
+		ComboCount++;
+		AnimInstance->Montage_Play(AttackMontage);
 	}
 }
 
@@ -140,16 +168,25 @@ void UBaseCombatComponent::AllowInput()
 	}
 }
 
-void UBaseCombatComponent::DisableInput()
+void UBaseCombatComponent::PerformNextAttack()
 {
-	if(!bIsAttacking || !bIsPerformingCombo)
+	bIdealNextAttackPointPassed = true;
+	
+	if(bIsPerformingCombo)
 	{
-		AnimInstance->Montage_Stop(0.5f, WeaponHandler->GetAttackMontage());
+		PrintOnScreen_Local(TEXT("Combo 2"));
+		bIdealNextAttackPointPassed = false;
+		PlayNextAnimation();
 	}
 	else
 	{
-		bIsPerformingCombo = false;
+		PrintOnScreen_Local(TEXT("Combo 2 failed"));
 	}
+}
+
+void UBaseCombatComponent::DisableInput()
+{
+	bIsPerformingCombo = false;
 }
 #pragma endregion
 
@@ -163,7 +200,7 @@ void UBaseCombatComponent::ForceStopAttack()
 
 	PerformForceStop();
 	
-	if (GetOwnerRole() < ROLE_Authority)
+	if (!HasAuthority())
 	{
 		Server_ForceStopAttack();
 	}
@@ -175,10 +212,12 @@ void UBaseCombatComponent::ForceStopAttack()
 
 void UBaseCombatComponent::PerformForceStop()
 {
+	PrintOnScreen_Local(TEXT("ForceStop"), FColor::Blue);
 	bIsAttacking = false;
 	bIsPerformingCombo = false;
 	AnimInstance->Montage_Stop(0.1f);
 	AnimInstance->Montage_Play(AttackInterruptionMontage);
+	ComboCount = 0;
 }
 
 void UBaseCombatComponent::Server_ForceStopAttack_Implementation()
@@ -194,13 +233,24 @@ void UBaseCombatComponent::Multicast_ForceStopAttack_Implementation()
 
 void UBaseCombatComponent::OnAttackEnded(UAnimMontage* Anim, bool bInterrupted)
 {
+	if(!bIsEndOfCombo)
+	{
+		bIsEndOfCombo = true;
+		PrintOnScreen_Local(TEXT("OnAttackEnded Prevented"), FColor::Purple);
+		return;
+	}
+	
+	PrintOnScreen_Local(TEXT("OnAttackEnded"), FColor::Purple);
+	WeaponHandler->ResetAttackMontages();
+	bIdealNextAttackPointPassed = false;
 	bIsAttacking = false;
-	bIsPerformingCombo = false;
 	bCanPerformCombo = false;
+	bIsPerformingCombo = false;
+	ComboCount = 0;
 }
 
 #pragma region Setters
-void UBaseCombatComponent::SetWeaponHandler(TObjectPtr<UWeaponHandlerComponent> Handler)
+void UBaseCombatComponent::SetWeaponHandler(const TObjectPtr<UWeaponHandlerComponent>& Handler)
 {
 	if(!Handler)
 	{
@@ -210,23 +260,7 @@ void UBaseCombatComponent::SetWeaponHandler(TObjectPtr<UWeaponHandlerComponent> 
 	
 	WeaponHandler = Handler;
 }
-
-void UBaseCombatComponent::SetCanRoll(bool CanRoll)
-{
-	bCanRoll = CanRoll;
-}
-
-void UBaseCombatComponent::EnableRoll()
-{
-	bCanRoll = true;
-}
-
-void UBaseCombatComponent::DisableRoll()
-{
-	bCanRoll = false;
-}
 #pragma endregion
-
 
 #pragma region Roll
 void UBaseCombatComponent::Roll()
@@ -254,10 +288,5 @@ void UBaseCombatComponent::RollRecover()
 	{
 		OnEntityRollFinished.Broadcast();
 	}
-}
-
-void UBaseCombatComponent::SetRollDuration(float Duration)
-{
-	RollDuration = Duration;
 }
 #pragma endregion 

@@ -63,7 +63,7 @@ void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
 		}
 
 		const float StartingHealth = PlayerCharacter->GetPlayerStats()->MaxHealthPoints;
-		PrintOnScreen(FString::Printf(TEXT("%s Health: %f"), *UEnum::GetValueAsString(GetOwnerRole()), StartingHealth), FColor::Orange, 20.f);
+		// PrintOnScreen(FString::Printf(TEXT("%s Health: %f"), *UEnum::GetValueAsString(GetOwnerRole()), StartingHealth), FColor::Orange, 20.f);
 
 		if(!HasAuthority())
 		{

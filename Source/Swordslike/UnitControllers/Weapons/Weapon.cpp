@@ -1,5 +1,4 @@
- #include "Weapon.h"
-
+#include "Weapon.h"
 #include "NiagaraComponent.h"
 #include "Common/WeaponHandlerComponent.h"
 #include "Components/ArrowComponent.h"
@@ -53,11 +52,6 @@ void AWeapon::BeginPlay()
  		TrailPSC->BeginTrails(FName("Trail_Start"), FName("Trail_End"), ETrailWidthMode_FromCentre, 1.f);
  		TrailPSC->SetActive(false);
  	}
- }
-
-void AWeapon::Tick(float DeltaTime)
- {
- 	Super::Tick(DeltaTime);
  }
 
  void AWeapon::OnWeaponEquipped()

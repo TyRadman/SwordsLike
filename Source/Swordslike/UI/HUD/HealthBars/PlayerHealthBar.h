@@ -32,8 +32,6 @@ public:
 	void SetHealthBarValue(const float CurrentHealth, const float MaxHealth);
 	void SetStaminaBarValue(const float CurrentStamina, const float MaxStamina);
 	void SetPostureBarValue(const float Current, const float Max);
-	
-	void BindStaminaBar(ACharacter* Character);
 
 protected:
 	virtual  void NativeConstruct() override;
