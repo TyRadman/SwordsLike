@@ -4,9 +4,9 @@
 #include "Damagable.h"
 #include "Components/ArrowComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/SwordslikeCharacter.h"
-#include "Swordslike/UI/WorldUIElements/WeaponAttackIndicatorWidget.h"
 #include "Weapons/Weapon.h"
 
 UWeaponHandlerComponent::UWeaponHandlerComponent()
@@ -232,7 +232,7 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 			continue;
 		}
 
-		AActor* Actor = Result.GetActor();
+		const AActor* Actor = Result.GetActor();
 
 		TArray<UActorComponent*> Components;
 		Actor->GetComponents(Components);
@@ -256,8 +256,23 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				DamageInfo.Damage = CurrentWeapon->DamagePerHit;
 				DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
 				DamageInfo.DamageInstigator = WeaponOwner;
+				DamageInfo.DamageInstigatorCharacter = WeaponOwner;
+				DamageInfo.ImpactLocation = Result.ImpactPoint;
 				
 				TargetDamagable->TakeDamage(DamageInfo);
+
+				if(!TargetDamagable->IsAlive())
+				{
+					if(!HasAuthority())
+					{
+						Server_OnTargetAttacked(Result.ImpactPoint);
+					}
+					else
+					{
+						Multicasat_OnTargetAttacked(Result.ImpactPoint);
+					}
+				}
+				
 				TargetsHit.Add(TargetDamagable);
 				break;
 			}
@@ -297,6 +312,16 @@ void UWeaponHandlerComponent::StopWeaponAttackDetection()
 {
 	bIsAttacking = false;
 	TargetsHit.Empty();
+}
+
+void UWeaponHandlerComponent::Server_OnTargetAttacked_Implementation(const FVector ImpactPoint)
+{
+	Multicasat_OnTargetAttacked(ImpactPoint);
+}
+
+void UWeaponHandlerComponent::Multicasat_OnTargetAttacked_Implementation(const FVector ImpactPoint)
+{
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentWeapon->ImpactParticles, ImpactPoint);
 }
 
 #pragma region Animations

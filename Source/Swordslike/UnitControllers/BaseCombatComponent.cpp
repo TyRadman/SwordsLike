@@ -50,7 +50,14 @@ void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)
 		
 		OnEntityRollFinished.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnRollFinished);
 		
-		SetWeaponHandler(PlayerCharacter->GetWeaponHandler());
+		if(PlayerCharacter->GetWeaponHandler())
+		{
+			WeaponHandler = PlayerCharacter->GetWeaponHandler();
+		}
+		else
+		{
+			PrintOnScreen_Local(TEXT("No weapon handler"));
+		}
 
 		if(UWeaponAttackIndicatorWidget* AttackIndicator = PlayerCharacter->GetAttackIndicatorWidget())
 		{
@@ -111,8 +118,13 @@ void UBaseCombatComponent::AttackAction()
 
 		if(bIdealNextAttackPointPassed)
 		{
+			PrintOnScreen_Local(TEXT("Late combo"));
 			bIdealNextAttackPointPassed = false;
 			PlayNextAnimation();
+		}
+		else
+		{
+			PrintOnScreen_Local(TEXT("Early Combo"));
 		}
 	}
 	else
@@ -170,10 +182,7 @@ void UBaseCombatComponent::PerformPlayAttackAnimation()
 
 void UBaseCombatComponent::AllowInput()
 {
-	if(bIsAttacking)
-	{
-		bCanPerformCombo = true;
-	}
+	bCanPerformCombo = true;
 }
 
 void UBaseCombatComponent::PerformNextAttack()
@@ -182,8 +191,13 @@ void UBaseCombatComponent::PerformNextAttack()
 	
 	if(bIsPerformingCombo)
 	{
+		PrintOnScreen_Local(TEXT("Auto perform combo"));
 		bIdealNextAttackPointPassed = false;
 		PlayNextAnimation();
+	}
+	else
+	{
+		PrintOnScreen_Local(TEXT("Not auto perform combo"));
 	}
 }
 
@@ -200,24 +214,28 @@ void UBaseCombatComponent::StartAttackWarning(const float Duration)
 	}
 	else
 	{
+		AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationMultiplier);
 		Multicast_StartWarning(Duration);
 	}
 }
 
 void UBaseCombatComponent::Server_StartWarning_Implementation(const float Duration)
 {
+	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationMultiplier);
 	Multicast_StartWarning(Duration);
 }
 
 void UBaseCombatComponent::Multicast_StartWarning_Implementation(const float Duration)
 {
+	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationMultiplier);
+	
 	if (!IsAutonomousProxy())
 	{
 		const APawn* LocalPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
 		if (const AActor* OwnerActor = GetOwner(); LocalPawn && OwnerActor)
 		{
 			const float Distance = FVector::Dist(LocalPawn->GetActorLocation(), OwnerActor->GetActorLocation());
-			PrintOnScreen(FString::Printf(TEXT("Distance: %f"), Distance));
+			// PrintOnScreen(FString::Printf(TEXT("Distance: %f"), Distance));
 			if (Distance <= AttackWarningRadius)
 			{
 				PerformStartAttackWarninig(Duration);
@@ -234,7 +252,6 @@ void UBaseCombatComponent::PerformStartAttackWarninig(const float Duration)
 {
 	if(AttackIndicatorWidget && CurrentAttackMontage)
 	{
-		AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationMultiplier);
 		AttackIndicatorWidget->Shrink(Duration / AnticipationMultiplier);
 	}
 	else
@@ -257,15 +274,13 @@ void UBaseCombatComponent::EndAttackWarning()
 
 void UBaseCombatComponent::Server_EndAttackWarning_Implementation()
 {
+	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, 1.0f);
 	Multicast_EndAttackWarning();
 }
 
 void UBaseCombatComponent::Multicast_EndAttackWarning_Implementation()
 {
-	if (!IsAutonomousProxy())
-	{
-		PerformEndAttackWarning();
-	}
+	PerformEndAttackWarning();
 }
 
 void UBaseCombatComponent::PerformEndAttackWarning()
@@ -332,19 +347,6 @@ void UBaseCombatComponent::OnAttackEnded(UAnimMontage* Anim, bool bInterrupted)
 	bIsPerformingCombo = false;
 	ComboCount = 0;
 }
-
-#pragma region Setters
-void UBaseCombatComponent::SetWeaponHandler(const TObjectPtr<UWeaponHandlerComponent>& Handler)
-{
-	if(!Handler)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Handler pass is null in BaseCombatComponent."));
-		return;
-	}
-	
-	WeaponHandler = Handler;
-}
-#pragma endregion
 
 #pragma region Roll
 void UBaseCombatComponent::Roll()

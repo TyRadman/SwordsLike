@@ -8,6 +8,7 @@
 #include "Swordslike/Core/MyActorComponent.h"
 #include "BaseEntityAnimationsComponent.generated.h"
 
+struct FDamageInfo;
 class ASwordslikeCharacter;
 class UAnimMontage;
 class UAnimInstance;
@@ -25,15 +26,20 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	FORCEINLINE float GetRollAnimationDuration() const {return RollMontage_F->GetPlayLength();}
 
-protected:
-	virtual void BeginPlay() override;
-
-public:
 	UPROPERTY(EditAnywhere, Category=Animations)
 	UAnimMontage* HitReactMontage;
+	
+	UPROPERTY(EditAnywhere, Category=Animations)
+	UAnimMontage* ForwardHitReactMontage;
+	UPROPERTY(EditAnywhere, Category=Animations)
+	UAnimMontage* BackwardHitReactMontage;
+	UPROPERTY(EditAnywhere, Category=Animations)
+	UAnimMontage* LeftHitReactMontage;
+	UPROPERTY(EditAnywhere, Category=Animations)
+	UAnimMontage* RightHitReactMontage;
 
 	UFUNCTION(BlueprintCallable)
-	void PlayHitReactMontage();
+	void PlayHitReactMontage(const FDamageInfo& DamageInfo);
 
 	// ROLL
 	UPROPERTY(EditAnywhere, Category=Animations)

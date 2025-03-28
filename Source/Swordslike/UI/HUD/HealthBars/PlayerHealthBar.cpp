@@ -2,11 +2,7 @@
 
 #include "Components/ProgressBar.h"
 #include "Components/SizeBox.h"
-#include "BaseParryComponent.h"
-#include "SprintComponent.h"
 #include "Components/CanvasPanelSlot.h"
-#include "Player/SwordslikeCharacter.h"
-#include "Player/PlayerHealthComponent.h"
 
 
 void UPlayerHealthBar::NativeConstruct()
@@ -36,7 +32,6 @@ void UPlayerHealthBar::SetHealthBarValue(const float CurrentHealth, const float 
 	{
 		const float Amount = CurrentHealth / MaxHealth;
 		HealthBar->SetPercent(Amount);
-		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f / %f"), CurrentHealth, MaxHealth));
 	}
 	else
 	{

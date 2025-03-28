@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "DamageInfo.generated.h"
 
+class ASwordslikeCharacter;
+
 USTRUCT(BlueprintType)
 struct SWORDSLIKE_API FDamageInfo
 {
@@ -17,4 +19,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	AActor* DamageInstigator;
+	
+	UPROPERTY(BlueprintReadOnly)
+	ASwordslikeCharacter* DamageInstigatorCharacter;
+
+	FVector ImpactLocation;
 };

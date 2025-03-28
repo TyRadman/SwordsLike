@@ -38,11 +38,19 @@ public:
 	WeaponHitDelegate OnWeaponHitStarted;
 	void StartWeaponAttackDetection();
 	void StopWeaponAttackDetection();
+	
+	UFUNCTION(Server, Reliable)
+	void Server_OnTargetAttacked(const FVector ImpactPoint);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicasat_OnTargetAttacked(const FVector ImpactPoint);
 
 
 	void EquipWeapon(AWeapon* Weapon);
 	float GetWeaponStaminaCost() const;
 	FVector GetWeaponMiddleLocation() const;
+
+	UPROPERTY(ReplicatedUsing=OnRep_CurrentWeapon)
+	AWeapon* CurrentWeapon;
 
 private:
 	bool bIsAttacking = false;
@@ -52,9 +60,6 @@ private:
 	TArray<IDamagable*> TargetsHit;
 
 	ASwordslikeCharacter* WeaponOwner;
-
-	UPROPERTY(ReplicatedUsing=OnRep_CurrentWeapon)
-	AWeapon* CurrentWeapon;
 	
 	UFUNCTION()
 	void OnRep_CurrentWeapon();

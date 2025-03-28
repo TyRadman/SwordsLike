@@ -3,6 +3,8 @@
 #include "BaseEntityData.h"
 #include "DamageInfo.h"
 #include "LockableTargetComponent.h"
+#include "WeaponHandlerComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/SwordslikeCharacter.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
@@ -99,6 +101,7 @@ void UBaseHealthComponent::Server_TakeDamage_Implementation(const FDamageInfo& I
 {
 	ApplyDamage(Info);
 }
+
 
 void UBaseHealthComponent::ApplyDamage(const FDamageInfo& DamageInfo)
 {

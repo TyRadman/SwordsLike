@@ -8,6 +8,13 @@ UBaseEntityAnimationsComponent::UBaseEntityAnimationsComponent()
 	SetIsReplicatedByDefault(true);
 }
 
+void UBaseEntityAnimationsComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	
+}
+
 void UBaseEntityAnimationsComponent::InitEntityComponent(ACharacter* Character)
 {
 	if(Character)
@@ -24,22 +31,37 @@ void UBaseEntityAnimationsComponent::InitEntityComponent(ACharacter* Character)
 	}
 }
 
-void UBaseEntityAnimationsComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	
-}
-
-void UBaseEntityAnimationsComponent::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
 #pragma region Hit React Animation
-void UBaseEntityAnimationsComponent::PlayHitReactMontage()
+void UBaseEntityAnimationsComponent::PlayHitReactMontage(const FDamageInfo& DamageInfo)
 {
-	PlayMontage(HitReactMontage);
+	const FVector Forward = OwnerCharacter->GetActorForwardVector();
+	const FVector Right = OwnerCharacter->GetActorRightVector();
+	const FVector AttackLocation = DamageInfo.DamageInstigator->GetActorLocation();
+	const FVector HitDirection = (AttackLocation - OwnerCharacter->GetActorLocation()).GetSafeNormal();
+
+	const float ForwardDot = FVector::DotProduct(Forward, HitDirection);
+	const float RightDot   = FVector::DotProduct(Right, HitDirection);
+
+	UAnimMontage* HitReactionMontage;
+	
+	if (ForwardDot > 0.7f)
+	{
+		HitReactionMontage = ForwardHitReactMontage;
+	}
+	else if (ForwardDot < -0.7f)
+	{
+		HitReactionMontage = BackwardHitReactMontage;
+	}
+	else if (RightDot > 0.f)
+	{
+		HitReactionMontage = RightHitReactMontage;
+	}
+	else
+	{
+		HitReactionMontage = LeftHitReactMontage;
+	}
+	
+	PlayMontage(HitReactionMontage);
 }
 #pragma endregion 
 
@@ -53,7 +75,6 @@ UAnimMontage* UBaseEntityAnimationsComponent::GetRollMontage() const
 
 	const FVector2D MovementVector = OwnerCharacter->GetMovementVector();
 	const bool IsLocked = OwnerCharacter->GetLockOnComponent()->GetIsLocked();
-
 	if(!IsLocked)
 	{
 		return RollMontage_F;

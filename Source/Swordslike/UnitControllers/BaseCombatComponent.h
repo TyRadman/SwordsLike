@@ -53,7 +53,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category="Animations")
 	TObjectPtr<UAnimMontage> AttackInterruptionMontage;
 
-	void SetWeaponHandler(const TObjectPtr<UWeaponHandlerComponent>& Handler);
 	FORCEINLINE UWeaponHandlerComponent* GetWeaponHandler() const {return WeaponHandler;}
 
 	/**
@@ -91,15 +90,16 @@ private:
 	UAnimMontage* CurrentAttackMontage;
 
 protected:
+	FTimerHandle RollTimer;
+
 	bool bCanAttack = false;
 	bool bIsAttacking = false;
 	bool bIsPerformingCombo = false;
 	bool bIdealNextAttackPointPassed = false;
 	bool bCanPerformCombo = false;
-
 	bool bCanRoll = false;
 	bool bIsRolling = false;
-	FTimerHandle RollTimer;
+
 	float RollDuration = 0.7f;
 	
 	TObjectPtr<UWeaponHandlerComponent> WeaponHandler;
@@ -108,7 +108,6 @@ protected:
 	// EXTERNALS
 public:
 	virtual void AttackAction();
-	
 	FORCEINLINE void EnableRoll() { bCanRoll = true; }
 	FORCEINLINE void DisableRoll() { bCanRoll = false; }
 	// ROLLING

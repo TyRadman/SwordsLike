@@ -82,10 +82,8 @@ protected:
 	UFUNCTION()
 	void OnRep_bIsAlive();
 	
-#pragma region Take Damage
 	UFUNCTION(Server, Reliable)
-	virtual void Server_TakeDamage(const FDamageInfo& Info);
-#pragma endregion
+	void Server_TakeDamage(const FDamageInfo& Info);
 
 #pragma region Set Max Health
 	UFUNCTION(Server, Reliable)

@@ -572,7 +572,7 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 		{
 			SetCanJump(false);
 			SetCanMove(false);
-			Animations->PlayHitReactMontage();
+			Animations->PlayHitReactMontage(DamageInfo);
 			GetWorldTimerManager().SetTimer(HitRecoveryTimer, this, &ASwordslikeCharacter::OnCharacterHitRecovered, RecoveryDuration, false);
 		}
 	}

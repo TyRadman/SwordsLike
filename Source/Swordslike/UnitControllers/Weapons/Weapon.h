@@ -74,6 +74,9 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Visuals)
 	TArray<UAnimMontage*> ComboMontages;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Visuals)
+	UParticleSystem* ImpactParticles;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = true))
