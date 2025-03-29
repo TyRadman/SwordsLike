@@ -76,6 +76,7 @@ void UInteractionComponent::OnOverlapBegin(UPrimitiveComponent* OverlappedCompon
 		if(Cast<IInteractable>(OtherActor))
 		{
 			CurrentInteractable = OtherActor;
+			Client_OnOverlapEvent_Implementation();
 		}
 	}
 	else
@@ -91,9 +92,9 @@ void UInteractionComponent::OnRep_CurrentInteractable()
 
 void UInteractionComponent::Client_OnOverlapEvent_Implementation()
 {
-	if (OwnerCharacter && OwnerCharacter->IsLocallyControlled())
+	PrintOnScreen_Local(TEXT("Current interactable exists"));
+	if (OwnerCharacter)
 	{
-
 		if(CurrentInteractable)
 		{
 			OnInteractableOverlapStarted.Broadcast(OwnerCharacter);
@@ -109,6 +110,7 @@ void UInteractionComponent::OnOverlapEnd(UPrimitiveComponent* OverlappedComponen
                                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	CurrentInteractable = nullptr;
+	Client_OnOverlapEvent_Implementation();
 }
 
 void UInteractionComponent::Interact()

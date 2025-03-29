@@ -43,24 +43,26 @@ void UBaseEntityAnimationsComponent::PlayHitReactMontage(const FDamageInfo& Dama
 	const float RightDot   = FVector::DotProduct(Right, HitDirection);
 
 	UAnimMontage* HitReactionMontage;
+	const int32 HitTypeIndex = static_cast<int32>(DamageInfo.HitType);
 	
 	if (ForwardDot > 0.7f)
 	{
-		HitReactionMontage = ForwardHitReactMontage;
+		HitReactionMontage = ForwardHitReactMontages[HitTypeIndex];
 	}
 	else if (ForwardDot < -0.7f)
 	{
-		HitReactionMontage = BackwardHitReactMontage;
+		HitReactionMontage = BackwardHitReactMontages[HitTypeIndex];
 	}
 	else if (RightDot > 0.f)
 	{
-		HitReactionMontage = RightHitReactMontage;
+		HitReactionMontage = RightHitReactMontages[HitTypeIndex];
 	}
 	else
 	{
-		HitReactionMontage = LeftHitReactMontage;
+		HitReactionMontage = LeftHitReactMontages[HitTypeIndex];
 	}
-	
+
+	PrintOnScreen_Local(FString::Printf(TEXT("Montage for hit is: (%d) %s"), HitTypeIndex, *HitReactionMontage->GetFullName()));
 	PlayMontage(HitReactionMontage);
 }
 #pragma endregion 

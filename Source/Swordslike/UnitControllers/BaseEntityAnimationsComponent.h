@@ -38,6 +38,16 @@ public:
 	UPROPERTY(EditAnywhere, Category=Animations)
 	UAnimMontage* RightHitReactMontage;
 
+	// 1. normal hit 2. big hit 3. knock out
+	UPROPERTY(EditAnywhere, Category=Animations)
+	TArray<UAnimMontage*> ForwardHitReactMontages;
+	UPROPERTY(EditAnywhere, Category=Animations)
+	TArray<UAnimMontage*> BackwardHitReactMontages;
+	UPROPERTY(EditAnywhere, Category=Animations)
+	TArray<UAnimMontage*> LeftHitReactMontages;
+	UPROPERTY(EditAnywhere, Category=Animations)
+	TArray<UAnimMontage*> RightHitReactMontages;
+
 	UFUNCTION(BlueprintCallable)
 	void PlayHitReactMontage(const FDamageInfo& DamageInfo);
 

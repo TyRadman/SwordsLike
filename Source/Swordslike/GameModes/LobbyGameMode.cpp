@@ -22,7 +22,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 		if(UWorld* World = GetWorld())
 		{
 			bUseSeamlessTravel = true;
-			World->ServerTravel(FString(TEXT("/Game/Levels/Level_Arena_02?listen")));
+			World->ServerTravel(FString(TEXT("/Game/Levels/Level_FirstLevel?listen")));
 		}
 	}
 }

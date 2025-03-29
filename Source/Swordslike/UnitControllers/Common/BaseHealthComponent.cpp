@@ -65,9 +65,8 @@ void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
 		}
 
 		const float StartingHealth = PlayerCharacter->GetPlayerStats()->MaxHealthPoints;
-		// PrintOnScreen(FString::Printf(TEXT("%s Health: %f"), *UEnum::GetValueAsString(GetOwnerRole()), StartingHealth), FColor::Orange, 20.f);
 
-		if(!HasAuthority())
+		if(PlayerCharacter->IsLocallyControlled())
 		{
 			Server_SetStartingHealth(StartingHealth);
 		}
@@ -137,6 +136,7 @@ void UBaseHealthComponent::ApplyMaxHealth(const float MaxHP)
 
 void UBaseHealthComponent::AddToCurrentHealth(const FDamageInfo& DamageInfo)
 {
+	PrintOnScreen_Local(FString::Printf(TEXT("UBaseHealthComponent:Current health: %f"), CurrentHealth));
 	if(!HasAuthority())
 	{
 		Server_AddToCurrentHealth(DamageInfo);
@@ -155,6 +155,7 @@ void UBaseHealthComponent::Server_AddToCurrentHealth_Implementation(const FDamag
 void UBaseHealthComponent::PerformAddToCurrentHealth(const FDamageInfo& DamageInfo)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth - DamageInfo.Damage, 0.0f, MaxHealth);
+	PrintOnScreen_Local(FString::Printf(TEXT("UBaseHealthComponent::AddToCurrentHealth: %f"), CurrentHealth));
 	OnRep_CurrentHealth();
 
 	if (CurrentHealth <= 0)

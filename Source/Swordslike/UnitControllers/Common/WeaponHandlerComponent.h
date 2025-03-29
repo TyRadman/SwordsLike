@@ -8,6 +8,7 @@
 #include "Weapons/Weapon.h"
 #include "WeaponHandlerComponent.generated.h"
 
+enum class EHitType : uint8;
 DECLARE_MULTICAST_DELEGATE_OneParam(WeaponHitDelegate, AWeapon* Weapon);
 
 class UArrowComponent;
@@ -36,7 +37,7 @@ public:
 	FORCEINLINE bool HasWeapon() const { return CurrentWeapon != nullptr; ;}
 
 	WeaponHitDelegate OnWeaponHitStarted;
-	void StartWeaponAttackDetection();
+	void StartWeaponAttackDetection(EHitType NewHitType, float NewDamage);
 	void StopWeaponAttackDetection();
 	
 	UFUNCTION(Server, Reliable)
@@ -54,6 +55,8 @@ public:
 
 private:
 	bool bIsAttacking = false;
+	EHitType CurrentHitType;
+	float CurrentDamage;
 
 	void GetTargetsInWeaponRange();
 	

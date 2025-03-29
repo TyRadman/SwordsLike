@@ -200,7 +200,7 @@ void UWeaponHandlerComponent::GetTargetsInWeaponRange()
 
 void UWeaponHandlerComponent::CacheTargetsBetweenTwoPoints(const FVector& StartLocation, const FVector& EndLocation)
 {
-	float Radius = CurrentWeapon->HitBoxRadius;
+	const float Radius = CurrentWeapon->HitBoxRadius;
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(GetOwner());
@@ -253,15 +253,17 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				}
 				
 				FDamageInfo DamageInfo;
-				DamageInfo.Damage = CurrentWeapon->DamagePerHit;
+				// DamageInfo.Damage = CurrentWeapon->DamagePerHit;
+				DamageInfo.Damage = CurrentDamage;
 				DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
 				DamageInfo.DamageInstigator = WeaponOwner;
 				DamageInfo.DamageInstigatorCharacter = WeaponOwner;
 				DamageInfo.ImpactLocation = Result.ImpactPoint;
+				DamageInfo.HitType = CurrentHitType;
 				
 				TargetDamagable->TakeDamage(DamageInfo);
 
-				if(!TargetDamagable->IsAlive())
+				if(TargetDamagable->IsAlive())
 				{
 					if(!HasAuthority())
 					{
@@ -284,7 +286,7 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 	}
 }
 
-void UWeaponHandlerComponent::StartWeaponAttackDetection()
+void UWeaponHandlerComponent::StartWeaponAttackDetection(EHitType NewHitType, float NewDamage)
 {
 	if (!CurrentWeapon)
 	{
@@ -297,6 +299,9 @@ void UWeaponHandlerComponent::StartWeaponAttackDetection()
 		PrintOnScreen(TEXT("Weapon arrows are null"), FColor::Red);
 		return;
 	}
+	
+	CurrentHitType = NewHitType;
+	CurrentDamage = NewDamage;
 	
 	if(OnWeaponHitStarted.IsBound())
 	{

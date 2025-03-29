@@ -118,17 +118,20 @@ bool UTargetLockerComponent::CanPerformLock() const
 
 void UTargetLockerComponent::UpdateTargetLocation(const float DeltaTime)
 {
-	FVector TargetLocation = LockedTarget->GetComponentLocation();
-	FVector PlayerLocation = CharacterController->GetPawn()->GetActorLocation();
-		
-	FRotator TargetRotation = (TargetLocation - PlayerLocation).Rotation();
-
+	if(!LockedTarget)
+	{
+		return;
+	}
+	
+	const FVector TargetLocation = LockedTarget->GetComponentLocation();
+	const FVector PlayerLocation = CharacterController->GetPawn()->GetActorLocation();
+	const FRotator TargetRotation = (TargetLocation - PlayerLocation).Rotation();
 	FRotator NewRotation = CharacterController->GetControlRotation();
+	
 	NewRotation.Yaw = TargetRotation.Yaw;
-
-	float InterpolationSpeed = 40.0f;
-	FRotator FinalRotation = FMath::RInterpTo(CharacterController->GetControlRotation(),
-		NewRotation, DeltaTime, InterpolationSpeed);
+	constexpr float InterpolationSpeed = 40.0f;
+	const FRotator FinalRotation = FMath::RInterpTo(CharacterController->GetControlRotation(),
+	                                                NewRotation, DeltaTime, InterpolationSpeed);
 		
 	CharacterController->SetControlRotation(FinalRotation);
 }

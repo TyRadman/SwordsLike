@@ -36,7 +36,7 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 		{
 			if (CombatComp->GetWeaponHandler())
 			{
-				CombatComp->GetWeaponHandler()->StartWeaponAttackDetection();
+				CombatComp->GetWeaponHandler()->StartWeaponAttackDetection(HitType, Damage);
 			}
 			break;
 		}

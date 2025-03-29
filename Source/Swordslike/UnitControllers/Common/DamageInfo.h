@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "DamageInfo.generated.h"
 
+enum class EHitType : uint8;
+
 class ASwordslikeCharacter;
 
 USTRUCT(BlueprintType)
@@ -24,4 +26,6 @@ public:
 	ASwordslikeCharacter* DamageInstigatorCharacter;
 
 	FVector ImpactLocation;
+
+	EHitType HitType;
 };

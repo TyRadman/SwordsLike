@@ -118,13 +118,13 @@ void UBaseCombatComponent::AttackAction()
 
 		if(bIdealNextAttackPointPassed)
 		{
-			PrintOnScreen_Local(TEXT("Late combo"));
+			// PrintOnScreen_Local(TEXT("Late combo"));
 			bIdealNextAttackPointPassed = false;
 			PlayNextAnimation();
 		}
 		else
 		{
-			PrintOnScreen_Local(TEXT("Early Combo"));
+			// PrintOnScreen_Local(TEXT("Early Combo"));
 		}
 	}
 	else
@@ -191,13 +191,13 @@ void UBaseCombatComponent::PerformNextAttack()
 	
 	if(bIsPerformingCombo)
 	{
-		PrintOnScreen_Local(TEXT("Auto perform combo"));
+		// PrintOnScreen_Local(TEXT("Auto perform combo"));
 		bIdealNextAttackPointPassed = false;
 		PlayNextAnimation();
 	}
 	else
 	{
-		PrintOnScreen_Local(TEXT("Not auto perform combo"));
+		// PrintOnScreen_Local(TEXT("Not auto perform combo"));
 	}
 }
 
@@ -335,11 +335,11 @@ void UBaseCombatComponent::OnAttackEnded(UAnimMontage* Anim, bool bInterrupted)
 	if(!bIsEndOfCombo)
 	{
 		bIsEndOfCombo = true;
-		PrintOnScreen_Local(TEXT("OnAttackEnded Prevented"), FColor::Purple);
+		// PrintOnScreen_Local(TEXT("OnAttackEnded Prevented"), FColor::Purple);
 		return;
 	}
 	
-	PrintOnScreen_Local(TEXT("OnAttackEnded"), FColor::Purple);
+	// PrintOnScreen_Local(TEXT("OnAttackEnded"), FColor::Purple);
 	WeaponHandler->ResetAttackMontages();
 	bIdealNextAttackPointPassed = false;
 	bIsAttacking = false;

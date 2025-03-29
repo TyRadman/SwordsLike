@@ -280,7 +280,10 @@ void UBaseParryComponent::AddToCurrentPosture(const float Amount)
 	// PrintOnScreen_Local(FString::Printf(TEXT("AddToCurrentPosture: %f"), CurrentPosture));
 	if (!HasAuthority())
 	{
-		Server_AddToCurrentPosture(Amount);
+		if(GetOwnerRole() == ROLE_AutonomousProxy)
+		{
+			Server_AddToCurrentPosture(Amount);
+		}
 	}
 	else
 	{

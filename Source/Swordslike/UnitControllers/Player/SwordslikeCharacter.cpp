@@ -570,10 +570,15 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 			
 		if(!ParryComponent->bIsKnockedDown)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Took damage")));
 			SetCanJump(false);
 			SetCanMove(false);
 			Animations->PlayHitReactMontage(DamageInfo);
 			GetWorldTimerManager().SetTimer(HitRecoveryTimer, this, &ASwordslikeCharacter::OnCharacterHitRecovered, RecoveryDuration, false);
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Target is knocked down")));
 		}
 	}
 	else
