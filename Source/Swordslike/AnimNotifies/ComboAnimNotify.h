@@ -22,6 +22,8 @@ enum class EHitType : uint8
 	KnockOutHit UMETA(DisplayName = "Knock out hit")
 };
 
+class UCameraShakeBase;
+
 /**
  * An Anim Notify that is used in combo animations to read the player's input and determine whether to continue the combo or stop.
  */
@@ -46,4 +48,6 @@ public:
 	float Damage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage"))
 	EHitType HitType; 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage"))
+	TSubclassOf<UCameraShakeBase> CameraShake; 
 };

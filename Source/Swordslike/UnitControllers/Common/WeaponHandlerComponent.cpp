@@ -12,6 +12,8 @@
 UWeaponHandlerComponent::UWeaponHandlerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	SetIsReplicatedByDefault(true);
 }
 
 void UWeaponHandlerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -103,7 +105,7 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 {
 	if(!Weapon)
 	{
-		PrintOnScreen(FString::Printf(TEXT("WeaponHandler: No Weapon passed for EquipWeapon")));
+		PrintOnScreen(FString::Printf(TEXT("WeaponHandler ERROR: No Weapon passed for EquipWeapon")));
 		return;
 	}
 	
@@ -115,6 +117,7 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 
 	bIsCarryingHeavyWeapon = Weapon->bIsCarryingHeavyWeapon;
 
+	PrintOnScreen(FString::Printf(TEXT("Equipped weapon successfully (%s)"), *Weapon->GetActorNameOrLabel()), FColor::Green);
 	CurrentWeapon = Weapon;
 	
 	Weapon->AttachToComponent(
@@ -135,8 +138,6 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 				CurrentWeapon->GetMesh(),
 				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 				FName("Indicator"));
-
-			PrintOnScreen(TEXT("Successfully attached the widget"));
 		}
 		else
 		{
@@ -263,15 +264,17 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				
 				TargetDamagable->TakeDamage(DamageInfo);
 
+				Client_PlayCameraShake(CurrentCameraShake);
+
 				if(TargetDamagable->IsAlive())
 				{
 					if(!HasAuthority())
 					{
-						Server_OnTargetAttacked(Result.ImpactPoint);
+						Server_OnTargetAttacked(Result.ImpactPoint, CurrentWeapon);
 					}
 					else
 					{
-						Multicasat_OnTargetAttacked(Result.ImpactPoint);
+						Multicasat_OnTargetAttacked(Result.ImpactPoint, CurrentWeapon);
 					}
 				}
 				
@@ -286,11 +289,11 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 	}
 }
 
-void UWeaponHandlerComponent::StartWeaponAttackDetection(EHitType NewHitType, float NewDamage)
+void UWeaponHandlerComponent::StartWeaponAttackDetection(const EHitType NewHitType, const float NewDamage, const TSubclassOf<UCameraShakeBase>& CameraShake)
 {
 	if (!CurrentWeapon)
 	{
-		PrintOnScreen(TEXT("CurrentWeapon is null"), FColor::Red);
+		PrintOnScreen(FString::Printf(TEXT("CurrentWeapon is null on %s"), *UEnum::GetValueAsString(GetOwnerRole())), FColor::Red);
 		return;
 	}
 
@@ -302,6 +305,15 @@ void UWeaponHandlerComponent::StartWeaponAttackDetection(EHitType NewHitType, fl
 	
 	CurrentHitType = NewHitType;
 	CurrentDamage = NewDamage;
+
+	if(!CameraShake)
+	{
+		CurrentCameraShake = WeaponOwner->CameraShake;
+	}
+	else
+	{
+		CurrentCameraShake = CameraShake;
+	}
 	
 	if(OnWeaponHitStarted.IsBound())
 	{
@@ -319,14 +331,28 @@ void UWeaponHandlerComponent::StopWeaponAttackDetection()
 	TargetsHit.Empty();
 }
 
-void UWeaponHandlerComponent::Server_OnTargetAttacked_Implementation(const FVector ImpactPoint)
+void UWeaponHandlerComponent::Server_OnTargetAttacked_Implementation(const FVector ImpactPoint, AWeapon* Weapon)
 {
-	Multicasat_OnTargetAttacked(ImpactPoint);
+	Multicasat_OnTargetAttacked(ImpactPoint, Weapon);
 }
 
-void UWeaponHandlerComponent::Multicasat_OnTargetAttacked_Implementation(const FVector ImpactPoint)
+void UWeaponHandlerComponent::Multicasat_OnTargetAttacked_Implementation(const FVector ImpactPoint, AWeapon* Weapon)
 {
-	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CurrentWeapon->ImpactParticles, ImpactPoint);
+	if(Weapon)
+	{
+		if(Weapon->ImpactParticles)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Weapon->ImpactParticles, ImpactPoint);
+		}
+		else
+		{
+			PrintOnScreen(TEXT("Weapon impact particles is null"));
+		}
+	}
+	else
+	{
+		PrintOnScreen(TEXT("Weapon is null"));
+	}
 }
 
 #pragma region Animations
@@ -335,6 +361,7 @@ void UWeaponHandlerComponent::PlayEquipMontage()
 	if(!AnimInstance)
 	{
 		PrintOnScreen(FString::Printf(TEXT("WeaponHandler: No Anim Instance")));
+		return;
 	}
 	
 	PlayMontage(EquipMontage);
@@ -351,6 +378,14 @@ void UWeaponHandlerComponent::PlayMontage(UAnimMontage* Montage)
 	else
 	{
 		Multicast_PlayMontage(Montage);
+	}
+}
+
+void UWeaponHandlerComponent::Client_PlayCameraShake_Implementation(TSubclassOf<UCameraShakeBase> ShakeClass)
+{
+	if (const APlayerController* PlayerController = Cast<APlayerController>(WeaponOwner->GetController()))
+	{
+		PlayerController->PlayerCameraManager->StartCameraShake(CurrentCameraShake);
 	}
 }
 

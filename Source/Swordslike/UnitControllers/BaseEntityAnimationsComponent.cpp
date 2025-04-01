@@ -62,7 +62,7 @@ void UBaseEntityAnimationsComponent::PlayHitReactMontage(const FDamageInfo& Dama
 		HitReactionMontage = LeftHitReactMontages[HitTypeIndex];
 	}
 
-	PrintOnScreen_Local(FString::Printf(TEXT("Montage for hit is: (%d) %s"), HitTypeIndex, *HitReactionMontage->GetFullName()));
+	// PrintOnScreen_Local(FString::Printf(TEXT("Montage for hit is: (%d) %s"), HitTypeIndex, *HitReactionMontage->GetFullName()));
 	PlayMontage(HitReactionMontage);
 }
 #pragma endregion 

@@ -1,7 +1,7 @@
 
 #include "SwordslikeCharacter.h"
 
-#include "AudioMixerDevice.h"
+#include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "BaseEntityAnimationsComponent.h"
 #include "BaseEntityData.h"
@@ -22,14 +22,10 @@
 #include "TargetLockerComponent.h"
 #include "Common/LockableTargetComponent.h"
 #include "Common/WeaponHandlerComponent.h"
-#include "Components/SphereComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "EnhancedInputComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Swordslike/UI/HUD/HUDManager.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
-#include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
 #include "Swordslike/UI/WorldUIElements/WeaponAttackIndicatorWidget.h"
 #include "Swordslike/UnitControllers/Player/LockWidgetController.h"
@@ -260,6 +256,12 @@ void ASwordslikeCharacter::SetInitialValues()
 	// CHARACTER MOVEMENT STATS
 	GetCharacterMovement()->MaxWalkSpeed = PlayerStats->MovementSpeed;
 	GetCharacterMovement()->JumpZVelocity = PlayerStats->JumpHeight;
+
+	ParryVFXMap = {
+		{EParryState::Normal, NormalParryParticle},
+		{EParryState::Good, GoodParryParticle},
+		{EParryState::Perfect, PerfectParryParticle},
+			};
 }
 
 void ASwordslikeCharacter::SetSprintSpeed()
@@ -563,6 +565,8 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 	// posture will take damage regardless on whether the character parried or not
 	ParryComponent->DamagePosture(DamageInfo);
 
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("PARRY: %s"), *UEnum::GetValueAsString(ParryState)));
+
 	// if there is no parry, then take normal damage
 	if(ParryState == EParryState::None)
 	{
@@ -581,18 +585,21 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Target is knocked down")));
 		}
 	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Parry is preventing damage")));
-	}
 }
 
-void ASwordslikeCharacter::OnAttackParried()
+void ASwordslikeCharacter::OnAttackParried(const EParryState ParryState)
 {
 	const FVector WeaponMiddlePoint = WeaponHandler->GetWeaponMiddleLocation();
 	const FRotator Rotation =  GetActorForwardVector().ToOrientationRotator();
-	ParrySparkVFX->SetWorldLocationAndRotation(WeaponMiddlePoint, Rotation);
-	ParrySparkVFX->Activate();
+
+	if(UNiagaraSystem* SelectedEffect = ParryVFXMap[ParryState])
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			SelectedEffect,
+			WeaponMiddlePoint,
+			Rotation);
+	}
 }
 
 void ASwordslikeCharacter::OnCharacterHitRecovered()

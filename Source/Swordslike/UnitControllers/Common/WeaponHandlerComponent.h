@@ -13,6 +13,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(WeaponHitDelegate, AWeapon* Weapon);
 
 class UArrowComponent;
 class ASwordslikeCharacter;
+class UCameraShakeBase;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SWORDSLIKE_API UWeaponHandlerComponent : public UMyActorComponent, public IIEntityComponent
@@ -37,13 +38,13 @@ public:
 	FORCEINLINE bool HasWeapon() const { return CurrentWeapon != nullptr; ;}
 
 	WeaponHitDelegate OnWeaponHitStarted;
-	void StartWeaponAttackDetection(EHitType NewHitType, float NewDamage);
+	void StartWeaponAttackDetection(const EHitType NewHitType, const float NewDamage, const TSubclassOf<UCameraShakeBase>& CameraShake);
 	void StopWeaponAttackDetection();
 	
 	UFUNCTION(Server, Reliable)
-	void Server_OnTargetAttacked(const FVector ImpactPoint);
+	void Server_OnTargetAttacked(const FVector ImpactPoint, AWeapon* Weapon);
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicasat_OnTargetAttacked(const FVector ImpactPoint);
+	void Multicasat_OnTargetAttacked(const FVector ImpactPoint, AWeapon* Weapon);
 
 
 	void EquipWeapon(AWeapon* Weapon);
@@ -57,6 +58,7 @@ private:
 	bool bIsAttacking = false;
 	EHitType CurrentHitType;
 	float CurrentDamage;
+	TSubclassOf<UCameraShakeBase> CurrentCameraShake;
 
 	void GetTargetsInWeaponRange();
 	
@@ -95,6 +97,10 @@ private:
 	void Server_PlayMontage(UAnimMontage* Montage);
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayMontage(UAnimMontage* Montage);
+
+	UFUNCTION(Client, Reliable)
+	void Client_PlayCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass);
+
 
 public:
 	UPROPERTY(Replicated, BlueprintReadOnly)

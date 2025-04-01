@@ -7,9 +7,12 @@
 #include "Swordslike/UnitControllers/Player/LockWidgetController.h"
 #include "Swordslike/UnitControllers/Player/TargetLockerComponent.h"
 #include "Swordslike/UnitControllers/Player/PlayerHealthComponent.h"
+#include "NiagaraSystem.h"
+#include "Camera/CameraShakeBase.h"
 
 #include "SwordslikeCharacter.generated.h"
 
+class UNiagaraSystem;
 class UWeaponAttackIndicatorWidget;
 class UBaseCombatComponent;
 class UMasterHUD;
@@ -32,6 +35,7 @@ class UBaseEntityAnimationsComponent;
 class UBaseEntityData;
 class UWeaponHandlerComponent;
 class UNiagaraComponent;
+class ULegacyCameraShake;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -208,7 +212,17 @@ private:
 public:
 	void OnKnockedDown();
 	void OnKnockedDownRecover();
-	void OnAttackParried();
+	
+	void OnAttackParried(EParryState ParryState);
+
+	UPROPERTY(EditDefaultsOnly, Category=Parry)
+	UNiagaraSystem* NormalParryParticle;
+	UPROPERTY(EditDefaultsOnly, Category=Parry)
+	UNiagaraSystem* GoodParryParticle;
+	UPROPERTY(EditDefaultsOnly, Category=Parry)
+	UNiagaraSystem* PerfectParryParticle;
+	TMap<EParryState, UNiagaraSystem*> ParryVFXMap;
+
 	
 	void OnTargetLockedOn(ULockableTargetComponent* Target, bool bIsLockedOn);
 	UFUNCTION(Server, Reliable)
@@ -240,5 +254,9 @@ public:
 
 private:
 	FString GetInputKey(const UInputAction* InputAction);
+
+public:
+	UPROPERTY(EditDefaultsOnly, Category="Settings")
+	TSubclassOf<UCameraShakeBase> CameraShake;
 };
 

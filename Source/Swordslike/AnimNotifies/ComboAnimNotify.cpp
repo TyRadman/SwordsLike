@@ -18,7 +18,7 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 		return;
 	}
 
-	ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Owner);
+	const ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Owner);
 	
 	if(!CustomCharacter)
 	{
@@ -36,8 +36,9 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 		{
 			if (CombatComp->GetWeaponHandler())
 			{
-				CombatComp->GetWeaponHandler()->StartWeaponAttackDetection(HitType, Damage);
+				CombatComp->GetWeaponHandler()->StartWeaponAttackDetection(HitType, Damage, CameraShake);
 			}
+			
 			break;
 		}
 	case ECombatNotifyType::Input:

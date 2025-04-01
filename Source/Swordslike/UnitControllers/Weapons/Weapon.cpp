@@ -52,6 +52,10 @@ void AWeapon::BeginPlay()
  		TrailPSC->BeginTrails(FName("Trail_Start"), FName("Trail_End"), ETrailWidthMode_FromCentre, 1.f);
  		TrailPSC->SetActive(false);
  	}
+ 	else
+ 	{
+ 		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Purple, TEXT("No trail effect"));
+ 	}
  }
 
  void AWeapon::OnWeaponEquipped()
@@ -94,8 +98,7 @@ void AWeapon::Server_Interact_Implementation(AActor* InteractingActor)
 
  void AWeapon::InteractionProcess(AActor* InteractingActor)
  {
- 	ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(InteractingActor);
-
+	 const ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(InteractingActor);
  	if(!Character)
  	{
  		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("No Character on interactable"));

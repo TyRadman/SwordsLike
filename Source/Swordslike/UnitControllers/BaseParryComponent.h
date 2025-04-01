@@ -19,7 +19,7 @@ enum class EParryState : uint8
 class ASwordslikeCharacter;
 
 DECLARE_MULTICAST_DELEGATE(ParryDelegate);
-DECLARE_MULTICAST_DELEGATE(SuccessfulParryDelegate);
+DECLARE_MULTICAST_DELEGATE_OneParam(SuccessfulParryDelegate, EParryState State);
 DECLARE_MULTICAST_DELEGATE_TwoParams(PostureDelegateTwoParams, float Current, float Max);
 DECLARE_MULTICAST_DELEGATE(PostureDelegate);
 

@@ -9,24 +9,24 @@
 void UWeaponAnimNotifyState_Trail::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration);
-    // Early out if running on a dedicated server
+    
     if (MeshComp->GetWorld()->GetNetMode() == NM_DedicatedServer)
     {
+ 		// GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Purple, TEXT("UWeaponAnimNotifyState_Trail: ERROR: Is Dedicated server"));
         return;
     }
 
-    // Get the character and weapon
-    ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner());
+    const ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner());
     if (!Character)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Weapon Trail Notify: No character found for trail notify in anim: %s"), *GetPathNameSafe(Animation));
+ 		// GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Purple, TEXT("Weapon Trail Notify: No character found for trail notify in anim: %s"), *GetPathNameSafe(Animation));
         return;
     }
 
-    AWeapon* Weapon = Character->GetWeaponHandler()->GetCurrentWeapon(); // Assuming you have a method to get the current weapon
+    const AWeapon* Weapon = Character->GetWeaponHandler()->GetCurrentWeapon(); // Assuming you have a method to get the current weapon
     if (!Weapon)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Weapon Trail Notify: No weapon found for trail notify in anim: %s"), *GetPathNameSafe(Animation));
+ 		// GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Purple, TEXT("Weapon Trail Notify: No weapon found for trail notify in anim: %s"), *GetPathNameSafe(Animation));
         return;
     }
 
@@ -37,24 +37,23 @@ void UWeaponAnimNotifyState_Trail::NotifyEnd(USkeletalMeshComponent* MeshComp, U
 {
     Super::NotifyEnd(MeshComp, Animation);
 
-    // Early out if running on a dedicated server
     if (MeshComp->GetWorld()->GetNetMode() == NM_DedicatedServer)
     {
+ 		// GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Purple, TEXT("UWeaponAnimNotifyState_Trail: ERROR: Is Dedicated server"));
         return;
     }
 
-    // Get the character and weapon
-    ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner());
+    const ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner());
     if (!Character)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Weapon Trail Notify: No character found for trail notify in anim: %s"), *GetPathNameSafe(Animation));
+ 		// GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Purple, TEXT("Weapon Trail Notify: No character found for trail notify in anim: %s"), *GetPathNameSafe(Animation));
         return;
     }
 
-    AWeapon* Weapon = Character->GetWeaponHandler()->GetCurrentWeapon(); // Assuming you have a method to get the current weapon
+    const AWeapon* Weapon = Character->GetWeaponHandler()->GetCurrentWeapon();
     if (!Weapon)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Weapon Trail Notify: No weapon found for trail notify in anim: %s"), *GetPathNameSafe(Animation));
+ 		// GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Purple, TEXT("Weapon Trail Notify: No weapon found for trail notify in anim: %s"), *GetPathNameSafe(Animation));
         return;
     }
 

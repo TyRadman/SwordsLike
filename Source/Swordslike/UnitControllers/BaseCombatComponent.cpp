@@ -311,7 +311,6 @@ void UBaseCombatComponent::ForceStopAttack()
 
 void UBaseCombatComponent::PerformForceStop()
 {
-	PrintOnScreen_Local(TEXT("ForceStop"), FColor::Blue);
 	bIsAttacking = false;
 	bIsPerformingCombo = false;
 	AnimInstance->Montage_Stop(0.1f);

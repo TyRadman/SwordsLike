@@ -163,7 +163,7 @@ EParryState UBaseParryComponent::ValidateParry(const FDamageInfo& DamageInfo)
 	
 	AActor* AttackSource = DamageInfo.DamageInstigator;
 
-	ASwordslikeCharacter* AttackerCharacter = Cast<ASwordslikeCharacter>(AttackSource);
+	const ASwordslikeCharacter* AttackerCharacter = Cast<ASwordslikeCharacter>(AttackSource);
 
 	// check if the attack is caused by another character, otherwise, no parry takes place
 	if(!AttackerCharacter)
@@ -270,7 +270,7 @@ void UBaseParryComponent::OnParry()
 	{
 		if(OnParrySuccessful_Local.IsBound())
 		{
-			OnParrySuccessful_Local.Broadcast();
+			OnParrySuccessful_Local.Broadcast(CurrentParryState);
 		}
 	}
 }
