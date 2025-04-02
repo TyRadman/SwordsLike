@@ -179,6 +179,10 @@ public:
 	FORCEINLINE UWeaponAttackIndicatorWidget* GetAttackIndicatorWidget() const {return WeaponAttackIndicator;}
 	FORCEINLINE UWidgetComponent* GetAttackIndicatorWidgetComponent() const {return WeaponAttackIndicatorWidgetComponent;}
 	
+	FORCEINLINE void SetCanMove(const bool NewCanMove) {bCanMove = NewCanMove; }
+	FORCEINLINE void SetCanJump(const bool NewCanJump) {bCanJump = NewCanJump; }
+	FORCEINLINE void SetCanAttack(const bool NewCanAttack) {bCanAttack = NewCanAttack; }
+	
 
 	void OnDeath();
 	void SetSprintSpeed();
@@ -199,6 +203,7 @@ private:
 
 	bool bCanJump = true;
 	bool bCanMove = true;
+	bool bCanAttack = true;
 	
 	UFUNCTION(Server, Reliable)
 	void Server_SetWalkSpeed(float NewSpeed);
@@ -206,12 +211,9 @@ private:
 	// TEST
 	void StartAttackCycle();
 
-	FORCEINLINE void SetCanMove(bool NewCanMove) {bCanMove = NewCanMove; }
-	FORCEINLINE void SetCanJump(bool NewCanJump) {bCanJump = NewCanJump; }
-
 public:
-	void OnKnockedDown();
-	void OnKnockedDownRecover();
+	void OnStunned();
+	void OnStunnedRecover();
 	
 	void OnAttackParried(EParryState ParryState);
 
@@ -243,6 +245,9 @@ public:
 	void OnRollFinished();
 	void OnSprintStarted();
 	void OnSprintEnded();
+
+	void RotateCharacterToDirection(const FRotator& NewRotation);
+	void PrintOverhead(const FString& Message);
 
 private:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

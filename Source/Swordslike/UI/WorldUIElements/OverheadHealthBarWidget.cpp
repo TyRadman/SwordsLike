@@ -17,12 +17,12 @@ void UOverheadHealthBarWidget::InitEntityComponent(ACharacter* Character)
 				                                     *UEnum::GetValueAsString(Character->GetRemoteRole()));
 			
 				SetOverheadNameValue(FText::FromString(*Name));
-				Hide();
+				// Hide();
 			}
 		}
 		else
 		{
-			Hide();
+			// Hide();
 		}
 	}
 }
@@ -40,8 +40,13 @@ void UOverheadHealthBarWidget::SetPostureOverheadBarValue(const float Current, c
 {
 	if(PostureBar)
 	{
+		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("%f \\ %f"), Current, Max));
 		const float Amount = Current / Max;
 		PostureBar->SetPercent(Amount);
+	}
+	else
+	{
+		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f\n%f"), Current, Max));
 	}
 }
 

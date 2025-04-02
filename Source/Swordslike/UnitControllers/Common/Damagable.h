@@ -19,4 +19,5 @@ class SWORDSLIKE_API IDamagable
 public:
 	virtual void TakeDamage(const FDamageInfo& Damage) = 0;
 	virtual bool IsAlive() = 0;
+	virtual bool IsInvincible() const = 0;
 };

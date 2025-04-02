@@ -7,13 +7,14 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	int32 NumberOfPlayers = GameState.Get()->PlayerArray.Num();
+	const int32 NumberOfPlayers = GameState.Get()->PlayerArray.Num();
 
 	if(NewPlayer)
 	{
-		if(ASwordslikeCharacter* CustomPlayer = Cast<ASwordslikeCharacter>(NewPlayer))
+		if(APlayerState* CustomPlayer = Cast<APlayerState>(NewPlayer))
 		{
-			CustomPlayer->PlayerName = GameState.Get()->PlayerArray[GameState.Get()->PlayerArray.Num() - 1]->GetPlayerName();
+			// CustomPlayer->PlayerName = GameState.Get()->PlayerArray[GameState.Get()->PlayerArray.Num() - 1]->GetPlayerName();
+			CustomPlayer->SetPlayerName(FString::Printf(TEXT("Player %d"), GameState.Get()->PlayerArray.Num()));
 		}
 	}
 	

@@ -89,6 +89,7 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 	// UI
 	OverheadHealthBar = CreateDefaultSubobject<UWidgetComponent>("Overhead Health Bar");
 	OverheadHealthBar->SetupAttachment(RootComponent);
+	
 	WeaponAttackIndicatorWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("Play Weapon Attack Indicator");
 	WeaponAttackIndicatorWidgetComponent->SetupAttachment(RootComponent);
 	
@@ -371,7 +372,7 @@ void ASwordslikeCharacter::Landed(const FHitResult& Hit)
 
 void ASwordslikeCharacter::Roll()
 {
-	if(Sprint->GetCurrentStamina() < USprintComponent::ROLL_STAMINA_COST)
+	if(Sprint->GetCurrentStamina() < USprintComponent::ROLL_STAMINA_COST || !bCanMove)
 	{
 		return;
 	}
@@ -384,7 +385,7 @@ void ASwordslikeCharacter::Roll()
 
 void ASwordslikeCharacter::Attack()
 {
-	if(Sprint->GetCurrentStamina() == 0.f)
+	if(Sprint->GetCurrentStamina() == 0.f || !bCanAttack)
 	{
 		return;
 	}
@@ -416,11 +417,10 @@ void ASwordslikeCharacter::EndParry()
 	{
 		ParryComponent->EndParry();
 		
-		if(ParryComponent->bIsKnockedDown)
+		if(ParryComponent->CurrentCombatState == ECombatState::Stunned)
 		{
 			return;
 		}
-	
 		
 		SetCanJump(true);
 		SetCanMove(true);
@@ -565,14 +565,14 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 	// posture will take damage regardless on whether the character parried or not
 	ParryComponent->DamagePosture(DamageInfo);
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("PARRY: %s"), *UEnum::GetValueAsString(ParryState)));
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("PARRY: %s"), *UEnum::GetValueAsString(ParryState)));
 
 	// if there is no parry, then take normal damage
 	if(ParryState == EParryState::None)
 	{
 		Health->AddToCurrentHealth(DamageInfo);
 			
-		if(!ParryComponent->bIsKnockedDown)
+		if(ParryComponent->CurrentCombatState == ECombatState::Normal)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Took damage")));
 			SetCanJump(false);
@@ -582,7 +582,7 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Target is knocked down")));
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Can't take damage, knocked down")));
 		}
 	}
 }
@@ -619,7 +619,7 @@ void ASwordslikeCharacter::OnRollFinished()
 	SetCanJump(true);
 }
 
-void ASwordslikeCharacter::OnKnockedDown()
+void ASwordslikeCharacter::OnStunned()
 {
 	if(GetWorldTimerManager().IsTimerActive(HitRecoveryTimer))
 	{
@@ -630,7 +630,7 @@ void ASwordslikeCharacter::OnKnockedDown()
 	SetCanMove(false);
 }
 
-void ASwordslikeCharacter::OnKnockedDownRecover()
+void ASwordslikeCharacter::OnStunnedRecover()
 {
 	SetCanJump(true);
 	SetCanMove(true);
@@ -656,6 +656,23 @@ void ASwordslikeCharacter::OnSprintEnded()
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	}
+}
+
+void ASwordslikeCharacter::RotateCharacterToDirection(const FRotator& NewRotation)
+{
+	if(!GetController())
+	{
+		return;
+	}
+
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	GetController()->SetControlRotation(NewRotation);
+}
+
+void ASwordslikeCharacter::PrintOverhead(const FString& Message)
+{
+	OverHeadHUD->SetOverheadNameValue(FText::FromString(Message));
 }
 #pragma endregion
 
@@ -711,3 +728,5 @@ FString ASwordslikeCharacter::GetInputKey(const UInputAction* InputAction)
 		return FString::Printf(TEXT("NoInputKey"));
 	}
 }
+
+

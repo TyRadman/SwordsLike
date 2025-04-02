@@ -60,7 +60,7 @@ protected:
 	/**
 	 * The amount of stamina regenerated per second.
 	 */
-	const float StaminaRegenerationRate = 1.5f;
+	const float StaminaRegenerationRate = 5.f;
 	const float DelayBeforeRegeneration = 1.f;
 	float CurrentStamina;
 	float MaxStamina;

@@ -60,7 +60,7 @@ public:
 	HealthDelegate OnEntityHit;
 
 	FORCEINLINE void SetIsInvincible(const bool IsInvincible) { bIsInvincible = IsInvincible;}
-	FORCEINLINE bool IsInvincible() const { return bIsInvincible; }
+	FORCEINLINE virtual bool IsInvincible() const override { return bIsInvincible; }
 	
 
 protected:

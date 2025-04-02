@@ -19,6 +19,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	void PrintOnScreen_Local(const FString& Message) const;
+	void PrintOnScreen_Local(const int32 Key, const FString& Message) const;
 	void PrintOnScreen_Local(const FString& Message, FColor Color) const;
 	void PrintOnScreen_Local(const FString& Message, FColor Color, float Duration) const;
 	void PrintOnScreen_Local(const FString& Message, float Duration) const;

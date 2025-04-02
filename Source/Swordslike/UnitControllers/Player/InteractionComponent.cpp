@@ -92,7 +92,6 @@ void UInteractionComponent::OnRep_CurrentInteractable()
 
 void UInteractionComponent::Client_OnOverlapEvent_Implementation()
 {
-	PrintOnScreen_Local(TEXT("Current interactable exists"));
 	if (OwnerCharacter)
 	{
 		if(CurrentInteractable)

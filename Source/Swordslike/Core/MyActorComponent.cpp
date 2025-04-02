@@ -13,6 +13,14 @@ void UMyActorComponent::BeginPlay()
 }
 
 #pragma region Debug
+void UMyActorComponent::PrintOnScreen_Local(const int32 Key, const FString& Message) const
+{
+	if(IsLocallyControlled())
+	{
+		GEngine->AddOnScreenDebugMessage(Key, 5.f,  FColor::Red, Message);
+	}
+}
+
 void UMyActorComponent::PrintOnScreen_Local(const FString& Message) const
 {
 	if(IsLocallyControlled())

@@ -117,7 +117,7 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 
 	bIsCarryingHeavyWeapon = Weapon->bIsCarryingHeavyWeapon;
 
-	PrintOnScreen(FString::Printf(TEXT("Equipped weapon successfully (%s)"), *Weapon->GetActorNameOrLabel()), FColor::Green);
+	// PrintOnScreen(FString::Printf(TEXT("Equipped weapon successfully (%s)"), *Weapon->GetActorNameOrLabel()), FColor::Green);
 	CurrentWeapon = Weapon;
 	
 	Weapon->AttachToComponent(
@@ -247,6 +247,11 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 		
 			if(IDamagable* TargetDamagable = Cast<IDamagable>(Component))
 			{
+				if(TargetDamagable->IsInvincible())
+				{
+					break;
+				}
+				
 				// if the target has already been hit in this attack, then skip it
 				if(TargetsHit.Contains(TargetDamagable))
 				{
