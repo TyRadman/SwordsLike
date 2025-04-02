@@ -17,7 +17,7 @@ void USprintComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// DOREPLIFETIME(USprintComponent, bIsSprinting);
+	DOREPLIFETIME(USprintComponent, bIsSprinting);
 }
 
 void USprintComponent::InitEntityComponent(ACharacter* Character)
@@ -53,6 +53,8 @@ void USprintComponent::InitEntityComponent(ACharacter* Character)
 void USprintComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	PrintOnScreen_Local(FString::Printf(TEXT("Sprint: %s"), bIsSprinting ? TEXT("Yes") : TEXT("No")));
 	
 	if(bIsSprinting)
 	{
@@ -155,7 +157,6 @@ void USprintComponent::StartRefill()
 		return;
 	}
 	
-	// StopRefill();
 	bCanRefill = false;
 	
 	GetWorld()->GetTimerManager().SetTimer(
@@ -167,9 +168,6 @@ void USprintComponent::StartRefill()
 
 void USprintComponent::OnSprintStated()
 {
-	bIsSprinting = true;
-	
-	// bCanRefill = false;
 	StopRefill();
 	
 	if (!HasAuthority())
@@ -178,14 +176,13 @@ void USprintComponent::OnSprintStated()
 	}
 	else
 	{
-		PerformStartSprinting();
+		bIsSprinting = true;
+		EntityCharacter->SetSprintSpeed();
 	}
 }
 
 void USprintComponent::OnSprintEnded()
 {
-	bIsSprinting = false;
-	
 	StartRefill();
 	
 	if (!HasAuthority())
@@ -194,30 +191,21 @@ void USprintComponent::OnSprintEnded()
 	}
 	else
 	{
-		PerformStopSprinting();
+		bIsSprinting = false;
+		EntityCharacter->ResetSpeed();
 	}
 }
 
 void USprintComponent::Server_SetSprinting_Implementation(const bool bNewIsSprinting)
 {
+	bIsSprinting = bNewIsSprinting;
+	
 	if(bNewIsSprinting)
 	{
-		PerformStartSprinting();
+		EntityCharacter->SetSprintSpeed();
 	}
 	else
 	{
-		PerformStopSprinting();
+		EntityCharacter->ResetSpeed();
 	}
-}
-
-void USprintComponent::PerformStartSprinting()
-{
-	// bIsSprinting = true;
-	EntityCharacter->SetSprintSpeed();
-}
-
-void USprintComponent::PerformStopSprinting()
-{
-	// bIsSprinting = false;
-	EntityCharacter->ResetSpeed();
 }

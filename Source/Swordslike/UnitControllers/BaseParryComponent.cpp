@@ -510,8 +510,6 @@ void UBaseParryComponent::EndRecoveryFromKnockDown()
 {
 	CurrentCombatState = ECombatState::Normal;
 	PlayerCharacter->RestoreCharacterRotation();
-	// PlayerCharacter->GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	// PlayerCharacter->GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void UBaseParryComponent::SetMaxPosture(const float NewAmount)

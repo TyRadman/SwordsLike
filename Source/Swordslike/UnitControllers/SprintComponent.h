@@ -45,7 +45,7 @@ public:
 	StaminaDelegate OnEntityStaminaChanged;
 
 private:
-	// UPROPERTY(Replicated)
+	UPROPERTY(Replicated)
 	bool bIsSprinting = false;
 
 	TObjectPtr<ASwordslikeCharacter> EntityCharacter;
@@ -75,6 +75,4 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetSprinting(const bool bNewIsSprinting);
-	auto PerformStartSprinting() -> void;
-	void PerformStopSprinting();
 };

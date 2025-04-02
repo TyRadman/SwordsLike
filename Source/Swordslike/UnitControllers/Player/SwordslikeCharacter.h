@@ -182,8 +182,11 @@ public:
 	FORCEINLINE void SetCanMove(const bool NewCanMove) {bCanMove = NewCanMove; }
 	FORCEINLINE void SetCanJump(const bool NewCanJump) {bCanJump = NewCanJump; }
 	FORCEINLINE void SetCanAttack(const bool NewCanAttack) {bCanAttack = NewCanAttack; }
-	
 
+	UPROPERTY(ReplicatedUsing=OnRep_CurrentSpeed)
+	float CurrentSpeed;
+	UFUNCTION()
+	void OnRep_CurrentSpeed();
 	void OnDeath();
 	void SetSprintSpeed();
 	void ResetSpeed();

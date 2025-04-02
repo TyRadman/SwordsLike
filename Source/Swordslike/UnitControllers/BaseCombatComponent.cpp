@@ -18,7 +18,7 @@ void UBaseCombatComponent::TickComponent(float DeltaTime, enum ELevelTick TickTy
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	PlayerCharacter->PrintOverhead(*UEnum::GetValueAsString(ComboState));
+	// PlayerCharacter->PrintOverhead(*UEnum::GetValueAsString(ComboState));
 }
 
 void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)

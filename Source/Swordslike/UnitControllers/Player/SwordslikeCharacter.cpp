@@ -37,6 +37,7 @@ void ASwordslikeCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ASwordslikeCharacter, bIsLockedOnTarget);
+	DOREPLIFETIME(ASwordslikeCharacter, CurrentSpeed);
 }
 
 ASwordslikeCharacter::ASwordslikeCharacter()
@@ -267,47 +268,52 @@ void ASwordslikeCharacter::SetInitialValues()
 
 void ASwordslikeCharacter::SetSprintSpeed()
 {
-	const float Speed = PlayerStats->SprintSpeed;
+	const float NewSpeed = PlayerStats->SprintSpeed;
 	
 	if (!HasAuthority())
 	{
-		Server_SetWalkSpeed(Speed);
+		Server_SetWalkSpeed(NewSpeed);
 	}
 	else
 	{
-		GetCharacterMovement()->MaxWalkSpeed = Speed;
+		CurrentSpeed = NewSpeed;
+		OnRep_CurrentSpeed();
 	}
 }
 
 void ASwordslikeCharacter::ResetSpeed()
 {
-	const float Speed = PlayerStats->MovementSpeed;
+	const float NewSpeed = PlayerStats->MovementSpeed;
 	
 	if (!HasAuthority())
 	{
-		Server_SetWalkSpeed(Speed);
+		Server_SetWalkSpeed(NewSpeed);
 	}
 	else
 	{
-		GetCharacterMovement()->MaxWalkSpeed = Speed;
+		CurrentSpeed = NewSpeed;
+		OnRep_CurrentSpeed();
 	}
 }
 
-void ASwordslikeCharacter::Server_SetWalkSpeed_Implementation(float NewSpeed)
+void ASwordslikeCharacter::Server_SetWalkSpeed_Implementation(const float NewSpeed)
 {
-	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
+	CurrentSpeed = NewSpeed;
+	OnRep_CurrentSpeed();
+}
+
+void ASwordslikeCharacter::OnRep_CurrentSpeed()
+{
+	GetCharacterMovement()->MaxWalkSpeed = CurrentSpeed;
 }
 
 #pragma region Input
-// Input
 void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
-		UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
- 		
-		if (InputSubsystem)
+		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			InputSubsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
@@ -434,12 +440,6 @@ void ASwordslikeCharacter::EndParry()
 void ASwordslikeCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	if(GetLocalRole() == ROLE_AutonomousProxy)
-	{
-		// const FString Message = FString::Printf(TEXT("%s"), MasterHUD? TEXT("HUD Exists") : TEXT("Missing HUD"));
-		// GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Green, *Message);
-	}
 }
 
 void ASwordslikeCharacter::Move(const FInputActionValue& Value)
@@ -498,11 +498,6 @@ void ASwordslikeCharacter::Interact()
 #pragma region Externals
 void ASwordslikeCharacter::OnTargetLockedOn(ULockableTargetComponent* Target, const bool bIsLockedOn)
 {
-	// if(Sprint->GetIsSprintingValue())
-	// {
-	// 	return;
-	// }
-
 	SetLockOnValue(bIsLockedOn);
 }
 
@@ -645,22 +640,14 @@ void ASwordslikeCharacter::OnSprintStarted()
 {
 	Sprint->OnSprintStated();
 
-	// if(TargetLockerComponent->GetIsLocked())
-	// {
-	// 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	// 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	// }
+	SetLockOnValue(false);
 }
 
 void ASwordslikeCharacter::OnSprintEnded()
 {
 	Sprint->OnSprintEnded();
 
-	if(TargetLockerComponent->GetIsLocked())
-	{
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-		GetCharacterMovement()->bUseControllerDesiredRotation = true;
-	}
+	RestoreCharacterRotation();
 }
 
 void ASwordslikeCharacter::RotateCharacterToDirection(const FRotator& NewRotation)
@@ -680,7 +667,6 @@ void ASwordslikeCharacter::PrintOverhead(const FString& Message)
 	OverHeadHUD->SetOverheadNameValue(FText::FromString(Message));
 }
 #pragma endregion
-
 
 void ASwordslikeCharacter::StartAttackCycle()
 {
