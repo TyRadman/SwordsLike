@@ -8,6 +8,17 @@
 #include "Swordslike/Core/MyActorComponent.h"
 #include "BaseCombatComponent.generated.h"
 
+UENUM()
+enum class EComboState : uint8
+{
+	Idle = 0,
+	Attacking = 1,
+	ComboWindowOpen = 2,
+	ComboQueued = 3,
+	Ending = 4,
+	LastSecondComboWindowOpen = 5
+};
+
 class UWeaponAttackIndicatorWidget;
 class ASwordslikeCharacter;
 class UAnimInstance;
@@ -33,6 +44,7 @@ public:
 	virtual void InitEntityComponent(ACharacter* Character);
 
 protected:
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void PlayNextAnimation();
 	UFUNCTION(Server, Reliable)
 	void Server_PlayMontage();
@@ -42,14 +54,12 @@ protected:
 
 	int32 ComboCount = 0;
 	
-	UFUNCTION()
-	virtual void OnAttackEnded(UAnimMontage* Anim, bool bInterrupted);
-
-	bool bIsEndOfCombo = true;
-	
 	ASwordslikeCharacter* PlayerCharacter;
 
 public:
+	UFUNCTION()
+	virtual void OnAttackEnded(UAnimMontage* Anim, bool bInterrupted);
+	
 	UPROPERTY(EditDefaultsOnly, Category="Animations")
 	TObjectPtr<UAnimMontage> AttackInterruptionMontage;
 
@@ -69,12 +79,12 @@ public:
 	void PerformNextAttack();
 	void DisableInput();
 
-	void StartAttackWarning(const float Duration);
+	void StartAttackWarning(const float Duration, const float AnticipationSpeedMultiplier = 1.0f);
 	UFUNCTION(Server, Reliable)
-	void Server_StartWarning(const float Duration);
+	void Server_StartWarning(const float Duration, const float AnticipationSpeedMultiplier = 1.0f);
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_StartWarning(const float Duration);
-	void PerformStartAttackWarninig(const float Duration);
+	void Multicast_StartWarning(const float Duration, const float AnticipationSpeedMultiplier = 1.0f);
+	void PerformStartAttackWarninig(const float Duration, const float AnticipationSpeedMultiplier = 1.0f);
 	
 	void EndAttackWarning();
 	UFUNCTION(Server, Reliable)
@@ -82,7 +92,6 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_EndAttackWarning();
 	void PerformEndAttackWarning();
-	const float AnticipationMultiplier = 0.4f;
 	const float AttackWarningRadius = 750.f;
 
 private:
@@ -92,11 +101,6 @@ private:
 protected:
 	FTimerHandle RollTimer;
 
-	bool bCanAttack = false;
-	bool bIsAttacking = false;
-	bool bIsPerformingCombo = false;
-	bool bIdealNextAttackPointPassed = false;
-	bool bCanPerformCombo = false;
 	bool bCanRoll = false;
 	bool bIsRolling = false;
 
@@ -104,6 +108,8 @@ protected:
 	
 	TObjectPtr<UWeaponHandlerComponent> WeaponHandler;
 	UWeaponAttackIndicatorWidget* AttackIndicatorWidget;
+	
+	EComboState ComboState = EComboState::Idle;
 
 	// EXTERNALS
 public:

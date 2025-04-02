@@ -9,8 +9,10 @@
 void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	if (!MeshComp)
+	{
 		return;
-
+	}
+	
 	AActor* Owner = MeshComp->GetOwner();
 
 	if (!Owner)
@@ -53,7 +55,7 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 		}
 	case ECombatNotifyType::IndicatorTime:
 		{
-			CombatComp->StartAttackWarning(TotalDuration);
+			CombatComp->StartAttackWarning(TotalDuration, AnticipationSpeedMultiplayer);
 			break;
 		}
 	}

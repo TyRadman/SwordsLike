@@ -1,6 +1,7 @@
 #include "BaseCombatComponent.h"
 
 #include "BaseEntityAnimationsComponent.h"
+#include "BaseParryComponent.h"
 #include "Common/WeaponHandlerComponent.h"
 #include "GameFramework/Character.h"
 #include "Player/SwordslikeCharacter.h"
@@ -10,6 +11,14 @@ UBaseCombatComponent::UBaseCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
+}
+
+void UBaseCombatComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	PlayerCharacter->PrintOverhead(*UEnum::GetValueAsString(ComboState));
 }
 
 void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)
@@ -78,7 +87,6 @@ void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)
 		}
 	
 		AnimInstance->OnMontageEnded.AddDynamic(this, &UBaseCombatComponent::OnAttackEnded);
-		bCanAttack = true;
 		bCanRoll = true;
 	}
 }
@@ -89,12 +97,6 @@ void UBaseCombatComponent::InitEntityComponent(ACharacter* Character)
  */
 void UBaseCombatComponent::AttackAction()
 {
-	if(!bCanAttack)
-	{
-		PrintOnScreen_Local(TEXT("Can't attack"));
-		return;
-	}
-	
 	if(!WeaponHandler->HasWeapon())
 	{
 		PrintOnScreen_Local(TEXT("Has no weapon"));
@@ -107,34 +109,29 @@ void UBaseCombatComponent::AttackAction()
 		return;
 	}
 	
-	if(!bIsAttacking && !AnimInstance->Montage_IsPlaying(WeaponHandler->GetAttackMontage()))
+	if(ComboState == EComboState::Idle)
 	{
-		bIsAttacking = true;
+		ComboState = EComboState::Attacking;
+		PrintOnScreen_Local(FString::Printf(TEXT("First attack ")));
 		PlayNextAnimation();
 	}
-	else if(bCanPerformCombo)
+	else if(ComboState == EComboState::ComboWindowOpen)
 	{
-		bIsPerformingCombo = true;
-
-		if(bIdealNextAttackPointPassed)
-		{
-			// PrintOnScreen_Local(TEXT("Late combo"));
-			bIdealNextAttackPointPassed = false;
-			PlayNextAnimation();
-		}
-		else
-		{
-			// PrintOnScreen_Local(TEXT("Early Combo"));
-		}
+		ComboState = EComboState::ComboQueued;
 	}
-	else
+	else if(ComboState == EComboState::LastSecondComboWindowOpen)
 	{
-		PrintOnScreen_Local(TEXT("Something went wrong"));
+		ComboState = EComboState::Attacking;
+		PrintOnScreen_Local(FString::Printf(TEXT("Late attack ")));
+		PlayNextAnimation();
 	}
 }
 #pragma endregion
 
 #pragma region Animation
+/**
+ * Triggers the next combo attack animation
+ */
 void UBaseCombatComponent::PlayNextAnimation()
 {
 	PerformPlayAttackAnimation();
@@ -167,9 +164,9 @@ void UBaseCombatComponent::PerformPlayAttackAnimation()
 	CurrentAttackMontage = WeaponHandler->GetNextAttackMontage();
 	if(CurrentAttackMontage != nullptr)
 	{
+		// add a 0.2f blend to the new combo animation if it's not the first attack in the combo
 		if(ComboCount > 0)
 		{
-			bIsEndOfCombo = false;
 			FAlphaBlendArgs BlendArgs;
 			BlendArgs.BlendTime = 0.2f;
 			AnimInstance->Montage_StopWithBlendOut(BlendArgs, CurrentAttackMontage);
@@ -180,54 +177,54 @@ void UBaseCombatComponent::PerformPlayAttackAnimation()
 	}
 }
 
-void UBaseCombatComponent::AllowInput()
-{
-	bCanPerformCombo = true;
-}
-
+/** Called through the Anim Notify State using the NextAttack mode */
 void UBaseCombatComponent::PerformNextAttack()
 {
-	bIdealNextAttackPointPassed = true;
-	
-	if(bIsPerformingCombo)
+	if (ComboState == EComboState::ComboQueued)
 	{
-		// PrintOnScreen_Local(TEXT("Auto perform combo"));
-		bIdealNextAttackPointPassed = false;
 		PlayNextAnimation();
+		ComboState = EComboState::Attacking;
 	}
 	else
 	{
-		// PrintOnScreen_Local(TEXT("Not auto perform combo"));
+		ComboState = EComboState::LastSecondComboWindowOpen;
 	}
 }
 
-void UBaseCombatComponent::DisableInput()
+void UBaseCombatComponent::AllowInput()
 {
-	bIsPerformingCombo = false;
+	ComboState = EComboState::ComboWindowOpen;
 }
 
-void UBaseCombatComponent::StartAttackWarning(const float Duration)
+/** Called when the player misses the window to continue the combo or if the current attack is the last in the combo */
+void UBaseCombatComponent::DisableInput()
+{
+	ComboState = EComboState::Ending;
+}
+
+#pragma region Attack Warnings
+void UBaseCombatComponent::StartAttackWarning(const float Duration, const float AnticipationSpeedMultiplier)
 {
 	if(!HasAuthority())
 	{
-		Server_StartWarning(Duration);
+		Server_StartWarning(Duration, AnticipationSpeedMultiplier);
 	}
 	else
 	{
-		AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationMultiplier);
-		Multicast_StartWarning(Duration);
+		AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationSpeedMultiplier);
+		Multicast_StartWarning(Duration, AnticipationSpeedMultiplier);
 	}
 }
 
-void UBaseCombatComponent::Server_StartWarning_Implementation(const float Duration)
+void UBaseCombatComponent::Server_StartWarning_Implementation(const float Duration, const float AnticipationSpeedMultiplier)
 {
-	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationMultiplier);
-	Multicast_StartWarning(Duration);
+	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationSpeedMultiplier);
+	Multicast_StartWarning(Duration, AnticipationSpeedMultiplier);
 }
 
-void UBaseCombatComponent::Multicast_StartWarning_Implementation(const float Duration)
+void UBaseCombatComponent::Multicast_StartWarning_Implementation(const float Duration, const float AnticipationSpeedMultiplier)
 {
-	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationMultiplier);
+	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, AnticipationSpeedMultiplier);
 	
 	if (!IsAutonomousProxy())
 	{
@@ -238,7 +235,7 @@ void UBaseCombatComponent::Multicast_StartWarning_Implementation(const float Dur
 			// PrintOnScreen(FString::Printf(TEXT("Distance: %f"), Distance));
 			if (Distance <= AttackWarningRadius)
 			{
-				PerformStartAttackWarninig(Duration);
+				PerformStartAttackWarninig(Duration, AnticipationSpeedMultiplier);
 			}
 		}
 		else
@@ -248,11 +245,11 @@ void UBaseCombatComponent::Multicast_StartWarning_Implementation(const float Dur
 	}
 }
 
-void UBaseCombatComponent::PerformStartAttackWarninig(const float Duration)
+void UBaseCombatComponent::PerformStartAttackWarninig(const float Duration, const float AnticipationSpeedMultiplier)
 {
 	if(AttackIndicatorWidget && CurrentAttackMontage)
 	{
-		AttackIndicatorWidget->Shrink(Duration / AnticipationMultiplier);
+		AttackIndicatorWidget->Shrink(Duration / AnticipationSpeedMultiplier);
 	}
 	else
 	{
@@ -287,6 +284,26 @@ void UBaseCombatComponent::PerformEndAttackWarning()
 {
 	AnimInstance->Montage_SetPlayRate(CurrentAttackMontage, 1.0f);
 }
+#pragma endregion 
+
+void UBaseCombatComponent::OnAttackEnded(UAnimMontage* Anim, bool bInterrupted)
+{
+	if(ComboState == EComboState::Idle)
+	{
+		return;
+	}
+	
+	if(ComboState != EComboState::Ending)
+	{
+		PrintOnScreen_Local(TEXT("OnAttackEnded Prevented"), FColor::Purple);
+		return;
+	}
+	
+	PrintOnScreen_Local(TEXT("OnAttackEnded"), FColor::Purple);
+	WeaponHandler->ResetAttackMontages();
+	ComboState = EComboState::Idle;
+	ComboCount = 0;
+}
 #pragma endregion
 
 #pragma region Force Stop Attack
@@ -309,15 +326,6 @@ void UBaseCombatComponent::ForceStopAttack()
 	}
 }
 
-void UBaseCombatComponent::PerformForceStop()
-{
-	bIsAttacking = false;
-	bIsPerformingCombo = false;
-	AnimInstance->Montage_Stop(0.1f);
-	AnimInstance->Montage_Play(AttackInterruptionMontage);
-	ComboCount = 0;
-}
-
 void UBaseCombatComponent::Server_ForceStopAttack_Implementation()
 {
 	Multicast_ForceStopAttack();
@@ -327,25 +335,15 @@ void UBaseCombatComponent::Multicast_ForceStopAttack_Implementation()
 {
 	PerformForceStop();
 }
-#pragma endregion
 
-void UBaseCombatComponent::OnAttackEnded(UAnimMontage* Anim, bool bInterrupted)
+void UBaseCombatComponent::PerformForceStop()
 {
-	if(!bIsEndOfCombo)
-	{
-		bIsEndOfCombo = true;
-		// PrintOnScreen_Local(TEXT("OnAttackEnded Prevented"), FColor::Purple);
-		return;
-	}
-	
-	// PrintOnScreen_Local(TEXT("OnAttackEnded"), FColor::Purple);
-	WeaponHandler->ResetAttackMontages();
-	bIdealNextAttackPointPassed = false;
-	bIsAttacking = false;
-	bCanPerformCombo = false;
-	bIsPerformingCombo = false;
+	ComboState = EComboState::Idle;
+	AnimInstance->Montage_Stop(0.1f);
+	AnimInstance->Montage_Play(AttackInterruptionMontage);
 	ComboCount = 0;
 }
+#pragma endregion
 
 #pragma region Roll
 void UBaseCombatComponent::Roll()

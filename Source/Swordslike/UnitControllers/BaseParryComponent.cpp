@@ -60,7 +60,6 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 	
 	AnimInstance = PlayerCharacter->GetMesh()->GetAnimInstance();
 
-	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &UBaseParryComponent::OnParryNotifyStart);
 	OnParrySuccessful_Local.AddUObject(CustomCharacter, &ASwordslikeCharacter::OnAttackParried);
 	
 	//////////
@@ -121,8 +120,6 @@ void UBaseParryComponent::CacheValues()
 	}
 	
 	AnimInstance = PlayerCharacter->GetMesh()->GetAnimInstance();
-
-	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &UBaseParryComponent::OnParryNotifyStart);
 }
 
 void UBaseParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -237,18 +234,10 @@ EParryState UBaseParryComponent::ValidateParry(const FDamageInfo& DamageInfo)
 	return CurrentParryState;
 }
 
-#pragma region Notifies
-void UBaseParryComponent::OnParryNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
+void UBaseParryComponent::SetParryState(const EParryState State)
 {
-	if(!ParryStates.Contains(NotifyName))
-	{
-		return;
-	}
-	
-	CurrentParryState = ParryStates[NotifyName];
-	// PrintOnScreen(FString::Printf(TEXT("Parry state %s"), *UEnum::GetValueAsString(CurrentParryState)));
+	CurrentParryState = State;
 }
-#pragma endregion
 
 #pragma region Posture
 /**
@@ -381,20 +370,6 @@ void UBaseParryComponent::OnRep_CurrentPosture()
 
 void UBaseParryComponent::OnRep_CurrentCombatState()
 {
-	if(CurrentPosture <= 0)
-	{
-		// CurrentPosture = 0.f;
-		
-		// if(CurrentCombatState == ECombatState::Normal)
-		// {
-		// 	OnStunned();
-		// }
-		// else if(CurrentCombatState == ECombatState::Stunned)
-		// {
-		// 	OnKnockDown();
-		// }
-		// PendingPostureBreak = true;
-	}
 }
 
 void UBaseParryComponent::OnStunned()
@@ -534,8 +509,9 @@ void UBaseParryComponent::StartRecoveryFromKnockDown()
 void UBaseParryComponent::EndRecoveryFromKnockDown()
 {
 	CurrentCombatState = ECombatState::Normal;
-	PlayerCharacter->GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	PlayerCharacter->GetCharacterMovement()->bOrientRotationToMovement = true;
+	PlayerCharacter->RestoreCharacterRotation();
+	// PlayerCharacter->GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	// PlayerCharacter->GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void UBaseParryComponent::SetMaxPosture(const float NewAmount)

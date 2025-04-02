@@ -53,6 +53,11 @@ void UMyActorComponent::PrintOnScreen_Local(const FString& Message, float Durati
 	}
 }
 
+void UMyActorComponent::PrintOnScreen(const int32 Key, const FString& Message) const
+{
+	GEngine->AddOnScreenDebugMessage(Key, 5.f, FColor::Green, Message);
+}
+
 void UMyActorComponent::PrintOnScreen(const FString& Message) const
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f,  FColor::Red, Message);

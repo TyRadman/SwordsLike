@@ -7,7 +7,7 @@
 #include "Swordslike/Core/MyActorComponent.h"
 #include "BaseParryComponent.generated.h"
 
-UENUM()
+UENUM(BlueprintType)
 enum class EParryState : uint8
 {
 	None = 0,
@@ -90,9 +90,6 @@ private:
 	void Server_EndParry();
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_EndParry();
-	
-	UFUNCTION()
-	virtual void OnParryNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
 
 	const TMap<FName, EParryState> ParryStates =
 		{
@@ -188,11 +185,8 @@ public:
 
 	// so far only for UI updates
 	PostureDelegateTwoParams OnPostureChanged;
-
-	// UPROPERTY(ReplicatedUsing=OnRep_DataContainer)
-	// FParryDataContainer DataContainer;
-	// UFUNCTION()
-	// void OnRep_DataContainer();
+	
+	void SetParryState(const EParryState State);
 
 private:
 	ASwordslikeCharacter* PlayerCharacter;

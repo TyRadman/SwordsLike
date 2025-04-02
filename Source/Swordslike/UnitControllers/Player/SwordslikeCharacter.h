@@ -212,6 +212,10 @@ private:
 	void StartAttackCycle();
 
 public:
+	/**
+	 * Restores the character and character controller rotation and orientation to its state based on the target locking state, whether the character is sprinting or not and more.
+	 */
+	void RestoreCharacterRotation();
 	void OnStunned();
 	void OnStunnedRecover();
 	
@@ -227,8 +231,9 @@ public:
 
 	
 	void OnTargetLockedOn(ULockableTargetComponent* Target, bool bIsLockedOn);
+	void SetLockOnValue(const bool NewIsLockedOn);
 	UFUNCTION(Server, Reliable)
-	void Server_OnTargetLockedOn(ULockableTargetComponent* Target, bool bIsLockedOn);
+	void Server_OnTargetLockedOn(bool bIsLockedOn);
 	void HandleOnTargetLockedOn(ULockableTargetComponent* Target, const bool bIsLockedOn);
 	UPROPERTY(ReplicatedUsing = OnRep_bIsLockedOnTarget)
 	bool bIsLockedOnTarget = false;

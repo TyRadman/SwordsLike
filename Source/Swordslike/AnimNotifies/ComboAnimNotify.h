@@ -44,10 +44,13 @@ public:
 	virtual FString GetNotifyName_Implementation() const override;
 
 	// Attack vars
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage", EditConditionHides))
 	float Damage;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage", EditConditionHides))
 	EHitType HitType; 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage"))
-	TSubclassOf<UCameraShakeBase> CameraShake; 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage", EditConditionHides))
+	TSubclassOf<UCameraShakeBase> CameraShake;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::IndicatorTime", EditConditionHides))
+	float AnticipationSpeedMultiplayer = 1.0f;
 };

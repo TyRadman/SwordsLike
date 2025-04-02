@@ -503,18 +503,23 @@ void ASwordslikeCharacter::OnTargetLockedOn(ULockableTargetComponent* Target, co
 	// 	return;
 	// }
 
+	SetLockOnValue(bIsLockedOn);
+}
+
+void ASwordslikeCharacter::SetLockOnValue(const bool NewIsLockedOn)
+{
 	if(!HasAuthority())
 	{
-		Server_OnTargetLockedOn(Target, bIsLockedOn);
+		Server_OnTargetLockedOn(NewIsLockedOn);
 	}
 	else
 	{
-		bIsLockedOnTarget = bIsLockedOn;
+		bIsLockedOnTarget = NewIsLockedOn;
 		OnRep_bIsLockedOnTarget();
 	}
 }
 
-void ASwordslikeCharacter::Server_OnTargetLockedOn_Implementation(ULockableTargetComponent* Target, const bool bIsLockedOn)
+void ASwordslikeCharacter::Server_OnTargetLockedOn_Implementation(const bool bIsLockedOn)
 {
 	bIsLockedOnTarget = bIsLockedOn;
 	OnRep_bIsLockedOnTarget();
@@ -680,7 +685,12 @@ void ASwordslikeCharacter::PrintOverhead(const FString& Message)
 void ASwordslikeCharacter::StartAttackCycle()
 {
 	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ASwordslikeCharacter::Attack, 2.f, true);
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ASwordslikeCharacter::Attack, 1.f, true);
+}
+
+void ASwordslikeCharacter::RestoreCharacterRotation()
+{
+	SetLockOnValue(TargetLockerComponent->GetIsLocked());
 }
 
 FString ASwordslikeCharacter::GetInteractionInput()

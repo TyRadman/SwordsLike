@@ -17,12 +17,12 @@ void UOverheadHealthBarWidget::InitEntityComponent(ACharacter* Character)
 				                                     *UEnum::GetValueAsString(Character->GetRemoteRole()));
 			
 				SetOverheadNameValue(FText::FromString(*Name));
-				// Hide();
+				Hide();
 			}
 		}
 		else
 		{
-			// Hide();
+			Hide();
 		}
 	}
 }
