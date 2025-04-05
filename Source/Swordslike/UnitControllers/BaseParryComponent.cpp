@@ -50,7 +50,6 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 	
 	if(PlayerCharacter->GetController())
 	{
-		PrintOnScreen(FString::Printf(TEXT("FOUND CONTROLLER ON %s"), *UEnum::GetValueAsString(GetOwnerRole())), FColor::Green, 6.0f);
 		OwnerController = PlayerCharacter->GetController();
 	}
 	else
@@ -99,11 +98,9 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 
 void UBaseParryComponent::CacheValues()
 {
-		PrintOnScreen(TEXT("CACHE CALLED"));
 	ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(GetOwner());
 	if(!CustomCharacter)
 	{
-		PrintOnScreen_Local(TEXT("No Character passed to the Parry Component"));
 		return;
 	}
 
@@ -111,12 +108,7 @@ void UBaseParryComponent::CacheValues()
 	
 	if(PlayerCharacter->GetController())
 	{
-		PrintOnScreen(FString::Printf(TEXT("FOUND CONTROLLER ON %s"), *UEnum::GetValueAsString(GetOwnerRole())), FColor::Green, 6.0f);
 		OwnerController = PlayerCharacter->GetController();
-	}
-	else
-	{
-		PrintOnScreen(FString::Printf(TEXT("ERROR: NOT FOUND CONTROLLER ON %s"), *UEnum::GetValueAsString(GetOwnerRole())), FColor::Red, 6.0f);
 	}
 	
 	AnimInstance = PlayerCharacter->GetMesh()->GetAnimInstance();
@@ -125,9 +117,6 @@ void UBaseParryComponent::CacheValues()
 void UBaseParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// PrintOnScreen_Local(1, FString::Printf(TEXT("%s"), *UEnum::GetValueAsString(CurrentCombatState)));
-	// PlayerCharacter->PrintOverhead(*UEnum::GetValueAsString(CurrentCombatState));
 	
 	if(bCanRecoverPosture && CurrentPosture < MaxPosture && CurrentCombatState == ECombatState::Normal)
 	{

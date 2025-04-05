@@ -23,6 +23,7 @@
 #include "Common/LockableTargetComponent.h"
 #include "Common/WeaponHandlerComponent.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
 #include "Swordslike/UI/HUD/HUDManager.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"

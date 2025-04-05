@@ -9,7 +9,6 @@
 #include "Swordslike/UnitControllers/Player/PlayerHealthComponent.h"
 #include "NiagaraSystem.h"
 #include "Camera/CameraShakeBase.h"
-
 #include "SwordslikeCharacter.generated.h"
 
 class UNiagaraSystem;

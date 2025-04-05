@@ -42,12 +42,9 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch, FStr
 	SetVisibility(ESlateVisibility::Visible);
 	bIsFocusable = true;
 
-	UWorld* World = GetWorld();
-
-	if(World)
+	if(const UWorld* World = GetWorld())
 	{
-		APlayerController* PlayerController = World->GetFirstPlayerController();
-		if(PlayerController)
+		if(APlayerController* PlayerController = World->GetFirstPlayerController())
 		{
 			FInputModeUIOnly InputModeData;
 			InputModeData.SetWidgetToFocus(TakeWidget());
@@ -182,14 +179,11 @@ void UMenu::MenuTearDown()
 {
 	RemoveFromParent();
 
-	UWorld* World = GetWorld();
-
-	if(World)
+	if(const UWorld* World = GetWorld())
 	{
-		APlayerController* PlayerController = World->GetFirstPlayerController();
-		if(PlayerController)
+		if(APlayerController* PlayerController = World->GetFirstPlayerController())
 		{
-			FInputModeGameOnly InputModeData;
+			const FInputModeGameOnly InputModeData;
 			PlayerController->SetInputMode(InputModeData);
 			PlayerController->SetShowMouseCursor(false);
 		}

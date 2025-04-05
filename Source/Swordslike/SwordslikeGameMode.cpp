@@ -11,7 +11,7 @@ ASwordslikeGameMode::ASwordslikeGameMode()
 	HUDClass = AHUDManager::StaticClass();
 	
 	// set default pawn class to our Blueprinted character
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/Blueprints/BP_ThirdPersonCharacter"));
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/Blueprints/BP_MainPlayerCharacter"));
 	
 	if (PlayerPawnBPClass.Class != NULL)
 	{

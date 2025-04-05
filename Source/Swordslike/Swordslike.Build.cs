@@ -8,7 +8,18 @@ public class Swordslike : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "GameplayCameras" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core", 
+			"CoreUObject", 
+			"Engine", 
+			"InputCore", 
+			"EnhancedInput", 
+			"Niagara", 
+			"GameplayCameras",
+			"Slate", 
+			"SlateCore"
+		});
 		
 		PrivateIncludePaths.AddRange(new string[] { "Swordslike/UnitControllers" });
 	}

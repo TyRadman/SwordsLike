@@ -16,7 +16,7 @@ StartSessionCompleteDelegate(FOnStartSessionCompleteDelegate::CreateUObject(this
 	{
 		if(GEngine)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("OnlineSubsystem created %s"),
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("OnlineSubsystem created %s"),
 				*Subsystem->GetSubsystemName().ToString()));
 		}
 
