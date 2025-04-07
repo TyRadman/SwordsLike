@@ -2,6 +2,7 @@
 
 #include "SwordslikeGameMode.h"
 
+#include "Player/MainPlayerState.h"
 #include "UI/HUD/HUDManager.h"
 #include "UnitControllers/Player/SwordslikeCharacter.h"
 #include "UObject/ConstructorHelpers.h"
@@ -9,6 +10,8 @@
 ASwordslikeGameMode::ASwordslikeGameMode()
 {
 	HUDClass = AHUDManager::StaticClass();
+
+	PlayerStateClass = AMainPlayerState::StaticClass();
 	
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/Blueprints/BP_MainPlayerCharacter"));

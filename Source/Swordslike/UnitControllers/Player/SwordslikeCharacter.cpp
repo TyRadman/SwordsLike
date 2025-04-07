@@ -4,7 +4,6 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "BaseEntityAnimationsComponent.h"
-#include "BaseEntityData.h"
 #include "BaseParryComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
@@ -16,6 +15,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "InteractionComponent.h"
+#include "MainPlayerState.h"
 #include "PlayerCombatComponent.h"
 #include "PlayerHealthComponent.h"
 #include "SprintComponent.h"
@@ -23,13 +23,14 @@
 #include "Common/LockableTargetComponent.h"
 #include "Common/WeaponHandlerComponent.h"
 #include "Components/WidgetComponent.h"
-#include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
+#include "Swordslike/SwordslikeGameInstance.h"
 #include "Swordslike/UI/HUD/HUDManager.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
 #include "Swordslike/UI/WorldUIElements/WeaponAttackIndicatorWidget.h"
 #include "Swordslike/UnitControllers/Player/LockWidgetController.h"
+#include "Swordslike/Utilities/UtilHelper.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -39,6 +40,12 @@ void ASwordslikeCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 
 	DOREPLIFETIME(ASwordslikeCharacter, bIsLockedOnTarget);
 	DOREPLIFETIME(ASwordslikeCharacter, CurrentSpeed);
+	DOREPLIFETIME(ASwordslikeCharacter, PlayerCharacterDataAsset);
+}
+
+void ASwordslikeCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
 }
 
 ASwordslikeCharacter::ASwordslikeCharacter()
@@ -94,7 +101,6 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 	
 	WeaponAttackIndicatorWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("Play Weapon Attack Indicator");
 	WeaponAttackIndicatorWidgetComponent->SetupAttachment(RootComponent);
-	
 
 	CustomMesh = CreateDefaultSubobject<USkeletalMeshComponent>("Custom Mesh");
 	CustomMesh->SetupAttachment(GetMesh());
@@ -115,9 +121,13 @@ void ASwordslikeCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UUtilHelper::HideCursor(GetWorld());
+	
+	SetInitialValues();
+	
 	CacheComponentReferences();
 	InitializeComponents();
-
+	
 	////////////////////////
 	// LOCAL SUBSCRIPTIONS
 	////////////////////////
@@ -126,14 +136,12 @@ void ASwordslikeCharacter::BeginPlay()
 		OnJumped.AddUObject(Combat, &UBaseCombatComponent::DisableRoll);
 		OnLanded.AddUObject(Combat, &UBaseCombatComponent::EnableRoll);
 	}
-
+	
 	if(Sprint)
 	{
 		OnJumped.AddUObject(Sprint, &USprintComponent::OnJumped);
 	}
 	
-	// SET INITIAL VALUES
-	SetInitialValues();
 	SetDefaultReplicationProperties();
 }
 
@@ -257,19 +265,63 @@ void ASwordslikeCharacter::SetDefaultReplicationProperties()
 void ASwordslikeCharacter::SetInitialValues()
 {
 	// CHARACTER MOVEMENT STATS
-	GetCharacterMovement()->MaxWalkSpeed = PlayerStats->MovementSpeed;
-	GetCharacterMovement()->JumpZVelocity = PlayerStats->JumpHeight;
-
 	ParryVFXMap = {
 		{EParryState::Normal, NormalParryParticle},
 		{EParryState::Good, GoodParryParticle},
 		{EParryState::Perfect, PerfectParryParticle},
 			};
+
+	if (IsLocallyControlled())
+	{
+		if (const USwordslikeGameInstance* GI = GetGameInstance<USwordslikeGameInstance>())
+		{
+			if (UPlayerStartCharacterDataAsset* Data = GI->LocalData)
+			{
+				if(!HasAuthority())
+				{
+					Server_SetInitialValues(Data);
+				}
+				else
+				{
+					PerformSetInitialValues(Data);
+					OnRep_PlayerCharacterDataAsset();
+				}
+			}
+		}
+	}
+}
+
+void ASwordslikeCharacter::Server_SetInitialValues_Implementation(UPlayerStartCharacterDataAsset* Data)
+{
+	PerformSetInitialValues(Data);
+	OnRep_PlayerCharacterDataAsset();
+}
+
+void ASwordslikeCharacter::PerformSetInitialValues(UPlayerStartCharacterDataAsset* Data)
+{
+	PlayerCharacterDataAsset = Data;
+}
+
+void ASwordslikeCharacter::OnRep_PlayerCharacterDataAsset()
+{
+	if(!PlayerCharacterDataAsset)
+	{
+		return;
+	}
+	
+	ApplyDataValuesToPlayer();
+}
+
+void ASwordslikeCharacter::ApplyDataValuesToPlayer()
+{
+	CustomMesh->SetSkeletalMesh(PlayerCharacterDataAsset->CharacterSkeletalMesh);
+	GetCharacterMovement()->MaxWalkSpeed = PlayerCharacterDataAsset->MovementSpeed;
+	GetCharacterMovement()->JumpZVelocity = PlayerCharacterDataAsset->JumpHeight;
 }
 
 void ASwordslikeCharacter::SetSprintSpeed()
 {
-	const float NewSpeed = PlayerStats->SprintSpeed;
+	const float NewSpeed = PlayerCharacterDataAsset->SprintSpeed;
 	
 	if (!HasAuthority())
 	{
@@ -284,7 +336,7 @@ void ASwordslikeCharacter::SetSprintSpeed()
 
 void ASwordslikeCharacter::ResetSpeed()
 {
-	const float NewSpeed = PlayerStats->MovementSpeed;
+	const float NewSpeed = PlayerCharacterDataAsset->MovementSpeed;
 	
 	if (!HasAuthority())
 	{
@@ -671,8 +723,28 @@ void ASwordslikeCharacter::PrintOverhead(const FString& Message)
 
 void ASwordslikeCharacter::StartAttackCycle()
 {
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ASwordslikeCharacter::Attack, 1.f, true);
+	if(!IsLocallyControlled())
+	{
+		return;
+	}
+	
+	if(const USwordslikeGameInstance* GI = Cast<USwordslikeGameInstance>(GetGameInstance()))
+	{
+		if(GI->LocalData)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Blue, FString::Printf(TEXT("Data exists!")));
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("Data doesn't exist"), *UEnum::GetValueAsString(GetLocalRole())));
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("GI doesn't exist"), *UEnum::GetValueAsString(GetLocalRole())));
+	}
+	// FTimerHandle TimerHandle;
+	// GetWorldTimerManager().SetTimer(TimerHandle, this, &ASwordslikeCharacter::Attack, 1.f, true);
 }
 
 void ASwordslikeCharacter::RestoreCharacterRotation()

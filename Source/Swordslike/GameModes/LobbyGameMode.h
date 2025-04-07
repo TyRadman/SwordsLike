@@ -17,9 +17,14 @@ public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 	UPROPERTY(EditDefaultsOnly)
-	int32 RequiredPlayersCount = 2;
+	int32 RequiredPlayersCount = 3;
 	UPROPERTY(EditDefaultsOnly)
-	FString LevelName;
+	FString LevelName = "Level_FirstLevel";
 
 	const FString LevelsRootPath = "/Game/Levels/";
+
+private:
+	void OnPlayerReady();
+	void OnPlayerNotReady();
+	int32 ReadyPlayersCount = 0;
 };

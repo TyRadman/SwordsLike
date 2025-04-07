@@ -14,15 +14,24 @@ class SWORDSLIKE_API UPlayerStartCharacterDataAsset : public UDataAsset
 
 public:
 	UPROPERTY(EditAnywhere)
-	USkeletalMesh* CharacterSkeletalMesh;
+	FString CharacterName;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category=Stats)
 	float StartingHealthPoints;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category=Stats)
 	float StartingStamina;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category=Stats)
 	float StartingPosture;
+	
+	UPROPERTY(EditAnywhere, Category=Movement)
+	float MovementSpeed = 100;
+	UPROPERTY(EditAnywhere, Category=Movement)
+	float SprintSpeed = 100;
+	UPROPERTY(EditAnywhere, Category=Movement)
+	float JumpHeight = 100;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category=Visuals)
 	UTexture2D* CharacterTexture;
+	UPROPERTY(EditAnywhere, Category=Visuals)
+	USkeletalMesh* CharacterSkeletalMesh;
 };

@@ -15,21 +15,17 @@ enum class EPlayerPhase : uint8
 	GamePlay = 1
 };
 
-/**
- * 
- */
 UCLASS()
 class SWORDSLIKE_API AMainPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
-public:
-	virtual void BeginPlay() override;
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void CopyProperties(APlayerState* PlayerState) override;
 	
-	UPROPERTY(ReplicatedUsing = OnRep_PlayerPhase)
+public:
 	EPlayerPhase PlayerPhase = EPlayerPhase::Lobby;
-	UFUNCTION()
-	void OnRep_PlayerPhase();
 
 	virtual void OnRep_PlayerName() override;
 
@@ -37,21 +33,18 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_SetPlayerNewName(const FString& NewName);
 	void PerformSetPlayerNewName(const FString& NewName);
-	// FORCEINLINE void SetPlayerName(const FString& NewPlayerName) { SetPlayerName(NewPlayerName);}
 
 	CharacterEvent OnCharacterChangedEvent;
 	CharacterNameEvent OnPlayerNameChanged;
+	CharacterEvent OnPlayerReady;
+	CharacterEvent OnPlayerNotReady;
 
 
-	FORCEINLINE void SetCharacterDataAsset(const TSoftObjectPtr<UPlayerStartCharacterDataAsset>& NewCharacterDataAsset) { CharacterDataAsset = NewCharacterDataAsset; }
-	FORCEINLINE UPlayerStartCharacterDataAsset* GetCurrentDataAsset() const { return CharacterDataAsset.Get(); }
-	
-	UFUNCTION()
-	void OnRep_CharacterDataAsset();
-	
-protected:
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	FORCEINLINE void SetCharacterDataAsset(UPlayerStartCharacterDataAsset* NewCharacterDataAsset) { CharacterDataAsset = NewCharacterDataAsset; }
+	FORCEINLINE UPlayerStartCharacterDataAsset* GetCurrentDataAsset() const { return CharacterDataAsset; }
 	
 	UPROPERTY(ReplicatedUsing = OnRep_CharacterDataAsset)
-	TSoftObjectPtr<UPlayerStartCharacterDataAsset> CharacterDataAsset;
+	UPlayerStartCharacterDataAsset* CharacterDataAsset;
+	UFUNCTION()
+	void OnRep_CharacterDataAsset();
 };

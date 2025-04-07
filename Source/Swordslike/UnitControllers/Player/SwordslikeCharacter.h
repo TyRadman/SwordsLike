@@ -11,6 +11,7 @@
 #include "Camera/CameraShakeBase.h"
 #include "SwordslikeCharacter.generated.h"
 
+class UPlayerStartCharacterDataAsset;
 class UNiagaraSystem;
 class UWeaponAttackIndicatorWidget;
 class UBaseCombatComponent;
@@ -57,13 +58,19 @@ public:
 	void Parry();
 	void EndParry();
 private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Stats, meta=(AllowPrivateAccess = "true"))
-	UBaseEntityData* PlayerStats;
-
+	// UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Stats, meta=(AllowPrivateAccess = "true"))
+	// UBaseEntityData* PlayerStats;
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerCharacterDataAsset)
+	UPlayerStartCharacterDataAsset* PlayerCharacterDataAsset;
+	UFUNCTION()
+	void OnRep_PlayerCharacterDataAsset();
+	void ApplyDataValuesToPlayer();
+	
 	virtual void Tick(float DeltaTime) override;
 	
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void OnRep_PlayerState() override;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
@@ -157,30 +164,29 @@ protected:
 	void SetDefaultReplicationProperties();
 
 public:
-	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE UWidgetComponent* GetAttackIndicatorWidgetComponent() const {return WeaponAttackIndicatorWidgetComponent; }
+	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent; }
+	FORCEINLINE UWeaponAttackIndicatorWidget* GetAttackIndicatorWidget() const {return WeaponAttackIndicator; }
+	FORCEINLINE UInteractionComponent* GetOverInteractionComponent() const {return InteractionComponent; }
+	FORCEINLINE UTargetLockerComponent* GetLockOnComponent() const {return TargetLockerComponent; }
+	FORCEINLINE UOverheadHealthBarWidget* GetOverHeadHUDComponent() const {return OverHeadHUD; }
+	FORCEINLINE ULockWidgetController* GetLockOnWidget() const {return LockIndicatorWidget; }
+	FORCEINLINE UWeaponHandlerComponent* GetWeaponHandler() const {return WeaponHandler; }
+	FORCEINLINE UBaseEntityAnimationsComponent* GetAnimation() const {return Animations; }
+	FORCEINLINE UBaseParryComponent* GetParryComponent() const {return ParryComponent; }
+	FORCEINLINE UPlayerCombatComponent* GetCombatComponent() const {return Combat; }
+	FORCEINLINE UPlayerHealthComponent* GetHealthComponent() const {return Health; }
+	FORCEINLINE USkeletalMeshComponent* GetCustomMesh() const {return CustomMesh; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-	FORCEINLINE UWeaponHandlerComponent* GetWeaponHandler() const {return WeaponHandler;}
-	FORCEINLINE UPlayerHealthComponent* GetHealthComponent() const {return Health;}
-	FORCEINLINE UBaseEntityData* GetPlayerStats() const {return PlayerStats;}
-	FORCEINLINE UPlayerCombatComponent* GetCombatComponent() const {return Combat;}
-	FORCEINLINE UTargetLockerComponent* GetLockOnComponent() const {return TargetLockerComponent;}
-	FORCEINLINE ULockWidgetController* GetLockOnWidget() const {return LockIndicatorWidget;}
-	FORCEINLINE USprintComponent* GetSprintComponent() const {return Sprint;}
-	FORCEINLINE USkeletalMeshComponent* GetCustomMesh() const {return CustomMesh;}
-	FORCEINLINE UBaseParryComponent* GetParryComponent() const {return ParryComponent;}
-	FORCEINLINE UOverheadHealthBarWidget* GetOverHeadHUDComponent() const {return OverHeadHUD;}
-	FORCEINLINE UInteractionComponent* GetOverInteractionComponent() const {return InteractionComponent;}
-	FORCEINLINE UAnimInstance* GetAnimInstance() const {return AnimInstance;}
-	FORCEINLINE UCapsuleComponent* GetInteractionSphere() const {return Capsule;}
-	FORCEINLINE UMasterHUD* GetMasterHUD() const {return MasterHUD;}
-	FORCEINLINE UBaseEntityAnimationsComponent* GetAnimation() const {return Animations;}
-	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent;}
-	FORCEINLINE UWeaponAttackIndicatorWidget* GetAttackIndicatorWidget() const {return WeaponAttackIndicator;}
-	FORCEINLINE UWidgetComponent* GetAttackIndicatorWidgetComponent() const {return WeaponAttackIndicatorWidgetComponent;}
+	FORCEINLINE UCapsuleComponent* GetInteractionSphere() const {return Capsule; }
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE USprintComponent* GetSprintComponent() const {return Sprint; }
+	FORCEINLINE UAnimInstance* GetAnimInstance() const {return AnimInstance; }
+	FORCEINLINE UMasterHUD* GetMasterHUD() const {return MasterHUD; }
 	
+	FORCEINLINE void SetCanAttack(const bool NewCanAttack) {bCanAttack = NewCanAttack; }
 	FORCEINLINE void SetCanMove(const bool NewCanMove) {bCanMove = NewCanMove; }
 	FORCEINLINE void SetCanJump(const bool NewCanJump) {bCanJump = NewCanJump; }
-	FORCEINLINE void SetCanAttack(const bool NewCanAttack) {bCanAttack = NewCanAttack; }
 
 	UPROPERTY(ReplicatedUsing=OnRep_CurrentSpeed)
 	float CurrentSpeed;
@@ -196,6 +202,11 @@ private:
 	FVector2D MovementVector;
 
 	void SetInitialValues();
+	UFUNCTION(Server, Reliable)
+	void Server_SetInitialValues(UPlayerStartCharacterDataAsset* Data);
+	// UFUNCTION(NetMulticast, Reliable)
+	// void Multicast_SetInitialValues(UPlayerStartCharacterDataAsset* Data);
+	void PerformSetInitialValues(UPlayerStartCharacterDataAsset* Data);
 
 	/**
 	 * Called when the entity takes damage
@@ -257,7 +268,7 @@ public:
 	void PrintOverhead(const FString& Message);
 
 private:
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UNiagaraComponent* ParrySparkVFX;
 
 public:

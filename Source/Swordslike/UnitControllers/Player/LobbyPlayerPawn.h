@@ -41,13 +41,23 @@ protected:
 	
 	void OnSelectLeft();
 	void OnSelectRight();
+
 	void ConfirmSelection();
+	UFUNCTION(Server, Reliable)
+	void Server_ConfirmSelection();
+	void PerformConfirmSelection();
 	void ReturnFromSelection();
+	UFUNCTION(Server, Reliable)
+	void Server_ReturnFromSelection();
+	void PerformReturnFromSelection();
 
 	UPROPERTY(Replicated)
 	UMainLobbyMenu* LobbyUI;
 
+	UPROPERTY(ReplicatedUsing = OnRep_bIsSelectionReady)
 	bool bIsSelectionReady = false;
+	UFUNCTION()
+	void OnRep_bIsSelectionReady();
 
 	void SaveCurrentCharacterData();
 	void PerformSaveCurrentCharacterData(TSoftObjectPtr<UPlayerStartCharacterDataAsset> Data);
@@ -55,4 +65,5 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SelectCharacter(const TSoftObjectPtr<UPlayerStartCharacterDataAsset>& Data);
 
+	FORCEINLINE AMainPlayerState* GetMainPlayerState() const;
 };

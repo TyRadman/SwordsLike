@@ -37,8 +37,11 @@ void UMainLobbyMenu::NativeConstruct()
 
 void UMainLobbyMenu::SetupPlayerWidgets()
 {
-	if (!GetWorld()) return;
-
+	if (!GetWorld())
+	{
+		return;
+	}
+	
 	AGameStateBase* GameState = GetWorld()->GetGameState();
 	if (!GameState || !PlayersWidgetClass) return;
 
@@ -125,7 +128,12 @@ void UMainLobbyMenu::BindWidgets()
 
 		MainPlayerState->OnPlayerNameChanged.AddUObject(this, &UMainLobbyMenu::UpdateNameText);
 
-		PlayerWidgetsMap[MainPlayerState]->OnPlayerNameChanged.AddUObject(MainPlayerState, &AMainPlayerState::SetPlayerNewName);
+		UPlayerSelectionMenuWidget* CharacterWidget = PlayerWidgetsMap[MainPlayerState];
+		
+		MainPlayerState->OnPlayerReady.AddUObject(CharacterWidget, &UPlayerSelectionMenuWidget::OnReady);
+		MainPlayerState->OnPlayerNotReady.AddUObject(CharacterWidget, &UPlayerSelectionMenuWidget::OnNotReady);
+
+		CharacterWidget->OnPlayerNameChanged.AddUObject(MainPlayerState, &AMainPlayerState::SetPlayerNewName);
 	}
 }
 

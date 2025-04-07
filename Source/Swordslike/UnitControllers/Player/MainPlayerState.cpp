@@ -8,17 +8,24 @@ void AMainPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AMainPlayerState, CharacterDataAsset);
-	DOREPLIFETIME(AMainPlayerState, PlayerPhase);
 }
 
-void AMainPlayerState::BeginPlay()
+void AMainPlayerState::CopyProperties(APlayerState* PlayerState)
 {
-	Super::BeginPlay();
-}
+	Super::CopyProperties(PlayerState);
 
-void AMainPlayerState::OnRep_PlayerPhase()
-{
-	
+	if (AMainPlayerState* PS = Cast<AMainPlayerState>(PlayerState))
+	{
+		if(CharacterDataAsset)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5, FColor::White, TEXT("Copied Data"));
+			PS->CharacterDataAsset = CharacterDataAsset;
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Black, TEXT("No Data to copy"));
+		}
+	}
 }
 
 void AMainPlayerState::OnRep_PlayerName()
@@ -55,8 +62,6 @@ void AMainPlayerState::PerformSetPlayerNewName(const FString& NewName)
 
 void AMainPlayerState::OnRep_CharacterDataAsset()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, "CALLED");
-	
 	if(OnCharacterChangedEvent.IsBound())
 	{
 		OnCharacterChangedEvent.Broadcast();

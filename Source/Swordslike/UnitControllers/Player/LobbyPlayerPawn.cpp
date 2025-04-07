@@ -4,8 +4,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "MainPlayerState.h"
 #include "Net/UnrealNetwork.h"
+#include "Swordslike/SwordslikeGameInstance.h"
 #include "Swordslike/UI/Lobby/LobbyHUD.h"
 
+class USwordslikeGameInstance;
 class UEnhancedInputLocalPlayerSubsystem;
 
 ALobbyPlayerPawn::ALobbyPlayerPawn()
@@ -88,6 +90,7 @@ void ALobbyPlayerPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ALobbyPlayerPawn, LobbyUI);
+	DOREPLIFETIME(ALobbyPlayerPawn, bIsSelectionReady);
 }
 
 void ALobbyPlayerPawn::OnSelectLeft()
@@ -126,33 +129,6 @@ void ALobbyPlayerPawn::OnSelectRight()
 	}
 }
 
-void ALobbyPlayerPawn::ConfirmSelection()
-{
-	if(!LobbyUI)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, "No hud LobbyUI");
-	}
-
-	GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, "Confirmed 1");
-	LobbyUI->ConfirmSelection();
-		
-	bIsSelectionReady = LobbyUI->CanBeConfirmed();
-}
-
-void ALobbyPlayerPawn::ReturnFromSelection()
-{
-	if(LobbyUI)
-	{
-		LobbyUI->ReturnFromSelection();
-		
-		bIsSelectionReady = false;
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, "No hud LobbyUI");
-	}
-}
-
 void ALobbyPlayerPawn::SaveCurrentCharacterData()
 {
 	const TSoftObjectPtr<UPlayerStartCharacterDataAsset> Data = LobbyUI->GetSelectedCharacter();
@@ -173,7 +149,8 @@ void ALobbyPlayerPawn::PerformSaveCurrentCharacterData(TSoftObjectPtr<UPlayerSta
 	{
 		if(AMainPlayerState* State = GetPlayerState<AMainPlayerState>())
 		{
-			State->SetCharacterDataAsset(Data);
+			State->SetCharacterDataAsset(Data.LoadSynchronous());
+			State->OnRep_CharacterDataAsset();
 		}
 	}
 	else
@@ -192,3 +169,122 @@ void ALobbyPlayerPawn::Server_SelectCharacter_Implementation(const TSoftObjectPt
 	}
 }
 
+#pragma region Confirmation And Returning
+void ALobbyPlayerPawn::ConfirmSelection()
+{
+	if(!LobbyUI)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, "No hud LobbyUI");
+		return;
+	}
+	
+	if(const auto State = GetMainPlayerState())
+	{
+		if(USwordslikeGameInstance* GI = Cast<USwordslikeGameInstance>(GetGameInstance()))
+		{
+			if(State->CharacterDataAsset)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Blue, FString::Printf(TEXT("SET!!!")));
+				GI->LocalData = State->CharacterDataAsset;
+			}
+			else
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Blue, FString::Printf(TEXT("No DATA!!!")));
+			}
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Blue, FString::Printf(TEXT("No GI!!!")));
+		}
+	}
+
+	LobbyUI->ConfirmSelection();
+
+	if(!HasAuthority())
+	{
+		Server_ConfirmSelection();
+	}
+	else
+	{
+		PerformConfirmSelection();
+	}
+}
+
+void ALobbyPlayerPawn::Server_ConfirmSelection_Implementation()
+{
+	PerformConfirmSelection();
+}
+
+void ALobbyPlayerPawn::PerformConfirmSelection()
+{
+	if(bIsSelectionReady)
+	{
+		return;
+	}
+	
+	bIsSelectionReady = true;
+	OnRep_bIsSelectionReady();
+}
+
+void ALobbyPlayerPawn::ReturnFromSelection()
+{
+	if(!LobbyUI)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, "No hud LobbyUI");
+		return;
+	}
+	
+	LobbyUI->ReturnFromSelection();
+
+	if(!HasAuthority())
+	{
+		Server_ReturnFromSelection();
+	}
+	else
+	{
+		PerformReturnFromSelection();
+	}
+}
+
+void ALobbyPlayerPawn::Server_ReturnFromSelection_Implementation()
+{
+	PerformReturnFromSelection();
+}
+
+void ALobbyPlayerPawn::PerformReturnFromSelection()
+{
+	if(!bIsSelectionReady)
+	{
+		return;
+	}
+	
+	bIsSelectionReady = false;
+	OnRep_bIsSelectionReady();
+}
+
+void ALobbyPlayerPawn::OnRep_bIsSelectionReady()
+{
+	if(auto State = GetMainPlayerState())
+	{
+		if(bIsSelectionReady)
+		{
+			State->OnPlayerReady.Broadcast();
+		}
+		else
+		{
+			State->OnPlayerNotReady.Broadcast();
+		}
+	}
+}
+#pragma endregion
+
+AMainPlayerState* ALobbyPlayerPawn::GetMainPlayerState() const
+{
+	if(AMainPlayerState* State = GetPlayerState<AMainPlayerState>())
+	{
+		return State;
+	}
+		
+	GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, "NO STATE FOUND!!");
+	return nullptr;
+}

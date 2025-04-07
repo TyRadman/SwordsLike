@@ -2,6 +2,8 @@
 
 #include "BaseEntityData.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/MainPlayerState.h"
+#include "Player/PlayerStartCharacterDataAsset.h"
 #include "Player/SwordslikeCharacter.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
@@ -27,7 +29,17 @@ void USprintComponent::InitEntityComponent(ACharacter* Character)
 		if(ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character))
 		{
 			EntityCharacter = CustomCharacter;
-			SetMaxStamina(CustomCharacter->GetPlayerStats()->MaxStamina);
+
+			float MaxStartingStamina = 10;
+			if(const AMainPlayerState* PS = Cast<AMainPlayerState>(Character->GetPlayerState()))
+			{
+				if(const UPlayerStartCharacterDataAsset* Data = PS->GetCurrentDataAsset())
+				{
+					MaxStartingStamina = Data->StartingStamina;
+				}
+			}
+			
+			SetMaxStamina(MaxStartingStamina);
 			FullyRefillStamina();
 
 			if(const UMasterHUD* MasterHUD = CustomCharacter->GetMasterHUD())

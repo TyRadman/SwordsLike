@@ -5,6 +5,8 @@
 #include "LockableTargetComponent.h"
 #include "WeaponHandlerComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/MainPlayerState.h"
+#include "Player/PlayerStartCharacterDataAsset.h"
 #include "Player/SwordslikeCharacter.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
@@ -63,16 +65,24 @@ void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
 			}
 		}
 
-		const float StartingHealth = PlayerCharacter->GetPlayerStats()->MaxHealthPoints;
+		
+		float MaxStartingHealth = 10;
+		if(const AMainPlayerState* PS = Cast<AMainPlayerState>(Character->GetPlayerState()))
+		{
+			if(const UPlayerStartCharacterDataAsset* Data = PS->GetCurrentDataAsset())
+			{
+				MaxHealth = Data->StartingHealthPoints;
+			}
+		}
 
 		if(PlayerCharacter->IsLocallyControlled())
 		{
-			Server_SetStartingHealth(StartingHealth);
+			Server_SetStartingHealth(MaxStartingHealth);
 		}
 		else
 		{
-			MaxHealth = StartingHealth;
-			CurrentHealth = StartingHealth;
+			MaxHealth = MaxStartingHealth;
+			CurrentHealth = MaxStartingHealth;
 		}
 	}
 }

@@ -37,6 +37,9 @@ class SWORDSLIKE_API UPlayerSelectionMenuWidget : public UUserWidget
 	UProgressBar* StaminaBar;
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* PostureBar;
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* CharacterNameText;
+	
 	bool bIsEditingName = false;
 
 	const int32 NameMaxCharacters = 12;
@@ -50,6 +53,8 @@ public:
 	void OnLocalPlayerController();
 	void OnRemotePlayerController();
 	void DisplayReadyText(const bool bDisplay);
+	FORCEINLINE void OnReady() {DisplayReadyText(true);}
+	FORCEINLINE void OnNotReady() {DisplayReadyText(false);}
 
 	CharacterNameEvent OnPlayerNameChanged;
 	

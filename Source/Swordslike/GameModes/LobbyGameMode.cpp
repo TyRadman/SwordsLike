@@ -28,29 +28,21 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	const int32 NumberOfPlayers = GameState.Get()->PlayerArray.Num();
+	// const int32 NumberOfPlayers = GameState.Get()->PlayerArray.Num();
+	RequiredPlayersCount = GameState.Get()->PlayerArray.Num();
 	
 	if (AMainPlayerState* PS = NewPlayer->GetPlayerState<AMainPlayerState>())
 	{
-		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("MainPlayerState is valid"));
-
 		if (USwordslikeGameInstance* GI = Cast<USwordslikeGameInstance>(GetGameInstance()))
 		{
-			// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("SwordslikeGameInstance is valid"));
-
 			if (GI->PlayerCharactersData.IsValidIndex(0))
 			{
-				// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Character data index 0 is valid"));
-
 				if (GI->PlayerCharactersData[0].IsNull())
 				{
 					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Character data at index 0 is NULL"));
 				}
 				else
 				{
-					// const FString AssetName = GI->PlayerCharactersData[0].ToString();
-					// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Assigning character: %s"), *AssetName));
-
 					PS->SetCharacterDataAsset(GI->PlayerCharactersData[0].LoadSynchronous());
 				}
 			}
@@ -63,15 +55,39 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GameInstance is not SwordslikeGameInstance"));
 		}
+
+		// register for reading when players are ready
+		PS->OnPlayerReady.AddUObject(this, &ALobbyGameMode::OnPlayerReady);
+		PS->OnPlayerNotReady.AddUObject(this, &ALobbyGameMode::OnPlayerNotReady);
 	}
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerState is not AMainPlayerState"));
 	}
+}
 
+void ALobbyGameMode::OnPlayerReady()
+{
+	ReadyPlayersCount++;
 	
-	if(NumberOfPlayers == RequiredPlayersCount)
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%d/%d"), ReadyPlayersCount, RequiredPlayersCount));
+	if(ReadyPlayersCount == RequiredPlayersCount)
 	{
+		for(TObjectPtr<APlayerState> PlayerState : GameState.Get()->PlayerArray)
+		{
+			if(AMainPlayerState* PS = Cast<AMainPlayerState>(PlayerState.Get()))
+			{
+				if(PS->GetCurrentDataAsset())
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, TEXT("Data exists"));
+				}
+				else
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, TEXT("Data doesn't exist"));
+				}
+			}
+		}
+		
 		if(UWorld* World = GetWorld())
 		{
 			bUseSeamlessTravel = true;
@@ -82,3 +98,10 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 		}
 	}
 }
+
+void ALobbyGameMode::OnPlayerNotReady()
+{
+	ReadyPlayersCount--;
+}
+
+

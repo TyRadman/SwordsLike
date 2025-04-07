@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,6 +5,7 @@
 #include "SwordslikeGameInstance.generated.h"
 
 class UPlayerStartCharacterDataAsset;
+
 /**
  * 
  */
@@ -18,4 +17,6 @@ class SWORDSLIKE_API USwordslikeGameInstance : public UGameInstance
 public:
 	UPROPERTY(EditAnywhere, Category=CharactersData)
 	TArray<TSoftObjectPtr<UPlayerStartCharacterDataAsset>> PlayerCharactersData;
+
+	UPlayerStartCharacterDataAsset* LocalData;
 };

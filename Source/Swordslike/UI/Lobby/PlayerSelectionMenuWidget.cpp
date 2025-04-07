@@ -36,6 +36,7 @@ void UPlayerSelectionMenuWidget::UpdateWithCharacterData(const TSoftObjectPtr<UP
 {
 	if (Data)
 	{
+		CharacterNameText->SetText(FText::FromString(Data->CharacterName));
 		CharacterImage->SetBrushFromTexture(Data->CharacterTexture);
 		HealthBar->SetPercent(Data->StartingHealthPoints / 100.f);
 		StaminaBar->SetPercent(Data->StartingStamina / 100.f);

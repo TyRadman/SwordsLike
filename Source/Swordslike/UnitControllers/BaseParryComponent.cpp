@@ -5,7 +5,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/MainPlayerState.h"
 #include "Player/PlayerCombatComponent.h"
+#include "Player/PlayerStartCharacterDataAsset.h"
 #include "Player/SwordslikeCharacter.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
@@ -50,11 +52,12 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 	
 	if(PlayerCharacter->GetController())
 	{
+		// TODO: Remove the controller if not need (hopefully, we don't)
 		OwnerController = PlayerCharacter->GetController();
 	}
 	else
 	{
-		PrintOnScreen(FString::Printf(TEXT("ERROR: NOT FOUND CONTROLLER ON %s"), *UEnum::GetValueAsString(GetOwnerRole())), FColor::Red, 6.0f);
+		// PrintOnScreen(FString::Printf(TEXT("ERROR: NOT FOUND CONTROLLER ON %s"), *UEnum::GetValueAsString(GetOwnerRole())), FColor::Red, 6.0f);
 	}
 	
 	AnimInstance = PlayerCharacter->GetMesh()->GetAnimInstance();
@@ -91,7 +94,17 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 	///////////
 	/// Initialization
 	///////////
-	SetMaxPosture(CustomCharacter->GetPlayerStats()->MaxPosture);
+	
+	float MaxStartingPosture = 10;
+	if(const AMainPlayerState* PS = Cast<AMainPlayerState>(Character->GetPlayerState()))
+	{
+		if(const UPlayerStartCharacterDataAsset* Data = PS->GetCurrentDataAsset())
+		{
+			MaxStartingPosture = Data->StartingPosture;
+		}
+	}
+	
+	SetMaxPosture(MaxStartingPosture);
 	FullyRefillPosture();
 	StunRecoveryTime = KnockDownMontage->GetPlayLength();
 }
