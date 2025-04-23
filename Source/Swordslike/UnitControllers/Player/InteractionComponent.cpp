@@ -45,7 +45,9 @@ void UInteractionComponent::InitEntityComponent(ACharacter* Character)
 				if(UInteractionPanel* InteractionHUD = OwnerCharacter->GetMasterHUD()->GetInteractionPanel())
 				{
 					OnInteractableOverlapStarted.AddUObject(InteractionHUD, &UInteractionPanel::DisplayInteractionPanel);
+					
 					OnInteractableOverlapEnded.AddUObject(InteractionHUD, &UInteractionPanel::HideInteractionPanel);
+					
 				}
 				else
 				{

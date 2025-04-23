@@ -18,6 +18,7 @@
 	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
  	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
  	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ 	Mesh->SetIsReplicated(true);
  	
 	StartArrow = CreateDefaultSubobject<UArrowComponent>("Start Arrow");
  	StartArrow->SetupAttachment(Mesh);
@@ -29,6 +30,7 @@
  	AreaSphere->SetupAttachment(Mesh);
 	AreaSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
  	AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ 	AreaSphere->SetIsReplicated(true);
 
  	TrailEffect = CreateDefaultSubobject<UNiagaraComponent>("Weapon Trail Effect");
  	TrailEffect->SetupAttachment(Mesh);
@@ -130,7 +132,24 @@ void AWeapon::Server_Interact_Implementation(AActor* InteractingActor)
  }
 
 void AWeapon::OnEquipped()
+ {
+ 	if(HasAuthority())
+ 	{
+ 		PerformOnEquipped();
+ 	}
+ 	else
+ 	{
+ 		Server_OnEquipped();
+ 	}
+}
+
+void AWeapon::Server_OnEquipped_Implementation()
 {
+ 	PerformOnEquipped();
+}
+
+void AWeapon::PerformOnEquipped()
+ {
  	bIsEquipped = true;
  	
  	Mesh->SetSimulatePhysics(false);
@@ -144,27 +163,47 @@ void AWeapon::OnEquipped()
 }
 
 void AWeapon::OnDropped()
+{
+ 	if(HasAuthority())
+ 	{
+ 		PerformOnDropped();
+ 	}
+ 	else
+ 	{
+ 		Server_OnDropped();
+ 	}
+}
+
+void AWeapon::Server_OnDropped_Implementation()
+{
+ 	PerformOnDropped();
+}
+
+void AWeapon::PerformOnDropped()
  {
  	bIsEquipped = false;
  	
  	Mesh->SetSimulatePhysics(true);
 
  	FTimerHandle TimerHandle;
+
+ 	
  	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
  	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
  	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
  	Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
  	
  	GetWorld()->GetTimerManager().SetTimer(
- 		TimerHandle,
- 		[this]()
- 		{
- 			Mesh->SetSimulatePhysics(false);
+		 TimerHandle,
+		 [this]()
+		 {
+			 Mesh->SetSimulatePhysics(false);
  			
- 			AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
- 			AreaSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
- 		},
- 		1.0f,
- 		false);
+			 AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			 AreaSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+			  AreaSphere->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		 },
+		 1.0f,
+		 false);
 }
 

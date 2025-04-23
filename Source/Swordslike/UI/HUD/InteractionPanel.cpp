@@ -1,5 +1,7 @@
 #include "InteractionPanel.h"
 
+#include "WeaponComparisonWidget.h"
+#include "Common/WeaponHandlerComponent.h"
 #include "Components/TextBlock.h"
 #include "Player/InteractionComponent.h"
 #include "Player/SwordslikeCharacter.h"
@@ -14,31 +16,55 @@ void UInteractionPanel::NativeConstruct()
 
 void UInteractionPanel::DisplayInteractionPanel(ASwordslikeCharacter* Character)
 {
-	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Interaction HUD displaying UI")));
-	
 	if(!Character)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Character is missing")));
 		return;
 	}
-	if(!Character->GetOverInteractionComponent())
+	if(!Character->GetInteractionComponent())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("GetOverInteractionComponent is missing")));
 		return;
 	}
-	if(!Character->GetOverInteractionComponent()->GetCurrentInteractable())
+	if(!Character->GetInteractionComponent()->GetCurrentInteractable())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("CurrentInteractable is missing")));
 		return;
 	}
 
-	if(IInteractable* Interactable = Character->GetOverInteractionComponent()->GetCurrentInteractable())
+	if(IInteractable* Interactable = Character->GetInteractionComponent()->GetCurrentInteractable())
 	{
-		FString Message = FString::Printf(TEXT("%s [%s]"), *Interactable->GetInteractionMessage(), *Character->GetInteractionInput());
-
+		const FString Message = FString::Printf(TEXT("%s [%s]"), *Interactable->GetInteractionMessage(), *Character->GetInteractionInput());
 		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("%s"), *Message));
 		MessageText->SetText(FText::FromString(*Message));
 		PlayAnimation(FadeInAnimation);
+
+		if(AWeapon* NewWeapon = Cast<AWeapon>(Character->GetInteractionComponent()->GetCurrentInteractable()))
+		{
+			if(Character->GetWeaponHandler()->HasWeapon())
+			{
+				if(GetWorld()->GetTimerManager().IsTimerActive(ComparisonDisplayTimer))
+				{
+					GetWorld()->GetTimerManager().ClearTimer(ComparisonDisplayTimer);
+				}
+				
+				AWeapon* CurrentWeapon = Character->GetWeaponHandler()->GetCurrentWeapon();
+				AWeapon* InteractableWeapon = NewWeapon;
+
+				GetWorld()->GetTimerManager().SetTimer(
+					ComparisonDisplayTimer,
+					[this, CurrentWeapon, InteractableWeapon]()
+					{
+						CurrentWeaponWidget->SetValues(CurrentWeapon, InteractableWeapon);
+						NewWeaponWidget->SetValues(InteractableWeapon, CurrentWeapon);
+						PlayAnimation(ComparisonFadeInAnimation);
+						bIsComparingWeapons = true;
+					},
+					ComparisonDisplayDelay,
+					false
+				);
+			}
+		}
 	}
 }
 
@@ -46,4 +72,10 @@ void UInteractionPanel::HideInteractionPanel()
 {
 	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("hidden"));
 	PlayAnimation(FadeOutAnimation);
+
+	if(bIsComparingWeapons)
+	{
+		PlayAnimation(ComparisonFadeOutAnimation);
+		bIsComparingWeapons = false;
+	}
 }

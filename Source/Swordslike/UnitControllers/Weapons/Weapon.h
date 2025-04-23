@@ -78,6 +78,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Visuals)
 	UParticleSystem* ImpactParticles;
 
+	UPROPERTY(EditDefaultsOnly, Category=Visuals)
+	UTexture2D* WeaponIcon;
+
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = true))
 	UStaticMeshComponent* Mesh;
@@ -118,5 +121,12 @@ public:
 	FORCEINLINE UParticleSystemComponent* GetTrailEffect() const { return TrailPSC; }
 	
 	void OnEquipped();
+	UFUNCTION(Server, Reliable)
+	void Server_OnEquipped();
+	void PerformOnEquipped();
+	
 	void OnDropped();
+	UFUNCTION(Server, Reliable)
+	void Server_OnDropped();
+	void PerformOnDropped();
 };

@@ -41,6 +41,7 @@ void ULockableTargetComponent::OnUnlocked()
 
 void ULockableTargetComponent::OnDeath()
 {
+    OnUnlocked();
 	IsValid = false;
 }
 

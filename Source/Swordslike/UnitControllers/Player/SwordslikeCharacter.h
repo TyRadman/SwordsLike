@@ -173,7 +173,7 @@ public:
 	FORCEINLINE UWidgetComponent* GetAttackIndicatorWidgetComponent() const {return WeaponAttackIndicatorWidgetComponent; }
 	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent; }
 	FORCEINLINE UWeaponAttackIndicatorWidget* GetAttackIndicatorWidget() const {return WeaponAttackIndicator; }
-	FORCEINLINE UInteractionComponent* GetOverInteractionComponent() const {return InteractionComponent; }
+	FORCEINLINE UInteractionComponent* GetInteractionComponent() const {return InteractionComponent; }
 	FORCEINLINE UPlayerStartCharacterDataAsset* GetData() const { return PlayerCharacterDataAsset; }
 	FORCEINLINE UTargetLockerComponent* GetLockOnComponent() const {return TargetLockerComponent; }
 	FORCEINLINE UOverheadHealthBarWidget* GetOverHeadHUDComponent() const {return OverHeadHUD; }
