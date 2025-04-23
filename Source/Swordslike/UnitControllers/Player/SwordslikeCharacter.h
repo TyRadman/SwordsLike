@@ -266,6 +266,8 @@ public:
 	void OnCharacterHitProcess(const FDamageInfo& DamageInfo);
 	UFUNCTION(Client, Reliable)
 	void Client_OnCharacterHit(const FDamageInfo& DamageInfo);
+	UFUNCTION(Server, Reliable)
+	void Server_PerformDamagePostureOnAttacker(UBaseParryComponent* AttackerParry, const FDamageInfo& DamageInfo);
 	
 	void OnCharacterHitRecovered();
 	void OnRollStarted();

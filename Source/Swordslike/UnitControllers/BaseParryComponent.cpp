@@ -291,6 +291,28 @@ void UBaseParryComponent::Server_InterruptAttacker_Implementation(ASwordslikeCha
 }
 
 #pragma region Posture
+void UBaseParryComponent::RecievePostureDamage(const FDamageInfo DamageInfo)
+{
+	if(HasAuthority())
+	{
+		Client_DamagePosture(DamageInfo);
+	}
+	else
+	{
+		Server_RecievePostureDamage(DamageInfo);
+	}
+}
+
+void UBaseParryComponent::Server_RecievePostureDamage_Implementation(const FDamageInfo DamageInfo)
+{
+	Client_DamagePosture(DamageInfo);
+}
+
+void UBaseParryComponent::Client_RecievePostureDamage_Implementation(const FDamageInfo DamageInfo)
+{
+	PerformDamagePosture(DamageInfo);
+}
+
 /**
  * Is triggered when the posture takes damage whether by parried attacks or by no parried attacks. NOTE: perfect parries will not trigger any logic here.
  * So far, only called on the client.

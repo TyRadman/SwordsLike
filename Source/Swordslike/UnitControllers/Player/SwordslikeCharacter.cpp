@@ -672,7 +672,7 @@ void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
 {
 	const EParryState ParryState = ParryComponent->ValidateParry(DamageInfo);
 	
-	ParryComponent->DamagePosture(DamageInfo);
+	ParryComponent->RecievePostureDamage(DamageInfo);
 
 	if(ParryState != EParryState::None)
 	{
@@ -706,7 +706,15 @@ void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
 				DeflectDamageInfo.DamageInstigator = this;
 				DeflectDamageInfo.DamageInstigatorCharacter = this;
 				DeflectDamageInfo.HitType = EHitType::BigHite;
-				AttackerParry->DamagePosture(DeflectDamageInfo);
+
+				if(HasAuthority())
+				{
+					AttackerParry->DamagePosture(DeflectDamageInfo);
+				}
+				else
+				{
+					Server_PerformDamagePostureOnAttacker(AttackerParry, DeflectDamageInfo);
+				}
 			}
 		}
 	}
@@ -731,6 +739,14 @@ void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
 void ASwordslikeCharacter::Client_OnCharacterHit_Implementation(const FDamageInfo& DamageInfo)
 {
 	OnCharacterHitProcess(DamageInfo);
+}
+
+void ASwordslikeCharacter::Server_PerformDamagePostureOnAttacker_Implementation(UBaseParryComponent* AttackerParry,const FDamageInfo& DamageInfo)
+{
+	if(AttackerParry)
+	{
+		AttackerParry->DamagePosture(DamageInfo);
+	}
 }
 
 void ASwordslikeCharacter::OnCharacterHitRecovered()

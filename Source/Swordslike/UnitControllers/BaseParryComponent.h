@@ -118,6 +118,12 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayParryEffects(const FDamageInfo DamageInfo);
 
+	void RecievePostureDamage(const FDamageInfo DamageInfo);
+	UFUNCTION(Client, Reliable)
+	void Client_RecievePostureDamage(const FDamageInfo DamageInfo);
+	UFUNCTION(Server, Reliable)
+	void Server_RecievePostureDamage(const FDamageInfo DamageInfo);
+	
 	void DamagePosture(const FDamageInfo DamageInfo);
 	UFUNCTION(Server, Reliable)
 	void Server_DamagePosture(const FDamageInfo DamageInfo);
