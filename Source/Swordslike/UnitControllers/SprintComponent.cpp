@@ -30,18 +30,13 @@ void USprintComponent::InitEntityComponent(ACharacter* Character)
 		{
 			EntityCharacter = CustomCharacter;
 
-			float MaxStartingStamina = 10;
-			if(const AMainPlayerState* PS = Cast<AMainPlayerState>(Character->GetPlayerState()))
+			if(const UPlayerStartCharacterDataAsset* Data = CustomCharacter->GetData())
 			{
-				if(const UPlayerStartCharacterDataAsset* Data = PS->GetCurrentDataAsset())
-				{
-					MaxStartingStamina = Data->StartingStamina;
-				}
+				const float MaxStartingStamina = Data->StartingStamina;
+				SetMaxStamina(MaxStartingStamina);
+				FullyRefillStamina();
 			}
 			
-			SetMaxStamina(MaxStartingStamina);
-			FullyRefillStamina();
-
 			if(const UMasterHUD* MasterHUD = CustomCharacter->GetMasterHUD())
 			{
 				if(UPlayerHealthBar* PlayerStatsHUD = MasterHUD->GetStatsHUD())
@@ -193,10 +188,10 @@ void USprintComponent::OnSprintStated()
 
 void USprintComponent::OnSprintEnded()
 {
-	StartRefill();
-	
 	if (!HasAuthority())
 	{
+		// we do it here as well as on the server for an instantaneous reaction locally
+		bIsSprinting = false;
 		Server_SetSprinting(false);
 	}
 	else
@@ -204,6 +199,8 @@ void USprintComponent::OnSprintEnded()
 		bIsSprinting = false;
 		EntityCharacter->ResetSpeed();
 	}
+	
+	StartRefill();
 }
 
 void USprintComponent::Server_SetSprinting_Implementation(const bool bNewIsSprinting)

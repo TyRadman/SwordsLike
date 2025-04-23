@@ -62,7 +62,8 @@ void UBaseEntityAnimationsComponent::PlayHitReactMontage(const FDamageInfo& Dama
 		HitReactionMontage = LeftHitReactMontages[HitTypeIndex];
 	}
 
-	// PrintOnScreen_Local(FString::Printf(TEXT("Montage for hit is: (%d) %s"), HitTypeIndex, *HitReactionMontage->GetFullName()));
+	
+	// PrintOnScreen_Local(FString::Printf(TEXT("Montage for hit is: (%d) %s"), HitTypeIndex, *HitReactionMontage->GetName()));
 	PlayMontage(HitReactionMontage);
 }
 #pragma endregion 
@@ -99,32 +100,38 @@ void UBaseEntityAnimationsComponent::PlayRollMontage()
 #pragma endregion 
 
 #pragma region Utilies
-void UBaseEntityAnimationsComponent::PlayMontage(UAnimMontage* Montage)
+void UBaseEntityAnimationsComponent::PlayMontage(UAnimMontage* Montage, const bool bForcePlay)
 {
-	PerformPlayMontage(Montage);
-	
-	if(!HasAuthority())
+	PrintOnScreen(FString::Printf(TEXT("Called %s to play"), *Montage->GetName()));
+	if (!HasAuthority())
 	{
-		Server_PlayRollMontage(Montage);
+		Server_PlayRollMontage(Montage, bForcePlay);
 	}
 	else
 	{
-		Multicast_PlayRollMontage(Montage);
+		PerformPlayMontage(Montage, bForcePlay);
+		Multicast_PlayRollMontage(Montage, bForcePlay);
 	}
 }
 
-void UBaseEntityAnimationsComponent::Server_PlayRollMontage_Implementation(UAnimMontage* Montage)
+void UBaseEntityAnimationsComponent::Server_PlayRollMontage_Implementation(UAnimMontage* Montage, const bool bForcePlay)
 {
-	Multicast_PlayRollMontage(Montage);
+	PerformPlayMontage(Montage, bForcePlay);
+	Multicast_PlayRollMontage(Montage, bForcePlay);
 }
 
-void UBaseEntityAnimationsComponent::Multicast_PlayRollMontage_Implementation(UAnimMontage* Montage)
+void UBaseEntityAnimationsComponent::Multicast_PlayRollMontage_Implementation(UAnimMontage* Montage, const bool bForcePlay)
 {
-	PerformPlayMontage(Montage);
+	PerformPlayMontage(Montage, bForcePlay);
 }
 
-void UBaseEntityAnimationsComponent::PerformPlayMontage(UAnimMontage* Montage)
+void UBaseEntityAnimationsComponent::PerformPlayMontage(UAnimMontage* Montage, const bool bForcePlay)
 {
+	if(bForcePlay)
+	{
+		AnimInstance->Montage_Stop(0.1f);
+	}
+	
 	AnimInstance->Montage_Play(Montage);
 }
 #pragma endregion

@@ -4,6 +4,7 @@
 #include "Player/MainPlayerState.h"
 #include "Swordslike/SwordslikeGameInstance.h"
 #include "Swordslike/UI/Lobby/LobbyHUD.h"
+#include "Swordslike/UI/Lobby/PlayerSelectionMenuWidget.h"
 
 
 class USwordslikeGameInstance;
@@ -11,6 +12,13 @@ class USwordslikeGameInstance;
 ALobbyGameMode::ALobbyGameMode()
 {
 	HUDClass = ALobbyHUD::StaticClass();
+
+	static ConstructorHelpers::FClassFinder<AHUD> CharacterSelectionHUD(TEXT("/Game/UI/Lobby/BP_LobbyHUD"));
+	
+	if (CharacterSelectionHUD.Class != nullptr)
+	{
+		HUDClass = CharacterSelectionHUD.Class;
+	}
 	
 	// DefaultPawnClass = ALobbyPlayerPawn::StaticClass();
 	
@@ -37,14 +45,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 		{
 			if (GI->PlayerCharactersData.IsValidIndex(0))
 			{
-				if (GI->PlayerCharactersData[0].IsNull())
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Character data at index 0 is NULL"));
-				}
-				else
-				{
 					PS->SetCharacterDataAsset(GI->PlayerCharactersData[0].LoadSynchronous());
-				}
 			}
 			else
 			{
@@ -64,6 +65,40 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerState is not AMainPlayerState"));
 	}
+	
+	// cache the biggest possible values based on the data assets
+	if (const USwordslikeGameInstance* GI = Cast<USwordslikeGameInstance>(GetGameInstance()))
+	{
+		TArray<TSoftObjectPtr<UPlayerStartCharacterDataAsset>> Assets = GI->PlayerCharactersData;
+		float MaxHealth = KINDA_SMALL_NUMBER;
+		float MaxStamina = KINDA_SMALL_NUMBER;
+		float MaxPosture = KINDA_SMALL_NUMBER;
+
+		for(TSoftObjectPtr<UPlayerStartCharacterDataAsset> Data : Assets)
+		{
+			if (Data)
+			{
+				if(Data->StartingHealthPoints > MaxHealth)
+				{
+					MaxHealth = Data->StartingHealthPoints;
+				}
+
+				if(Data->StartingStamina > MaxStamina)
+				{
+					MaxStamina = Data->StartingStamina;
+				}
+
+				if(Data->StartingPosture > MaxPosture)
+				{
+					MaxPosture = Data->StartingPosture;
+				}
+			}
+		}
+
+		UPlayerSelectionMenuWidget::MaxHealth = MaxHealth;
+		UPlayerSelectionMenuWidget::MaxStamina = MaxStamina;
+		UPlayerSelectionMenuWidget::MaxPosture = MaxPosture;
+	}
 }
 
 void ALobbyGameMode::OnPlayerReady()
@@ -73,21 +108,6 @@ void ALobbyGameMode::OnPlayerReady()
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%d/%d"), ReadyPlayersCount, RequiredPlayersCount));
 	if(ReadyPlayersCount == RequiredPlayersCount)
 	{
-		for(TObjectPtr<APlayerState> PlayerState : GameState.Get()->PlayerArray)
-		{
-			if(AMainPlayerState* PS = Cast<AMainPlayerState>(PlayerState.Get()))
-			{
-				if(PS->GetCurrentDataAsset())
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, TEXT("Data exists"));
-				}
-				else
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, TEXT("Data doesn't exist"));
-				}
-			}
-		}
-		
 		if(UWorld* World = GetWorld())
 		{
 			bUseSeamlessTravel = true;

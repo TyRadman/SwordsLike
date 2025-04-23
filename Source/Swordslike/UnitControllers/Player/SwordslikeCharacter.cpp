@@ -1,4 +1,3 @@
-
 #include "SwordslikeCharacter.h"
 
 #include "NiagaraFunctionLibrary.h"
@@ -25,6 +24,7 @@
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Swordslike/SwordslikeGameInstance.h"
+#include "Swordslike/AnimNotifies/ComboAnimNotify.h"
 #include "Swordslike/UI/HUD/HUDManager.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
@@ -32,7 +32,7 @@
 #include "Swordslike/UnitControllers/Player/LockWidgetController.h"
 #include "Swordslike/Utilities/UtilHelper.h"
 
-DEFINE_LOG_CATEGORY(LogTemplateCharacter);
+DEFINE_LOG_CATEGORY(SwordslikeLog);
 
 void ASwordslikeCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -41,11 +41,6 @@ void ASwordslikeCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	DOREPLIFETIME(ASwordslikeCharacter, bIsLockedOnTarget);
 	DOREPLIFETIME(ASwordslikeCharacter, CurrentSpeed);
 	DOREPLIFETIME(ASwordslikeCharacter, PlayerCharacterDataAsset);
-}
-
-void ASwordslikeCharacter::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
 }
 
 ASwordslikeCharacter::ASwordslikeCharacter()
@@ -117,20 +112,19 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 	ParrySparkVFX = CreateDefaultSubobject<UNiagaraComponent>("Sparks Effect");
 }
 
+void ASwordslikeCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	OnPawnBeginPlay.RemoveAll(this);
+}
+
 void ASwordslikeCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
 	UUtilHelper::HideCursor(GetWorld());
 	
-	SetInitialValues();
-	
-	CacheComponentReferences();
-	InitializeComponents();
-	
-	////////////////////////
-	// LOCAL SUBSCRIPTIONS
-	////////////////////////
 	if(Combat)
 	{
 		OnJumped.AddUObject(Combat, &UBaseCombatComponent::DisableRoll);
@@ -141,7 +135,8 @@ void ASwordslikeCharacter::BeginPlay()
 	{
 		OnJumped.AddUObject(Sprint, &USprintComponent::OnJumped);
 	}
-	
+
+	SetInitialValues();
 	SetDefaultReplicationProperties();
 }
 
@@ -153,26 +148,14 @@ void ASwordslikeCharacter::CacheComponentReferences()
 	}
 	
 	Capsule = GetComponentByClass<UCapsuleComponent>();
-	
-	if(UOverheadHealthBarWidget* CastOverHeadHUD = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
-	{
-		OverHeadHUD = CastOverHeadHUD;
-	}
 
-	if(UWeaponAttackIndicatorWidget* AttackIndicator = Cast<UWeaponAttackIndicatorWidget>(WeaponAttackIndicatorWidgetComponent->GetUserWidgetObject()))
+	if (APlayerController* ThePlayerController = Cast<APlayerController>(GetController()))
 	{
-		WeaponAttackIndicator = AttackIndicator;
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Couldn't get the indicator"));
-	}
-
-	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		if (PlayerController->IsLocalController())
+		PlayerController = ThePlayerController;
+		
+		if (ThePlayerController->IsLocalController())
 		{
-			if (AHUD* HUD = PlayerController->GetHUD())
+			if (AHUD* HUD = ThePlayerController->GetHUD())
 			{
 				if(const AHUDManager* HUDManager = Cast<AHUDManager>(HUD))
 				{
@@ -186,8 +169,108 @@ void ASwordslikeCharacter::CacheComponentReferences()
 	}
 }
 
-void ASwordslikeCharacter::InitializeComponents()
+void ASwordslikeCharacter::SetInitialValues()
 {
+	// CHARACTER MOVEMENT STATS
+	ParryVFXMap = {
+		{EParryState::Normal, NormalParryParticle},
+		{EParryState::Good, GoodParryParticle},
+		{EParryState::Perfect, PerfectParryParticle},
+			};
+
+	if (USwordslikeGameInstance* GI = GetGameInstance<USwordslikeGameInstance>())
+	{
+		if (UPlayerStartCharacterDataAsset* Data = GI->GetPlayerCharacterData())
+		{
+			if (IsLocallyControlled())
+			{
+				if(!HasAuthority())
+				{
+					Server_SetInitialValues(Data);
+				}
+				else
+				{
+					PerformSetInitialValues(Data);
+					OnRep_PlayerCharacterDataAsset();
+				}
+			}
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("ERROR no UPlayerStartCharacterDataAsset SetInitialValues Player %d"), GetUniqueID()));
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("ERROR SetInitialValues Player %d"), GetUniqueID()));
+	}
+}
+
+void ASwordslikeCharacter::Server_SetInitialValues_Implementation(UPlayerStartCharacterDataAsset* Data)
+{
+	PerformSetInitialValues(Data);
+	OnRep_PlayerCharacterDataAsset();
+}
+
+void ASwordslikeCharacter::PerformSetInitialValues(UPlayerStartCharacterDataAsset* Data)
+{
+	PlayerCharacterDataAsset = Data;
+}
+
+void ASwordslikeCharacter::OnRep_PlayerCharacterDataAsset()
+{
+	if(bIsInitialized)
+	{
+		return;
+	}
+	
+	if(!PlayerCharacterDataAsset || !HasActorBegunPlay())
+	{
+		if(!bOnBeginPlayerRegistered)
+		{
+			bOnBeginPlayerRegistered = true;
+			OnPawnBeginPlay.AddUObject(this, &ASwordslikeCharacter::OnBeginPlay);
+			return;
+		}
+	}
+
+	bIsInitialized = true;
+	ApplyDataValuesToPlayer();
+
+	InitializePlayerComponents();
+}
+
+void ASwordslikeCharacter::OnBeginPlay(APawn* Pawn)
+{
+	OnRep_PlayerCharacterDataAsset();
+}
+
+void ASwordslikeCharacter::ApplyDataValuesToPlayer()
+{
+	if(CustomMesh)
+	{
+		CustomMesh->SetSkeletalMesh(PlayerCharacterDataAsset->CharacterSkeletalMesh);
+	}
+
+	GetCharacterMovement()->MaxWalkSpeed = PlayerCharacterDataAsset->MovementSpeed;
+	GetCharacterMovement()->JumpZVelocity = PlayerCharacterDataAsset->JumpHeight;
+}
+
+void ASwordslikeCharacter::InitializePlayerComponents()
+{
+	CacheComponentReferences();
+
+	// Get the overhead widget
+	if(UOverheadHealthBarWidget* CastOverHeadHUD = Cast<UOverheadHealthBarWidget>(OverheadHealthBar->GetUserWidgetObject()))
+	{
+		OverHeadHUD = CastOverHeadHUD;
+		OverHeadHUD->InitEntityComponent(this);
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("NOT SET! at %d"), GetUniqueID()));
+	}
+	
 	if(InteractionComponent)
 	{
 		InteractionComponent->InitEntityComponent(this);
@@ -218,6 +301,31 @@ void ASwordslikeCharacter::InitializeComponents()
 		TargetLockerComponent->InitEntityComponent(this);
 	}
 
+	// Extract Weapon attack indicator
+	if(WeaponAttackIndicatorWidgetComponent)
+	{
+		if(WeaponAttackIndicatorWidgetComponent->GetUserWidgetObject())
+		{
+			if(UWeaponAttackIndicatorWidget* AttackIndicator = Cast<UWeaponAttackIndicatorWidget>(WeaponAttackIndicatorWidgetComponent->GetUserWidgetObject()))
+			{
+				WeaponAttackIndicator = AttackIndicator;
+				WeaponAttackIndicator->InitEntityComponent(this);
+			}
+			else
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("WeaponAttackIndicator NOT SET! at %d"), GetUniqueID()));
+			}
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, FString::Printf(TEXT("No widget object on [%s]"), *UEnum::GetValueAsString(GetLocalRole())));
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Couldn't get the indicator"));
+	}
+
 	if(Combat)
 	{
 		Combat->InitEntityComponent(this);
@@ -238,19 +346,13 @@ void ASwordslikeCharacter::InitializeComponents()
 		MasterHUD->InitEntityComponent(this);
 	}
 
-	if(OverHeadHUD)
-	{
-		OverHeadHUD->InitEntityComponent(this);
-	}
-
-	if(WeaponAttackIndicator)
-	{
-		WeaponAttackIndicator->InitEntityComponent(this);
-	}
-
 	if(LockIndicatorWidget)
 	{
 		LockIndicatorWidget->InitEntityComponent(this);
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("LockIndicatorWidget NOT SET! at %d"), GetUniqueID()));
 	}
 }
 
@@ -260,63 +362,6 @@ void ASwordslikeCharacter::InitializeComponents()
 void ASwordslikeCharacter::SetDefaultReplicationProperties()
 {
 	OnRep_bIsLockedOnTarget();
-}
-
-void ASwordslikeCharacter::SetInitialValues()
-{
-	// CHARACTER MOVEMENT STATS
-	ParryVFXMap = {
-		{EParryState::Normal, NormalParryParticle},
-		{EParryState::Good, GoodParryParticle},
-		{EParryState::Perfect, PerfectParryParticle},
-			};
-
-	if (IsLocallyControlled())
-	{
-		if (const USwordslikeGameInstance* GI = GetGameInstance<USwordslikeGameInstance>())
-		{
-			if (UPlayerStartCharacterDataAsset* Data = GI->LocalData)
-			{
-				if(!HasAuthority())
-				{
-					Server_SetInitialValues(Data);
-				}
-				else
-				{
-					PerformSetInitialValues(Data);
-					OnRep_PlayerCharacterDataAsset();
-				}
-			}
-		}
-	}
-}
-
-void ASwordslikeCharacter::Server_SetInitialValues_Implementation(UPlayerStartCharacterDataAsset* Data)
-{
-	PerformSetInitialValues(Data);
-	OnRep_PlayerCharacterDataAsset();
-}
-
-void ASwordslikeCharacter::PerformSetInitialValues(UPlayerStartCharacterDataAsset* Data)
-{
-	PlayerCharacterDataAsset = Data;
-}
-
-void ASwordslikeCharacter::OnRep_PlayerCharacterDataAsset()
-{
-	if(!PlayerCharacterDataAsset)
-	{
-		return;
-	}
-	
-	ApplyDataValuesToPlayer();
-}
-
-void ASwordslikeCharacter::ApplyDataValuesToPlayer()
-{
-	CustomMesh->SetSkeletalMesh(PlayerCharacterDataAsset->CharacterSkeletalMesh);
-	GetCharacterMovement()->MaxWalkSpeed = PlayerCharacterDataAsset->MovementSpeed;
-	GetCharacterMovement()->JumpZVelocity = PlayerCharacterDataAsset->JumpHeight;
 }
 
 void ASwordslikeCharacter::SetSprintSpeed()
@@ -364,9 +409,9 @@ void ASwordslikeCharacter::OnRep_CurrentSpeed()
 void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Add Input Mapping Context
-	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	if (const APlayerController* ThePlayerController = Cast<APlayerController>(GetController()))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(ThePlayerController->GetLocalPlayer()))
 		{
 			InputSubsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
@@ -393,14 +438,14 @@ void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::OnSprintEnded);
 		EnhancedInputComponent->BindAction(AttackInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::Attack);
 		EnhancedInputComponent->BindAction(RollInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::Roll);
-		EnhancedInputComponent->BindAction(TestInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::StartAttackCycle);
+		EnhancedInputComponent->BindAction(TestInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::PerformTestActoin);
 		EnhancedInputComponent->BindAction(ParryInputAction, ETriggerEvent::Started, this, &ASwordslikeCharacter::Parry);
 		EnhancedInputComponent->BindAction(ParryInputAction, ETriggerEvent::Completed, this, &ASwordslikeCharacter::EndParry);
 		EnhancedInputComponent->BindAction(InteractActionInput, ETriggerEvent::Completed, this, &ASwordslikeCharacter::Interact);
 	}
 	else
 	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		UE_LOG(SwordslikeLog, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
 
@@ -457,6 +502,11 @@ void ASwordslikeCharacter::Attack()
 
 void ASwordslikeCharacter::Parry()
 {
+	if(!WeaponHandler->HasWeapon())
+	{
+		return;
+	}
+	
 	if(ParryComponent)
 	{
 		SetCanJump(false);
@@ -526,7 +576,7 @@ void ASwordslikeCharacter::Move(const FInputActionValue& Value)
 void ASwordslikeCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
+	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
 	{
@@ -593,16 +643,10 @@ void ASwordslikeCharacter::OnDeath()
 	GetMesh()->SetSimulatePhysics(true);
 }
 
+// Always called through the server
 void ASwordslikeCharacter::OnCharacterHit(const FDamageInfo& DamageInfo)
 {
-	if(!HasAuthority())
-	{
-		Server_OnCharacterHit(DamageInfo);
-	}
-	else
-	{
-		PerformOnCharacterHit(DamageInfo);
-	}
+	PerformOnCharacterHit(DamageInfo);
 }
 
 void ASwordslikeCharacter::Server_OnCharacterHit_Implementation(const FDamageInfo& DamageInfo)
@@ -612,14 +656,29 @@ void ASwordslikeCharacter::Server_OnCharacterHit_Implementation(const FDamageInf
 
 void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 {
-	// get the parry state
-	const EParryState ParryState = ParryComponent->ValidateParry(DamageInfo);
-
 	// posture will take damage regardless on whether the character parried or not
+	if(IsLocallyControlled())
+	{
+		OnCharacterHitProcess(DamageInfo);
+	}
+	else
+	{
+		Client_OnCharacterHit(DamageInfo);
+	}
+}
+
+// only called on the client
+void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
+{
+	const EParryState ParryState = ParryComponent->ValidateParry(DamageInfo);
+	
 	ParryComponent->DamagePosture(DamageInfo);
 
-	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("PARRY: %s"), *UEnum::GetValueAsString(ParryState)));
-
+	if(ParryState != EParryState::None)
+	{
+		ParryComponent->PlayParryEffects(DamageInfo);
+	}
+	
 	// if there is no parry, then take normal damage
 	if(ParryState == EParryState::None)
 	{
@@ -627,17 +686,58 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 			
 		if(ParryComponent->CurrentCombatState == ECombatState::Normal)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Took damage")));
 			SetCanJump(false);
 			SetCanMove(false);
-			Animations->PlayHitReactMontage(DamageInfo);
+			SetCanAttack(false);
+			Combat->SetComboState(EComboState::Idle);
+			// Animations->PlayHitReactMontage(DamageInfo);
 			GetWorldTimerManager().SetTimer(HitRecoveryTimer, this, &ASwordslikeCharacter::OnCharacterHitRecovered, RecoveryDuration, false);
 		}
-		else
+	}
+	// if the parry is perfect, then deal damage to the posture of the attacker
+	else if(ParryState == EParryState::Perfect)
+	{
+		if(DamageInfo.DamageInstigatorCharacter)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Can't take damage, knocked down")));
+			if(UBaseParryComponent* AttackerParry = DamageInfo.DamageInstigatorCharacter->GetParryComponent())
+			{
+				FDamageInfo DeflectDamageInfo;
+				DeflectDamageInfo.PostureDamage = AttackerParry->MaxPosture * 0.5f;
+				DeflectDamageInfo.DamageInstigator = this;
+				DeflectDamageInfo.DamageInstigatorCharacter = this;
+				DeflectDamageInfo.HitType = EHitType::BigHite;
+				AttackerParry->DamagePosture(DeflectDamageInfo);
+			}
 		}
 	}
+
+	switch (ParryState)
+	{
+		case EParryState::None:
+				PerformCameraShake(HitCameraShake);
+				break;
+		case EParryState::Normal:
+				PerformCameraShake(NormalParryCameraShake);
+				break;
+		case EParryState::Good:
+				PerformCameraShake(GoodParryCameraShake);
+				break;
+		case EParryState::Perfect:
+				PerformCameraShake(PerfectParryCameraShake);
+				break;
+	}
+}
+
+void ASwordslikeCharacter::Client_OnCharacterHit_Implementation(const FDamageInfo& DamageInfo)
+{
+	OnCharacterHitProcess(DamageInfo);
+}
+
+void ASwordslikeCharacter::OnCharacterHitRecovered()
+{
+	SetCanMove(true);
+	SetCanJump(true);
+	SetCanAttack(true);
 }
 
 void ASwordslikeCharacter::OnAttackParried(const EParryState ParryState)
@@ -655,11 +755,24 @@ void ASwordslikeCharacter::OnAttackParried(const EParryState ParryState)
 	}
 }
 
-void ASwordslikeCharacter::OnCharacterHitRecovered()
+void ASwordslikeCharacter::OnStunned()
 {
-	UE_LOG(LogTemp, Display, TEXT("Recover jump and movement"));
-	SetCanMove(true);
+	if(GetWorldTimerManager().IsTimerActive(HitRecoveryTimer))
+	{
+		GetWorldTimerManager().ClearTimer(HitRecoveryTimer);
+	}
+	
+	SetCanJump(false);
+	SetCanMove(false);
+	SetCanAttack(false);
+}
+
+void ASwordslikeCharacter::OnStunnedRecover()
+{
 	SetCanJump(true);
+	SetCanMove(true);
+	SetCanAttack(true);
+	Combat->SetComboState(EComboState::Idle);
 }
 
 void ASwordslikeCharacter::OnRollStarted()
@@ -670,23 +783,6 @@ void ASwordslikeCharacter::OnRollStarted()
 void ASwordslikeCharacter::OnRollFinished()
 {
 	SetCanJump(true);
-}
-
-void ASwordslikeCharacter::OnStunned()
-{
-	if(GetWorldTimerManager().IsTimerActive(HitRecoveryTimer))
-	{
-		GetWorldTimerManager().ClearTimer(HitRecoveryTimer);
-	}
-	
-	SetCanJump(false);
-	SetCanMove(false);
-}
-
-void ASwordslikeCharacter::OnStunnedRecover()
-{
-	SetCanJump(true);
-	SetCanMove(true);
 }
 
 void ASwordslikeCharacter::OnSprintStarted()
@@ -719,32 +815,42 @@ void ASwordslikeCharacter::PrintOverhead(const FString& Message)
 {
 	OverHeadHUD->SetOverheadNameValue(FText::FromString(Message));
 }
-#pragma endregion
 
-void ASwordslikeCharacter::StartAttackCycle()
+void ASwordslikeCharacter::PerformCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass)
 {
-	if(!IsLocallyControlled())
+	if(IsLocallyControlled())
 	{
-		return;
-	}
-	
-	if(const USwordslikeGameInstance* GI = Cast<USwordslikeGameInstance>(GetGameInstance()))
-	{
-		if(GI->LocalData)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Blue, FString::Printf(TEXT("Data exists!")));
-		}
-		else
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("Data doesn't exist"), *UEnum::GetValueAsString(GetLocalRole())));
-		}
+		CameraShakeProcess(ShakeClass);
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, FString::Printf(TEXT("GI doesn't exist"), *UEnum::GetValueAsString(GetLocalRole())));
+		Client_PlayCameraShake(ShakeClass);
 	}
-	// FTimerHandle TimerHandle;
-	// GetWorldTimerManager().SetTimer(TimerHandle, this, &ASwordslikeCharacter::Attack, 1.f, true);
+}
+
+void ASwordslikeCharacter::Client_PlayCameraShake_Implementation(TSubclassOf<UCameraShakeBase> ShakeClass)
+{
+	CameraShakeProcess(ShakeClass);
+}
+
+void ASwordslikeCharacter::CameraShakeProcess(TSubclassOf<UCameraShakeBase> ShakeClass)
+{
+	if (PlayerController)
+	{
+		PlayerController->PlayerCameraManager->StartCameraShake(ShakeClass);
+	}
+}
+#pragma endregion
+
+void ASwordslikeCharacter::PerformTestActoin()
+{
+	if(GetWorldTimerManager().IsTimerActive(TestTimeHandle))
+	{
+		GetWorldTimerManager().ClearTimer(TestTimeHandle);
+		return;
+	}
+	
+	GetWorldTimerManager().SetTimer(TestTimeHandle, this, &ASwordslikeCharacter::Attack, 1.f, true);
 }
 
 void ASwordslikeCharacter::RestoreCharacterRotation()
@@ -765,7 +871,6 @@ FString ASwordslikeCharacter::GetInputKey(const UInputAction* InputAction)
 		return FString::Printf(TEXT("InputAction is null."));
 	}
 
-	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 	if (!PlayerController)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PlayerController not found."));

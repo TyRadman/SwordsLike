@@ -17,9 +17,9 @@ enum class ECombatNotifyType : uint8
 UENUM(BlueprintType)
 enum class EHitType : uint8
 {
-	SmallHite UMETA(DisplayName = "Small hit"),
-	BigHite UMETA(DisplayName = "Big hit"),
-	KnockOutHit UMETA(DisplayName = "Knock out hit")
+	SmallHite = 0 UMETA(DisplayName = "Small hit"),
+	BigHite = 1 UMETA(DisplayName = "Big hit"),
+	KnockOutHit = 2 UMETA(DisplayName = "Knock out hit")
 };
 
 class UCameraShakeBase;

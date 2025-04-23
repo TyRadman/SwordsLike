@@ -20,9 +20,6 @@ void UMainLobbyMenu::NativeConstruct()
 		{
 			AvailableCharacters.Add(DA.LoadSynchronous());
 		}
-	
-		// AvailableCharacters = Instance->PlayerCharactersData;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" %d"), AvailableCharacters.Num()));
 	}
 	else
 	{
@@ -39,12 +36,17 @@ void UMainLobbyMenu::SetupPlayerWidgets()
 {
 	if (!GetWorld())
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "UMainLobbyMenu ERROR: no world!");
 		return;
 	}
 	
 	AGameStateBase* GameState = GetWorld()->GetGameState();
-	if (!GameState || !PlayersWidgetClass) return;
-
+	if (!GameState || !PlayersWidgetClass)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "UMainLobbyMenu ERROR: no game state or playersWidgetClass!");
+		return;
+	}
+	
 	PlayersGrid->ClearChildren();
 	PlayerWidgetsMap.Empty();
 
@@ -54,8 +56,11 @@ void UMainLobbyMenu::SetupPlayerWidgets()
 		if (AMainPlayerState* MainPS = Cast<AMainPlayerState>(PlayerState))
 		{
 			UPlayerSelectionMenuWidget* CharacterWidget = CreateWidget<UPlayerSelectionMenuWidget>(this, PlayersWidgetClass);
-			if (!CharacterWidget) continue;
-
+			if (!CharacterWidget)
+			{
+				continue;
+			}
+			
 			PlayerWidgetsMap.Add(MainPS, CharacterWidget);
 
 			const int Row = Index / MaxColsCount;

@@ -25,7 +25,9 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	ASwordslikeCharacter* DamageInstigatorCharacter;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FVector ImpactLocation;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	EHitType HitType;
 };

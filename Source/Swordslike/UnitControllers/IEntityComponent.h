@@ -19,4 +19,5 @@ class SWORDSLIKE_API IIEntityComponent
 
 public:
     virtual void InitEntityComponent(ACharacter* Character) = 0;
+    bool bIsInitialized = false;
 };

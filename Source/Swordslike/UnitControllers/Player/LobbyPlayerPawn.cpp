@@ -15,6 +15,19 @@ ALobbyPlayerPawn::ALobbyPlayerPawn()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void ALobbyPlayerPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ALobbyPlayerPawn, LobbyUI);
+	DOREPLIFETIME(ALobbyPlayerPawn, bIsSelectionReady);
+}
+
+void ALobbyPlayerPawn::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+}
+
 void ALobbyPlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
@@ -24,17 +37,15 @@ void ALobbyPlayerPawn::BeginPlay()
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ALobbyPlayerPawn::Test, 5.f, false);
 }
 
-void ALobbyPlayerPawn::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-}
-
 void ALobbyPlayerPawn::Test()
 {
 	if(const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
-		if(PlayerController->IsLocalController())
+		if(IsLocallyControlled())
 		{
+			const FString Message = FString::Printf(TEXT("Setting up %s [%s]"), *PlayerController->GetActorNameOrLabel(), *UEnum::GetValueAsString(GetLocalRole()));
+			GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, Message);
+			
 			if (const ALobbyHUD* HUD = Cast<ALobbyHUD>(PlayerController->GetHUD()))
 			{
 				LobbyUI = HUD->GetLobbyUI();
@@ -43,8 +54,14 @@ void ALobbyPlayerPawn::Test()
 			}
 			else
 			{
-				GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, "No hud found");
+			const FString Message2 = FString::Printf(TEXT("No HUD on  %s [%s]"), *PlayerController->GetActorNameOrLabel(), *UEnum::GetValueAsString(GetLocalRole()));
+			GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, Message2);
 			}
+		}
+		else
+		{
+			const FString Message = FString::Printf(TEXT("No a local controller %s [%s]"), *PlayerController->GetActorNameOrLabel(), *UEnum::GetValueAsString(GetLocalRole()));
+			GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, Message);
 		}
 	}
 }
@@ -83,14 +100,6 @@ void ALobbyPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		Input->BindAction(ConfirmInputAction, ETriggerEvent::Started, this, &ALobbyPlayerPawn::ConfirmSelection);
 		Input->BindAction(ReturnInputAction, ETriggerEvent::Started, this, &ALobbyPlayerPawn::ReturnFromSelection);
 	}
-}
-
-void ALobbyPlayerPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ALobbyPlayerPawn, LobbyUI);
-	DOREPLIFETIME(ALobbyPlayerPawn, bIsSelectionReady);
 }
 
 void ALobbyPlayerPawn::OnSelectLeft()
@@ -184,8 +193,7 @@ void ALobbyPlayerPawn::ConfirmSelection()
 		{
 			if(State->CharacterDataAsset)
 			{
-				GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Blue, FString::Printf(TEXT("SET!!!")));
-				GI->LocalData = State->CharacterDataAsset;
+				GI->SetLocalCharacterData(State->CharacterDataAsset);
 			}
 			else
 			{

@@ -10,8 +10,6 @@
 void UMasterHUD::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	
 }
 
 void UMasterHUD::InitEntityComponent(ACharacter* Character)
@@ -20,12 +18,16 @@ void UMasterHUD::InitEntityComponent(ACharacter* Character)
 	{
 		if(Character->IsLocallyControlled())
 		{
-			if(const AMainPlayerState* PS = Cast<AMainPlayerState>(Character->GetPlayerState()))
+			if(const ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
 			{
-				if(const UPlayerStartCharacterDataAsset* Data = PS->GetCurrentDataAsset())
+				if(const UPlayerStartCharacterDataAsset* Data = PlayerCharacter->GetData())
 				{
 					GetStatsHUD()->SetHealthBarSize(Data->StartingHealthPoints);
 					GetStatsHUD()->SetStaminaBarSize(Data->StartingStamina);
+				}
+				else
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "No data");
 				}
 			}
 		}

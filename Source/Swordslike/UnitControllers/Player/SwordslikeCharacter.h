@@ -12,32 +12,32 @@
 #include "SwordslikeCharacter.generated.h"
 
 class UPlayerStartCharacterDataAsset;
-class UNiagaraSystem;
+class UBaseEntityAnimationsComponent;
 class UWeaponAttackIndicatorWidget;
-class UBaseCombatComponent;
-class UMasterHUD;
-class USphereComponent;
-class UInteractionComponent;
-enum class EParryState : uint8;
 class UOverheadHealthBarWidget;
-class UBaseParryComponent;
-class USprintComponent;
-class UWidgetComponent;
-class USpringArmComponent;
-class UCameraComponent;
-class UInputMappingContext;
-class UInputAction;
-struct FInputActionValue;
-class ULockWidgetController;
+enum class EParryState : uint8;
+class UWeaponHandlerComponent;
 class UTargetLockerComponent;
 class UPlayerCombatComponent;
-class UBaseEntityAnimationsComponent;
-class UBaseEntityData;
-class UWeaponHandlerComponent;
-class UNiagaraComponent;
+class UInteractionComponent;
+class ULockWidgetController;
+class UBaseCombatComponent;
+class UInputMappingContext;
+class UBaseParryComponent;
+class USpringArmComponent;
+struct FInputActionValue;
 class ULegacyCameraShake;
+class UNiagaraComponent;
+class USphereComponent;
+class USprintComponent;
+class UWidgetComponent;
+class UCameraComponent;
+class UBaseEntityData;
+class UNiagaraSystem;
+class UInputAction;
+class UMasterHUD;
 
-DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(SwordslikeLog, Log, All);
 
 DECLARE_MULTICAST_DELEGATE(DelegateEvent);
 
@@ -47,6 +47,7 @@ class ASwordslikeCharacter : public ACharacter
 	GENERATED_BODY()
 public:
 	ASwordslikeCharacter();
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	virtual void Jump() override;
 	virtual void Landed(const FHitResult& Hit) override;
@@ -58,19 +59,17 @@ public:
 	void Parry();
 	void EndParry();
 private:
-	// UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Stats, meta=(AllowPrivateAccess = "true"))
-	// UBaseEntityData* PlayerStats;
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerCharacterDataAsset)
 	UPlayerStartCharacterDataAsset* PlayerCharacterDataAsset;
 	UFUNCTION()
 	void OnRep_PlayerCharacterDataAsset();
 	void ApplyDataValuesToPlayer();
+	void OnBeginPlay(APawn* Pawn);
 	
 	virtual void Tick(float DeltaTime) override;
 	
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual void OnRep_PlayerState() override;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
@@ -134,6 +133,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UInteractionComponent* InteractionComponent;
 	
+	APlayerController* PlayerController;
+	
 	UCapsuleComponent* Capsule;
 	UMasterHUD* MasterHUD;
 
@@ -146,8 +147,8 @@ protected:
 	UWidgetComponent* WeaponAttackIndicatorWidgetComponent;
 	UWeaponAttackIndicatorWidget* WeaponAttackIndicator;
 	
-	UOverheadHealthBarWidget* OverHeadHUD;
-	UAnimInstance* AnimInstance;
+	TObjectPtr<UOverheadHealthBarWidget> OverHeadHUD;
+	TObjectPtr<UAnimInstance> AnimInstance;
 	
 	virtual void BeginPlay() override;
 
@@ -160,7 +161,9 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	void CacheComponentReferences();
-	void InitializeComponents();
+	void InitializePlayerComponents();
+	bool bIsInitialized = false;
+	bool bOnBeginPlayerRegistered = false;
 	void SetDefaultReplicationProperties();
 
 public:
@@ -168,11 +171,13 @@ public:
 	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent; }
 	FORCEINLINE UWeaponAttackIndicatorWidget* GetAttackIndicatorWidget() const {return WeaponAttackIndicator; }
 	FORCEINLINE UInteractionComponent* GetOverInteractionComponent() const {return InteractionComponent; }
+	FORCEINLINE UPlayerStartCharacterDataAsset* GetData() const { return PlayerCharacterDataAsset; }
 	FORCEINLINE UTargetLockerComponent* GetLockOnComponent() const {return TargetLockerComponent; }
 	FORCEINLINE UOverheadHealthBarWidget* GetOverHeadHUDComponent() const {return OverHeadHUD; }
 	FORCEINLINE ULockWidgetController* GetLockOnWidget() const {return LockIndicatorWidget; }
 	FORCEINLINE UWeaponHandlerComponent* GetWeaponHandler() const {return WeaponHandler; }
 	FORCEINLINE UBaseEntityAnimationsComponent* GetAnimation() const {return Animations; }
+	FORCEINLINE APlayerController* GetPlayerController() const {return PlayerController; }
 	FORCEINLINE UBaseParryComponent* GetParryComponent() const {return ParryComponent; }
 	FORCEINLINE UPlayerCombatComponent* GetCombatComponent() const {return Combat; }
 	FORCEINLINE UPlayerHealthComponent* GetHealthComponent() const {return Health; }
@@ -222,7 +227,8 @@ private:
 	void Server_SetWalkSpeed(float NewSpeed);
 
 	// TEST
-	void StartAttackCycle();
+	void PerformTestActoin();
+	FTimerHandle TestTimeHandle;
 
 public:
 	/**
@@ -257,6 +263,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_OnCharacterHit(const FDamageInfo& DamageInfo);
 	void PerformOnCharacterHit(const FDamageInfo& DamageInfo);
+	void OnCharacterHitProcess(const FDamageInfo& DamageInfo);
+	UFUNCTION(Client, Reliable)
+	void Client_OnCharacterHit(const FDamageInfo& DamageInfo);
 	
 	void OnCharacterHitRecovered();
 	void OnRollStarted();
@@ -266,6 +275,12 @@ public:
 
 	void RotateCharacterToDirection(const FRotator& NewRotation);
 	void PrintOverhead(const FString& Message);
+
+	void PerformCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass);
+	UFUNCTION(Client, Reliable)
+	void Client_PlayCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass);
+	void CameraShakeProcess(TSubclassOf<UCameraShakeBase> ShakeClass);
+	
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -281,5 +296,14 @@ private:
 public:
 	UPROPERTY(EditDefaultsOnly, Category="Settings")
 	TSubclassOf<UCameraShakeBase> CameraShake;
+	
+	UPROPERTY(EditDefaultsOnly, Category=CameraShake)
+	TSubclassOf<UCameraShakeBase> HitCameraShake;
+	UPROPERTY(EditDefaultsOnly, Category=CameraShake)
+	TSubclassOf<UCameraShakeBase> NormalParryCameraShake;
+	UPROPERTY(EditDefaultsOnly, Category=CameraShake)
+	TSubclassOf<UCameraShakeBase> GoodParryCameraShake;
+	UPROPERTY(EditDefaultsOnly, Category=CameraShake)
+	TSubclassOf<UCameraShakeBase> PerfectParryCameraShake;
 };
 

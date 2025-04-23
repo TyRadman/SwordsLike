@@ -18,6 +18,10 @@ public:
 	ALobbyHUD();
 	UMainLobbyMenu* GetLobbyUI() const { return LobbyUI; }
 
+	UPROPERTY(EditDefaultsOnly, Category = "References")
+	TSubclassOf<UUserWidget> LobbyWidgetClass;
+
+
 protected:
 	virtual void BeginPlay() override;
 

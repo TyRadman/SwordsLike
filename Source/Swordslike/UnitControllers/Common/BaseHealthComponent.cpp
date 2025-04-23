@@ -1,11 +1,9 @@
 #include "BaseHealthComponent.h"
 
-#include "BaseEntityData.h"
 #include "DamageInfo.h"
 #include "LockableTargetComponent.h"
 #include "WeaponHandlerComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "Player/MainPlayerState.h"
 #include "Player/PlayerStartCharacterDataAsset.h"
 #include "Player/SwordslikeCharacter.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
@@ -64,25 +62,24 @@ void UBaseHealthComponent::InitEntityComponent(ACharacter* Character)
 				PrintOnScreen_Local(FString::Printf(TEXT("UBaseHealthComponent: No Master HUD")));
 			}
 		}
-
 		
-		float MaxStartingHealth = 10;
-		if(const AMainPlayerState* PS = Cast<AMainPlayerState>(Character->GetPlayerState()))
+		if(const UPlayerStartCharacterDataAsset* Data = PlayerCharacter->GetData())
 		{
-			if(const UPlayerStartCharacterDataAsset* Data = PS->GetCurrentDataAsset())
-			{
-				MaxHealth = Data->StartingHealthPoints;
-			}
-		}
+			float MaxStartingHealth = Data->StartingHealthPoints;
 
-		if(PlayerCharacter->IsLocallyControlled())
-		{
-			Server_SetStartingHealth(MaxStartingHealth);
+			if(PlayerCharacter->IsLocallyControlled())
+			{
+				Server_SetStartingHealth(MaxStartingHealth);
+			}
+			else
+			{
+				MaxHealth = MaxStartingHealth;
+				CurrentHealth = MaxStartingHealth;
+			}
 		}
 		else
 		{
-			MaxHealth = MaxStartingHealth;
-			CurrentHealth = MaxStartingHealth;
+			PrintOnScreen_Local(TEXT("UBaseHealthComponent ERROR: NO DATA ON PLAYER"));
 		}
 	}
 }
@@ -109,7 +106,6 @@ void UBaseHealthComponent::Server_TakeDamage_Implementation(const FDamageInfo& I
 {
 	ApplyDamage(Info);
 }
-
 
 void UBaseHealthComponent::ApplyDamage(const FDamageInfo& DamageInfo)
 {

@@ -7,6 +7,8 @@
 #include "Swordslike/Core/MyActorComponent.h"
 #include "BaseParryComponent.generated.h"
 
+class UBaseEntityAnimationsComponent;
+
 UENUM(BlueprintType)
 enum class EParryState : uint8
 {
@@ -22,20 +24,6 @@ enum class ECombatState : uint8
 	Normal = 0,
 	Stunned = 1,
 	KnockedDown = 2
-};
-
-USTRUCT(BlueprintType)
-struct FParryDataContainer
-{
-	GENERATED_BODY()
-
-	float CurrentPosture;
-	
-	float MaxPosture;
-
-	ECombatState CombatState;
-
-	AActor* LastAttacker;
 };
 
 class ASwordslikeCharacter;
@@ -73,6 +61,9 @@ public:
 	 * @return The current parry state.
 	 */
 	EParryState ValidateParry(const FDamageInfo& DamageInfo);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_InterruptAttacker(ASwordslikeCharacter* Attacker);
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
@@ -120,32 +111,35 @@ private:
 	void OnRep_CurrentPosture();
 	UPROPERTY(Replicated)
 	float MaxPosture;
+	
+	void PlayParryEffects(const FDamageInfo DamageInfo);
+	UFUNCTION(Server, Reliable)
+	void Server_PlayParryEffects(const FDamageInfo DamageInfo);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayParryEffects(const FDamageInfo DamageInfo);
 
 	void DamagePosture(const FDamageInfo DamageInfo);
 	UFUNCTION(Server, Reliable)
 	void Server_DamagePosture(const FDamageInfo DamageInfo);
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_DamagePosture(const FDamageInfo DamageInfo);
+	UFUNCTION(Client, Reliable)
+	void Client_DamagePosture(const FDamageInfo DamageInfo);
 	void PerformDamagePosture(const FDamageInfo DamageInfo);
 	
 	void OnParry();
 	
-	void AddToCurrentPosture(const float Amount);
+	void AddToCurrentPosture(const FDamageInfo DamageInfo);
 	UFUNCTION(Server, Reliable)
-	void Server_AddToCurrentPosture(const float Amount);
+	void Server_AddToCurrentPosture(const FDamageInfo DamageInfo, const ECombatState State);
+	void PerformServerAddToCurrentPosture(const FDamageInfo DamageInfo, const ECombatState State);
 	void PerformAddToCurrentPosture(const float Amount);
 	
 	const float PostureRecoveryRate = 0.5f;
 	const float DelayBeforePostureRecovery = 1.f;
 	FTimerHandle PostureRecoveryTimerHandle;
 	
-	UPROPERTY(Replicated)
+	// UPROPERTY(Replicated)
 	bool bCanRecoverPosture = true;
 
-	UFUNCTION(Server, Reliable)
-	void Server_PerformStun();
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PerformStun();
 	void PerformStun();
 
 	UFUNCTION(Server, Reliable)
@@ -156,13 +150,18 @@ private:
 	FTimerHandle RecoveryTimerHandle;
 
 	
-	void OnKnockDown();
+	void OnKnockDown(AActor* Attacker);
 	UFUNCTION(Server, Reliable)
 	void Server_PerformKnockDown();
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PerformKnockDown();
-	void PerformKnockDown();
+	void Multicast_PerformKnockDown(AActor* Attacker);
+	void PerformKnockDown(const AActor* Attacker);
 	float KnockDownRecoveryTime;
+	
+	ECombatState CurrentCombatState = ECombatState::Normal;
+	UBaseEntityAnimationsComponent* AnimationComponent;
+
+	FDamageInfo RecoverDamageInfo;
 
 public:
 	void OnStunned();
@@ -170,10 +169,10 @@ public:
 	void StartRecoveryFromKnockDown();
 	void EndRecoveryFromKnockDown();
 
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentCombatState)
-	ECombatState CurrentCombatState = ECombatState::Normal;
-	UFUNCTION()
-	void OnRep_CurrentCombatState();
+	// UPROPERTY(ReplicatedUsing = OnRep_CurrentCombatState)
+	void SetCombatState(const ECombatState State);
+	UFUNCTION(Client, Reliable)
+	void Client_SetCombatState(const ECombatState State);
 	
 	void SetMaxPosture(const float NewAmount);
 	void FullyRefillPosture();
@@ -181,19 +180,30 @@ public:
 
 	ParryDelegate OnParryStartedEvent;
 	ParryDelegate OnParryEndedEvent;
+	/**
+	 * Performs non-gameplay crucial tasks like playing parry particles.
+	 */
 	SuccessfulParryDelegate OnParrySuccessful_Local;
 
 	// so far only for UI updates
 	PostureDelegateTwoParams OnPostureChanged;
 	
 	void SetParryState(const EParryState State);
+	UFUNCTION(Server, Reliable)
+	void Server_SetParryState(const EParryState State);
+	void PerformSetParryState(const EParryState State);
 
 private:
 	ASwordslikeCharacter* PlayerCharacter;
+	// TODO: Remove this if proved to be irrelevant.
 	AController* OwnerController;
 	UAnimInstance* AnimInstance;
-	UPROPERTY(Replicated)
-	AActor* CurrentAttacker;
 
 	bool PendingPostureBreak = false;
+	bool bIsLocallyControlled = false;
+	
+	UPROPERTY(EditDefaultsOnly, Category=CameraShake, meta=(AllowPrivateAccess=true))
+	TSubclassOf<UCameraShakeBase> StunCameraShake;
+	UPROPERTY(EditDefaultsOnly, Category=CameraShake, meta=(AllowPrivateAccess=true))
+	TSubclassOf<UCameraShakeBase> KnockDownCameraShake;
 };

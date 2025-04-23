@@ -2,6 +2,7 @@
 #include "WeaponHandlerComponent.h"
 #include "DamageInfo.h"
 #include "Damagable.h"
+#include "KismetTraceUtils.h"
 #include "Components/ArrowComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -34,9 +35,26 @@ void UWeaponHandlerComponent::InitEntityComponent(ACharacter* Character)
 
 	if(ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Character))
 	{
+		PlayerCharacter = CustomCharacter;
+		bIsLocallyController = PlayerCharacter->IsLocallyControlled();
 		AnimInstance = CustomCharacter->GetAnimInstance();
 		OnWeaponHitStarted.AddUObject(CustomCharacter->GetSprintComponent(), &USprintComponent::OnWeaponHit);
 		WeaponOwner = CustomCharacter;
+	}
+}
+
+void UWeaponHandlerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if(!bIsLocallyController)
+	{
+		return;
+	}
+	
+	if(bIsAttacking)
+	{
+		GetTargetsInWeaponRange();
 	}
 }
 
@@ -162,21 +180,6 @@ FVector UWeaponHandlerComponent::GetWeaponMiddleLocation() const
 	return (CurrentWeapon->StartArrow->GetComponentLocation() + CurrentWeapon->EndArrow->GetComponentLocation()) / 2.f;
 }
 
-void UWeaponHandlerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	if(!HasAuthority())
-	{
-		return;
-	}
-	
-	if(bIsAttacking)
-	{
-		GetTargetsInWeaponRange();
-	}
-}
-
 void UWeaponHandlerComponent::GetTargetsInWeaponRange()
 {
 	if(!CurrentWeapon->StartArrow || !CurrentWeapon->EndArrow)
@@ -228,15 +231,14 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 {
 	for(const FHitResult Result : HitResults)
 	{
-		if(!Result.GetActor())
+		AActor* TargetActor = Result.GetActor();
+		if(!TargetActor)
 		{
 			continue;
 		}
-
-		const AActor* Actor = Result.GetActor();
-
+		
 		TArray<UActorComponent*> Components;
-		Actor->GetComponents(Components);
+		TargetActor->GetComponents(Components);
 
 		for(UActorComponent* Component : Components)
 		{
@@ -267,9 +269,16 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				DamageInfo.ImpactLocation = Result.ImpactPoint;
 				DamageInfo.HitType = CurrentHitType;
 				
-				TargetDamagable->TakeDamage(DamageInfo);
-
-				Client_PlayCameraShake(CurrentCameraShake);
+				if(HasAuthority())
+				{
+					TargetDamagable->TakeDamage(DamageInfo);
+				}
+				else
+				{
+					Server_InflictDamage(TargetActor, DamageInfo);
+				}
+				
+				WeaponOwner->PerformCameraShake(CurrentCameraShake);
 
 				if(TargetDamagable->IsAlive())
 				{
@@ -286,10 +295,26 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				TargetsHit.Add(TargetDamagable);
 				break;
 			}
-			else
-			{
-				// PrintOnScreen(TEXT("No damagable"));
-			}
+		}
+	}
+}
+
+void UWeaponHandlerComponent::Server_InflictDamage_Implementation(AActor* Target, const FDamageInfo& DamageInfo)
+{
+	if (!Target)
+	{
+		return;
+	}
+	
+	TArray<UActorComponent*> Components;
+	Target->GetComponents(Components);
+
+	for (UActorComponent* Component : Components)
+	{
+		if (IDamagable* Damagable = Cast<IDamagable>(Component))
+		{
+			Damagable->TakeDamage(DamageInfo);
+			break;
 		}
 	}
 }
@@ -386,12 +411,10 @@ void UWeaponHandlerComponent::PlayMontage(UAnimMontage* Montage)
 	}
 }
 
-void UWeaponHandlerComponent::Client_PlayCameraShake_Implementation(TSubclassOf<UCameraShakeBase> ShakeClass)
+void UWeaponHandlerComponent::OnForceStopAttack()
 {
-	if (const APlayerController* PlayerController = Cast<APlayerController>(WeaponOwner->GetController()))
-	{
-		PlayerController->PlayerCameraManager->StartCameraShake(CurrentCameraShake);
-	}
+	bIsAttacking = false;
+	TargetsHit.Empty();
 }
 
 void UWeaponHandlerComponent::Server_PlayMontage_Implementation(UAnimMontage* Montage)
@@ -401,6 +424,9 @@ void UWeaponHandlerComponent::Server_PlayMontage_Implementation(UAnimMontage* Mo
 
 void UWeaponHandlerComponent::Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
 {
-	AnimInstance->Montage_Play(Montage);
+	if(AnimInstance)
+	{
+		AnimInstance->Montage_Play(Montage);
+	}
 }
 #pragma endregion

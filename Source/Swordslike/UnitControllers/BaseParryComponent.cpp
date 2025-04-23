@@ -1,11 +1,9 @@
 #include "BaseParryComponent.h"
 
-#include "BaseEntityData.h"
+#include "BaseEntityAnimationsComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
-#include "Player/MainPlayerState.h"
 #include "Player/PlayerCombatComponent.h"
 #include "Player/PlayerStartCharacterDataAsset.h"
 #include "Player/SwordslikeCharacter.h"
@@ -29,8 +27,8 @@ void UBaseParryComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePrope
 	DOREPLIFETIME(UBaseParryComponent, CurrentPosture);
 	DOREPLIFETIME(UBaseParryComponent, MaxPosture);
 	DOREPLIFETIME(UBaseParryComponent, CurrentParryState);
-	DOREPLIFETIME(UBaseParryComponent, CurrentAttacker);
-	DOREPLIFETIME(UBaseParryComponent, CurrentCombatState);
+	// DOREPLIFETIME(UBaseParryComponent, bCanRecoverPosture);
+	// DOREPLIFETIME(UBaseParryComponent, CurrentCombatState);
 }
 
 void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
@@ -48,6 +46,8 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 		return;
 	}
 
+	bIsLocallyControlled = CustomCharacter->IsLocallyControlled();
+
 	PlayerCharacter = CustomCharacter;
 	
 	if(PlayerCharacter->GetController())
@@ -61,6 +61,15 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 	}
 	
 	AnimInstance = PlayerCharacter->GetMesh()->GetAnimInstance();
+
+	if(PlayerCharacter->GetAnimation())
+	{
+		AnimationComponent = PlayerCharacter->GetAnimation();
+	}
+	else
+	{
+		PrintOnScreen_Local(TEXT("No Animation"));
+	}
 
 	OnParrySuccessful_Local.AddUObject(CustomCharacter, &ASwordslikeCharacter::OnAttackParried);
 	
@@ -94,19 +103,14 @@ void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
 	///////////
 	/// Initialization
 	///////////
-	
-	float MaxStartingPosture = 10;
-	if(const AMainPlayerState* PS = Cast<AMainPlayerState>(Character->GetPlayerState()))
+	if(const UPlayerStartCharacterDataAsset* Data = CustomCharacter->GetData())
 	{
-		if(const UPlayerStartCharacterDataAsset* Data = PS->GetCurrentDataAsset())
-		{
-			MaxStartingPosture = Data->StartingPosture;
-		}
+		const float MaxStartingPosture = Data->StartingPosture;
+		
+		SetMaxPosture(MaxStartingPosture);
+		FullyRefillPosture();
+		StunRecoveryTime = KnockDownMontage->GetPlayLength();
 	}
-	
-	SetMaxPosture(MaxStartingPosture);
-	FullyRefillPosture();
-	StunRecoveryTime = KnockDownMontage->GetPlayLength();
 }
 
 void UBaseParryComponent::CacheValues()
@@ -130,30 +134,39 @@ void UBaseParryComponent::CacheValues()
 void UBaseParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if(!bIsLocallyControlled)
+	{
+		return;
+	}
 	
 	if(bCanRecoverPosture && CurrentPosture < MaxPosture && CurrentCombatState == ECombatState::Normal)
 	{
-		AddToCurrentPosture(PostureRecoveryRate * DeltaTime);
+		// TODO: fix this with overloads or call something else
+		RecoverDamageInfo.PostureDamage = -PostureRecoveryRate * DeltaTime;
+		AddToCurrentPosture(RecoverDamageInfo);
 	}
 }
 
 #pragma region Parry Network
 void UBaseParryComponent::Parry()
 {
-	if(OnParryStartedEvent.IsBound())
-	{
-		OnParryStartedEvent.Broadcast();
-	}
+	// Not used
+	// if(OnParryStartedEvent.IsBound())
+	// {
+	// 	OnParryStartedEvent.Broadcast();
+	// }
 	
 	if(!HasAuthority())
 	{
 		Server_Parry();
-		return;
 	}
-
-	bIsParrying = true;
-	AnimInstance->Montage_Play(ParryMontage);
-	AnimInstance->Montage_SetNextSection(StartSectionName, MiddleSectionName);
+	else
+	{
+		bIsParrying = true;
+		AnimInstance->Montage_Play(ParryMontage);
+		AnimInstance->Montage_SetNextSection(StartSectionName, MiddleSectionName);
+	}
 }
 
 void UBaseParryComponent::Server_Parry_Implementation()
@@ -166,6 +179,29 @@ void UBaseParryComponent::Multicast_Parry_Implementation()
 	bIsParrying = true;
 	AnimInstance->Montage_Play(ParryMontage);
 	AnimInstance->Montage_SetNextSection(StartSectionName, MiddleSectionName);
+}
+
+// Always called through the client
+void UBaseParryComponent::SetParryState(const EParryState State)
+{
+	if(!HasAuthority())
+	{
+		Server_SetParryState(State);
+	}
+	else
+	{
+		PerformSetParryState(State);
+	}
+}
+
+void UBaseParryComponent::Server_SetParryState_Implementation(const EParryState State)
+{
+	PerformSetParryState(State);
+}
+
+void UBaseParryComponent::PerformSetParryState(const EParryState State)
+{
+	CurrentParryState = State;
 }
 #pragma endregion
 
@@ -208,10 +244,16 @@ EParryState UBaseParryComponent::ValidateParry(const FDamageInfo& DamageInfo)
 	{
 		AnimInstance->Montage_JumpToSection(HitSectionName);
 	}
+
+	if(!DamageInfo.DamageInstigator)
+	{
+		PrintOnScreen(TEXT("ValidateParry: No attack in attack info"));
+		return EParryState::None;
+	}
 	
 	AActor* AttackSource = DamageInfo.DamageInstigator;
 
-	const ASwordslikeCharacter* AttackerCharacter = Cast<ASwordslikeCharacter>(AttackSource);
+	ASwordslikeCharacter* AttackerCharacter = Cast<ASwordslikeCharacter>(AttackSource);
 
 	// check if the attack is caused by another character, otherwise, no parry takes place
 	if(!AttackerCharacter)
@@ -230,61 +272,61 @@ EParryState UBaseParryComponent::ValidateParry(const FDamageInfo& DamageInfo)
 
 	if(CurrentParryState == EParryState::Perfect)
 	{
-		AttackerCharacter->GetCombatComponent()->ForceStopAttack();
+		if(!HasAuthority())
+		{
+			Server_InterruptAttacker(AttackerCharacter);
+		}
+		else
+		{
+			AttackerCharacter->GetCombatComponent()->ForceStopAttack(true);
+		}
 	}
 	
 	return CurrentParryState;
 }
 
-void UBaseParryComponent::SetParryState(const EParryState State)
+void UBaseParryComponent::Server_InterruptAttacker_Implementation(ASwordslikeCharacter* Attacker)
 {
-	CurrentParryState = State;
+	Attacker->GetCombatComponent()->ForceStopAttack(true);
 }
 
 #pragma region Posture
 /**
  * Is triggered when the posture takes damage whether by parried attacks or by no parried attacks. NOTE: perfect parries will not trigger any logic here.
+ * So far, only called on the client.
  * @param DamageInfo 
  */
 void UBaseParryComponent::DamagePosture(const FDamageInfo DamageInfo)
 {
-	OnParry();
+	// OnParry();
 	
-	if(!HasAuthority())
+	if(bIsLocallyControlled)
 	{
-		Server_DamagePosture(DamageInfo);
+		PerformDamagePosture(DamageInfo);
 	}
 	else
 	{
-		Multicast_DamagePosture(DamageInfo);
-		PerformDamagePosture(DamageInfo);
+		Server_DamagePosture(DamageInfo);
+		// PerformDamagePosture(DamageInfo);
 	}
 }
 
 void UBaseParryComponent::Server_DamagePosture_Implementation(const FDamageInfo DamageInfo)
 {
-	Multicast_DamagePosture(DamageInfo);
+	Client_DamagePosture(DamageInfo);
+}
+
+void UBaseParryComponent::Client_DamagePosture_Implementation(const FDamageInfo DamageInfo)
+{
 	PerformDamagePosture(DamageInfo);
 }
 
-void UBaseParryComponent::Multicast_DamagePosture_Implementation(const FDamageInfo DamageInfo)
-{
-	if(IsAutonomousProxy())
-	{
-		return;
-	}
-	
-	OnParry();
-}
-
+// This is only called through the client
 void UBaseParryComponent::PerformDamagePosture(const FDamageInfo DamageInfo)
 {
-	CurrentAttacker = DamageInfo.DamageInstigatorCharacter;
-	
 	if(CurrentParryState != EParryState::Perfect)
 	{
-		const float Multiplier = PostureMultipliers[CurrentParryState];
-		AddToCurrentPosture(-DamageInfo.PostureDamage * Multiplier);
+		AddToCurrentPosture(DamageInfo);
 
 		// disable and enable posture recovery
 		if(GetWorld()->GetTimerManager().IsTimerActive(PostureRecoveryTimerHandle))
@@ -305,106 +347,84 @@ void UBaseParryComponent::PerformDamagePosture(const FDamageInfo DamageInfo)
 	}
 }
 
-void UBaseParryComponent::OnParry()
-{
-	// play parry particles
-	if(CurrentParryState != EParryState::None)
-	{
-		if(OnParrySuccessful_Local.IsBound())
-		{
-			OnParrySuccessful_Local.Broadcast(CurrentParryState);
-		}
-	}
-}
-
-void UBaseParryComponent::AddToCurrentPosture(const float Amount)
+void UBaseParryComponent::AddToCurrentPosture(const FDamageInfo DamageInfo)
 {
 	if (!HasAuthority())
 	{
-		if(GetOwnerRole() == ROLE_AutonomousProxy)
-		{
-			Server_AddToCurrentPosture(Amount);
-		}
+		Server_AddToCurrentPosture(DamageInfo, CurrentCombatState);
 	}
 	else
 	{
-		PerformAddToCurrentPosture(Amount);
-		OnRep_CurrentPosture();
+		PerformServerAddToCurrentPosture(DamageInfo, CurrentCombatState);
 	}
 }
 
-void UBaseParryComponent::Server_AddToCurrentPosture_Implementation(const float Amount)
+void UBaseParryComponent::Server_AddToCurrentPosture_Implementation(const FDamageInfo DamageInfo, const ECombatState State)
 {
-	PerformAddToCurrentPosture(Amount);
+	PerformServerAddToCurrentPosture(DamageInfo, State);
+}
+
+void UBaseParryComponent::PerformServerAddToCurrentPosture(const FDamageInfo DamageInfo, const ECombatState State)
+{
+	const float PostureDamage = -DamageInfo.PostureDamage * PostureMultipliers[CurrentParryState];
+	PerformAddToCurrentPosture(PostureDamage);
 	OnRep_CurrentPosture();
+		
+	if(CurrentPosture <= 0)
+	{
+		// PrintOnScreen(FString::Printf(TEXT("%s [%s]"), *UEnum::GetValueAsString(State), *UEnum::GetValueAsString(GetOwnerRole())));
+		if(State == ECombatState::Normal)
+		{
+			OnStunned();
+		}
+		else if(State == ECombatState::Stunned)
+		{
+			// TODO: must be handled better. A cheat for now.
+			// CurrentAttacker = DamageInfo.DamageInstigator;
+			OnKnockDown(DamageInfo.DamageInstigator);
+		}
+	}
+	else if(PostureDamage < 0 && CurrentParryState == EParryState::None)
+	{
+		AnimationComponent->PlayHitReactMontage(DamageInfo);
+	}
 }
 
 void UBaseParryComponent::PerformAddToCurrentPosture(const float Amount)
 {
-	CurrentPosture = FMath::Min(CurrentPosture + Amount, MaxPosture);
+	CurrentPosture = FMath::Clamp(CurrentPosture + Amount, 0.f, MaxPosture);
 }
 
 void UBaseParryComponent::OnRep_CurrentPosture()
 {
-	// on posture broken
-	if(CurrentPosture <= 0)
-	{
-		CurrentPosture = 0.f;
-
-		if(HasAuthority())
-		{
-			if(CurrentCombatState == ECombatState::Normal)
-			{
-				OnStunned();
-			}
-			else if(CurrentCombatState == ECombatState::Stunned)
-			{
-				OnKnockDown();
-			}
-		}
-	}
-	
+	// Update HUDs locally and remotely (overhead)
 	if(OnPostureChanged.IsBound())
 	{
 		OnPostureChanged.Broadcast(CurrentPosture, MaxPosture);
 	}
 }
 
-void UBaseParryComponent::OnRep_CurrentCombatState()
-{
-}
-
+// Called only through the server
 void UBaseParryComponent::OnStunned()
 {
-	if(!HasAuthority())
-	{
-		Server_PerformStun();
-	}
-	else
-	{
-		PerformStun();
-		Multicast_PerformStun();
-	}
-}
-
-void UBaseParryComponent::Server_PerformStun_Implementation()
-{
 	PerformStun();
-	Multicast_PerformStun();
-}
-
-void UBaseParryComponent::Multicast_PerformStun_Implementation()
-{
-	if(!HasAuthority())
-	{
-		AnimInstance->Montage_Play(StunMontage);
-	}
 }
 
 void UBaseParryComponent::PerformStun()
 {
-	CurrentCombatState = ECombatState::Stunned;
-	AnimInstance->Montage_Play(StunMontage);
+	PlayerCharacter->PerformCameraShake(StunCameraShake);
+	SetCombatState(ECombatState::Stunned);
+
+	if(!AnimationComponent)
+	{
+		PrintOnScreen(TEXT("AnimationComponent is invalid"));
+	}
+	if(!StunMontage)
+	{
+		PrintOnScreen(TEXT("StunMontage is invalid"));
+	}
+	
+	AnimationComponent->PlayMontage(StunMontage, true);
 	bCanRecoverPosture = false;
 }
 
@@ -427,80 +447,67 @@ void UBaseParryComponent::Server_PerformRecoverFromStun_Implementation()
 
 void UBaseParryComponent::PerformRecoverFromStun()
 {
-	CurrentCombatState = ECombatState::Normal;
+	SetCombatState(ECombatState::Normal);
 	bCanRecoverPosture = true;
-
 	FullyRefillPosture();
 }
 
-void UBaseParryComponent::OnKnockDown()
+// Called only through the server
+void UBaseParryComponent::OnKnockDown(AActor* Attacker)
 {
-	if (HasAuthority())
-	{
-		PerformKnockDown();
-		Multicast_PerformKnockDown();
-	}
-	else
-	{
-		Server_PerformKnockDown();
-	}
+	// if (HasAuthority())
+	// {
+	// PlayerCharacter->PerformCameraShake(KnockDownCameraShake);
+	PrintOnScreen(TEXT("Knockdown"));
+	SetCombatState(ECombatState::KnockedDown);
+	PerformKnockDown(Attacker);
+	Multicast_PerformKnockDown(Attacker);
+	// }
+	// else
+	// {
+	// 	Server_PerformKnockDown();
+	// }
 }
 
 void UBaseParryComponent::Server_PerformKnockDown_Implementation()
 {
-	PerformKnockDown();
-	Multicast_PerformKnockDown();
+	// SetCombatState(ECombatState::KnockedDown);
+	// PerformKnockDown();
+	// Multicast_PerformKnockDown();
 }
 
-void UBaseParryComponent::Multicast_PerformKnockDown_Implementation()
+void UBaseParryComponent::Multicast_PerformKnockDown_Implementation(AActor* Attacker)
 {
 	if(HasAuthority())
 	{
 		return;
 	}
-	
-	if (!CurrentAttacker || !PlayerCharacter || !AnimInstance)
-	{
-		return;
-	}
-	
-	const FVector Direction = (CurrentAttacker->GetActorLocation() - PlayerCharacter->GetActorLocation()).GetSafeNormal();
-	const FRotator HitRotation = Direction.Rotation();
-	
-	if(OwnerController)
-	{
-		OwnerController->SetControlRotation(HitRotation);
-	}
-	
-	PlayerCharacter->SetActorRotation(HitRotation);
-	PlayerCharacter->GetCharacterMovement()->bUseControllerDesiredRotation = true;
-	PlayerCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
 
-	AnimInstance->Montage_Play(KnockDownMontage, 1.f);
+	PerformKnockDown(Attacker);
 }
 
-void UBaseParryComponent::PerformKnockDown()
+void UBaseParryComponent::PerformKnockDown(const AActor* Attacker)
 {
-	CurrentCombatState = ECombatState::KnockedDown;
-	
-	if (!CurrentAttacker || !PlayerCharacter || !AnimInstance)
+	if (!Attacker || !PlayerCharacter || !AnimInstance)
 	{
+		PrintOnScreen(TEXT("Something is missing"));
 		return;
 	}
 	
-	const FVector Direction = (CurrentAttacker->GetActorLocation() - PlayerCharacter->GetActorLocation()).GetSafeNormal();
+	const FVector Direction = (Attacker->GetActorLocation() - PlayerCharacter->GetActorLocation()).GetSafeNormal();
 	const FRotator HitRotation = Direction.Rotation();
 	
-	if(OwnerController)
-	{
-		OwnerController->SetControlRotation(HitRotation);
-	}
+	// if(OwnerController)
+	// {
+	// 	OwnerController->SetControlRotation(HitRotation);
+	// }
 
 	PlayerCharacter->SetActorRotation(HitRotation);
 	PlayerCharacter->GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	PlayerCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
 
-	AnimInstance->Montage_Play(KnockDownMontage, 1.f);
+	PrintOnScreen(TEXT("Playing knockdown montage"));
+	AnimInstance->Montage_Play(KnockDownMontage);
 }
 
 void UBaseParryComponent::StartRecoveryFromKnockDown()
@@ -510,8 +517,26 @@ void UBaseParryComponent::StartRecoveryFromKnockDown()
 
 void UBaseParryComponent::EndRecoveryFromKnockDown()
 {
-	CurrentCombatState = ECombatState::Normal;
+	SetCombatState(ECombatState::Normal);
 	PlayerCharacter->RestoreCharacterRotation();
+	FullyRefillPosture();
+}
+
+void UBaseParryComponent::SetCombatState(const ECombatState State)
+{
+	if(bIsLocallyControlled)
+	{
+		CurrentCombatState = State;
+	}
+	else
+	{
+		Client_SetCombatState(State);
+	}
+}
+
+void UBaseParryComponent::Client_SetCombatState_Implementation(const ECombatState State)
+{
+	CurrentCombatState = State;
 }
 
 void UBaseParryComponent::SetMaxPosture(const float NewAmount)
@@ -521,6 +546,48 @@ void UBaseParryComponent::SetMaxPosture(const float NewAmount)
 
 void UBaseParryComponent::FullyRefillPosture()
 {
-	AddToCurrentPosture(MaxPosture);
+	RecoverDamageInfo.PostureDamage = -MaxPosture;
+	AddToCurrentPosture(RecoverDamageInfo);
 }
 #pragma endregion 
+
+void UBaseParryComponent::PlayParryEffects(const FDamageInfo DamageInfo)
+{
+	OnParry();
+	
+	if(!HasAuthority())
+	{
+		Server_PlayParryEffects(DamageInfo);
+	}
+	else
+	{
+		Multicast_PlayParryEffects(DamageInfo);
+	}
+}
+
+void UBaseParryComponent::Server_PlayParryEffects_Implementation(const FDamageInfo DamageInfo)
+{
+	Multicast_PlayParryEffects(DamageInfo);
+}
+
+void UBaseParryComponent::Multicast_PlayParryEffects_Implementation(const FDamageInfo DamageInfo)
+{
+	if(GetOwnerRole() == ROLE_AutonomousProxy)
+	{
+		return;
+	}
+	
+	OnParry();
+}
+
+void UBaseParryComponent::OnParry()
+{
+	// play parry particles if there is a parry
+	if(CurrentParryState != EParryState::None)
+	{
+		if(OnParrySuccessful_Local.IsBound())
+		{
+			OnParrySuccessful_Local.Broadcast(CurrentParryState);
+		}
+	}
+}

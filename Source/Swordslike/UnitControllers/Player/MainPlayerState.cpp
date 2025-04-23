@@ -1,7 +1,6 @@
 #include "MainPlayerState.h"
 
 #include "Net/UnrealNetwork.h"
-#include "Swordslike/SwordslikeGameInstance.h"
 
 void AMainPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {

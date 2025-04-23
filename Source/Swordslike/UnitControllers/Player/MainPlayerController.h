@@ -18,8 +18,14 @@ class SWORDSLIKE_API AMainPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
-// protected:
-// 	virtual void BeginPlay() override;
+protected:
+	virtual void ClientReset_Implementation() override;
+	virtual void BeginPlay() override;
+
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<AHUD> HUDToUse;
+
 // 	virtual void SetupInputComponent() override;
 //
 // 	UPROPERTY(EditDefaultsOnly, Category=Input, meta=(AllowPrivateAccess))

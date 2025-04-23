@@ -8,6 +8,10 @@
 
 class UPlayerStartCharacterDataAsset;
 
+float UPlayerSelectionMenuWidget::MaxHealth = 100.f;
+float UPlayerSelectionMenuWidget::MaxStamina = 100.f;
+float UPlayerSelectionMenuWidget::MaxPosture = 100.f;
+
 void UPlayerSelectionMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -38,9 +42,9 @@ void UPlayerSelectionMenuWidget::UpdateWithCharacterData(const TSoftObjectPtr<UP
 	{
 		CharacterNameText->SetText(FText::FromString(Data->CharacterName));
 		CharacterImage->SetBrushFromTexture(Data->CharacterTexture);
-		HealthBar->SetPercent(Data->StartingHealthPoints / 100.f);
-		StaminaBar->SetPercent(Data->StartingStamina / 100.f);
-		PostureBar->SetPercent(Data->StartingPosture / 100.f);
+		HealthBar->SetPercent(Data->StartingHealthPoints / MaxHealth);
+		StaminaBar->SetPercent(Data->StartingStamina / MaxStamina);
+		PostureBar->SetPercent(Data->StartingPosture / MaxPosture);
 	}
 	else
 	{

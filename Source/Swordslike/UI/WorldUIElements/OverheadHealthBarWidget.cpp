@@ -2,28 +2,16 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "GameFramework/Character.h"
-#include "Player/SwordslikeCharacter.h"
 
 void UOverheadHealthBarWidget::InitEntityComponent(ACharacter* Character)
 {
 	if(Character)
 	{
-		if(!Character->IsLocallyControlled())
-		{
-			if(ASwordslikeCharacter* PlayerCharacter = Cast<ASwordslikeCharacter>(Character))
-			{
-				const FString Name = FString::Printf(TEXT("%s\n%s"),
-				                                     *UEnum::GetValueAsString(Character->GetLocalRole()),
-				                                     *UEnum::GetValueAsString(Character->GetRemoteRole()));
-			
-				SetOverheadNameValue(FText::FromString(*Name));
-				Hide();
-			}
-		}
-		else
-		{
-			Hide();
-		}
+		Hide();
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 500.f, FColor::Green, FString::Printf(TEXT("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Hidden the overhead widget")));
 	}
 }
 
@@ -43,10 +31,6 @@ void UOverheadHealthBarWidget::SetPostureOverheadBarValue(const float Current, c
 		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("%f \\ %f"), Current, Max));
 		const float Amount = Current / Max;
 		PostureBar->SetPercent(Amount);
-	}
-	else
-	{
-		// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f\n%f"), Current, Max));
 	}
 }
 

@@ -15,6 +15,11 @@ void UParryState_AN::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase*
 	{
 		if(const ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner()))
 		{
+			if(!Character->IsLocallyControlled())
+			{
+				return;
+			}
+				
 			Character->GetParryComponent()->SetParryState(ParryState);
 		}
 	}

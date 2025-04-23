@@ -11,6 +11,11 @@ void UKnockDown_NS::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 	{
 		if(ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner()))
 		{
+			if(!Character->IsLocallyControlled())
+			{
+				return;
+			}
+			
 			Character->SetCanMove(false);
 			Character->SetCanJump(false);
 			Character->SetCanAttack(false);
@@ -36,6 +41,11 @@ void UKnockDown_NS::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBas
 	{
 		if(ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner()))
 		{
+			if(!Character->IsLocallyControlled())
+			{
+				return;
+			}
+			
 			Character->SetCanMove(true);
 			Character->SetCanJump(true);
 			Character->SetCanAttack(true);

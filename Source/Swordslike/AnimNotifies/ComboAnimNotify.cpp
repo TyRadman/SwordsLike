@@ -22,7 +22,7 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 
 	const ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Owner);
 	
-	if(!CustomCharacter)
+	if(!CustomCharacter || !CustomCharacter->IsLocallyControlled())
 	{
 		return;
 	}
@@ -30,11 +30,19 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 	UPlayerCombatComponent* CombatComp = CustomCharacter->GetCombatComponent();
 	
 	if (!CombatComp)
+	{
 		return;
+	}
+	
+	if(CombatComp->GetComboState() == EComboState::Broken)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Broken OnNotify");
+		return;
+	}
 
 	switch (NotifyType)
 	{
-	case ECombatNotifyType::Damage:
+		case ECombatNotifyType::Damage:
 		{
 			if (CombatComp->GetWeaponHandler())
 			{
@@ -43,17 +51,17 @@ void UComboAnimNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 			
 			break;
 		}
-	case ECombatNotifyType::Input:
+		case ECombatNotifyType::Input:
 		{
 			CombatComp->AllowInput();
 			break;
 		}
-	case ECombatNotifyType::PerformNextAttack:
+		case ECombatNotifyType::PerformNextAttack:
 		{
 			CombatComp->PerformNextAttack();
 			break;
 		}
-	case ECombatNotifyType::IndicatorTime:
+		case ECombatNotifyType::IndicatorTime:
 		{
 			CombatComp->StartAttackWarning(TotalDuration, AnticipationSpeedMultiplayer);
 			break;
@@ -75,9 +83,9 @@ void UComboAnimNotify::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequence
 		return;
 	}
 
-	ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Owner);
+	const ASwordslikeCharacter* CustomCharacter = Cast<ASwordslikeCharacter>(Owner);
 	
-	if(!CustomCharacter)
+	if(!CustomCharacter || !CustomCharacter->IsLocallyControlled())
 	{
 		return;
 	}
@@ -85,6 +93,11 @@ void UComboAnimNotify::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequence
 	UPlayerCombatComponent* CombatComp = CustomCharacter->GetCombatComponent();
 	
 	if (!CombatComp)
+	{
+		return;
+	}
+	
+	if(CombatComp->GetComboState() == EComboState::Broken)
 	{
 		return;
 	}

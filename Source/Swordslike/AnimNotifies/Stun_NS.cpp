@@ -11,6 +11,11 @@ void UStun_NS::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* 
 	{
 		if(ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner()))
 		{
+			if(!Character->IsLocallyControlled())
+			{
+				return;
+			}
+			
 			Character->OnStunned();
 			
 			if(UBaseParryComponent* Parry = Character->GetParryComponent())
@@ -30,11 +35,15 @@ void UStun_NS::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* An
 	{
 		if(ASwordslikeCharacter* Character = Cast<ASwordslikeCharacter>(MeshComp->GetOwner()))
 		{
+			if(!Character->IsLocallyControlled())
+			{
+				return;
+			}
+			
 			Character->OnStunnedRecover();
 			
 			if(UBaseParryComponent* Parry = Character->GetParryComponent())
 			{
-				GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Green, TEXT("Successfully called recover"));
 				Parry->OnRecoverFromStun();
 			}
 			else

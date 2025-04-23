@@ -29,14 +29,6 @@ public:
 	UPROPERTY(EditAnywhere, Category=Animations)
 	UAnimMontage* HitReactMontage;
 	
-	UPROPERTY(EditAnywhere, Category=Animations)
-	UAnimMontage* ForwardHitReactMontage;
-	UPROPERTY(EditAnywhere, Category=Animations)
-	UAnimMontage* BackwardHitReactMontage;
-	UPROPERTY(EditAnywhere, Category=Animations)
-	UAnimMontage* LeftHitReactMontage;
-	UPROPERTY(EditAnywhere, Category=Animations)
-	UAnimMontage* RightHitReactMontage;
 
 	// 1. normal hit 2. big hit 3. knock out
 	UPROPERTY(EditAnywhere, Category=Animations)
@@ -66,19 +58,17 @@ public:
 	void PlayRollMontage();
 
 	UFUNCTION(Server, Reliable)
-	void Server_PlayRollMontage(UAnimMontage* Montage);
+	void Server_PlayRollMontage(UAnimMontage* Montage, const bool bForcePlay);
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PlayRollMontage(UAnimMontage* Montage);
-
+	void Multicast_PlayRollMontage(UAnimMontage* Montage, const bool bForcePlay);
 	
+	void PlayMontage(UAnimMontage* Montage, const bool bForcePlay = false);
 
 private:
-	UPROPERTY(VisibleDefaultsOnly, Category=Animations)
 	UAnimInstance* AnimInstance;
 
 	// utilities
-	void PlayMontage(UAnimMontage* Montage);
-	void PerformPlayMontage(UAnimMontage* Montage);
+	void PerformPlayMontage(UAnimMontage* Montage, const bool bForcePlay = false);
 
 	ASwordslikeCharacter* OwnerCharacter;
 };

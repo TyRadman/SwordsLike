@@ -67,4 +67,8 @@ public:
 	
 	FORCEINLINE bool IsEditingName() const { return bIsEditingName; }
 	FORCEINLINE FString GetNameText(){ return PlayerNameTextBox->GetText().ToString(); }
+
+	static float MaxHealth;
+	static float MaxStamina;
+	static float MaxPosture;
 };

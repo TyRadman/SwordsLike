@@ -54,6 +54,9 @@ public:
 	UPROPERTY(ReplicatedUsing=OnRep_CurrentWeapon)
 	AWeapon* CurrentWeapon;
 
+	ASwordslikeCharacter* PlayerCharacter;
+	bool bIsLocallyController = false;
+
 private:
 	bool bIsAttacking = false;
 	EHitType CurrentHitType;
@@ -97,13 +100,15 @@ private:
 	void Server_PlayMontage(UAnimMontage* Montage);
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayMontage(UAnimMontage* Montage);
-
-	UFUNCTION(Client, Reliable)
-	void Client_PlayCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_InflictDamage(AActor* Target, const FDamageInfo& DamageInfo);
 
 
 public:
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	bool bIsCarryingHeavyWeapon = false;
 	FORCEINLINE AWeapon* GetCurrentWeapon() const { return CurrentWeapon; }
+
+	void OnForceStopAttack();
 };
