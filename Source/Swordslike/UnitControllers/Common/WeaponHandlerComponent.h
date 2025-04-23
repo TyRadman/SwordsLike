@@ -47,12 +47,14 @@ public:
 	void Multicasat_OnTargetAttacked(const FVector ImpactPoint, AWeapon* Weapon);
 
 
-	void EquipWeapon(AWeapon* Weapon);
+	void EquipWeapon(AWeapon* WeaponToEquip);
 	float GetWeaponStaminaCost() const;
 	FVector GetWeaponMiddleLocation() const;
 
 	UPROPERTY(ReplicatedUsing=OnRep_CurrentWeapon)
 	AWeapon* CurrentWeapon;
+
+	void DropWeapon();
 
 	ASwordslikeCharacter* PlayerCharacter;
 	bool bIsLocallyController = false;
@@ -73,8 +75,8 @@ private:
 	void OnRep_CurrentWeapon();
 	
 	UFUNCTION(Server, Reliable)
-	void Server_EquipWeapon(AWeapon* Weapon);
-	void EquipWeaponProcess(AWeapon* Weapon);
+	void Server_EquipWeapon(AWeapon* WeaponToEquip);
+	void EquipWeaponProcess(AWeapon* WeaponToEquip);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
 	TSubclassOf<AWeapon> StartingWeapon;

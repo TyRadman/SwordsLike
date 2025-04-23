@@ -102,26 +102,26 @@ void UWeaponHandlerComponent::OnRep_CurrentWeapon()
 	// PrintOnScreen(FString::Printf(TEXT("Weapon Set 2")));
 }
 
-void UWeaponHandlerComponent::EquipWeapon(AWeapon* Weapon)
+void UWeaponHandlerComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if(!HasAuthority())
 	{
-		Server_EquipWeapon(Weapon);
+		Server_EquipWeapon(WeaponToEquip);
 	}
 	else
 	{
-		EquipWeaponProcess(Weapon);
+		EquipWeaponProcess(WeaponToEquip);
 	}
 }
 
-void UWeaponHandlerComponent::Server_EquipWeapon_Implementation(AWeapon* Weapon)
+void UWeaponHandlerComponent::Server_EquipWeapon_Implementation(AWeapon* WeaponToEquip)
 {
-	EquipWeaponProcess(Weapon);
+	EquipWeaponProcess(WeaponToEquip);
 }
 
-void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
+void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* WeaponToEquip)
 {
-	if(!Weapon)
+	if(!WeaponToEquip)
 	{
 		PrintOnScreen(FString::Printf(TEXT("WeaponHandler ERROR: No Weapon passed for EquipWeapon")));
 		return;
@@ -133,12 +133,19 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 		return;
 	}
 
-	bIsCarryingHeavyWeapon = Weapon->bIsCarryingHeavyWeapon;
+	bIsCarryingHeavyWeapon = WeaponToEquip->bIsCarryingHeavyWeapon;
+
+	// if there's a weapon equipped, drop it
+	if(CurrentWeapon)
+	{
+		DropWeapon();
+	}
 
 	// PrintOnScreen(FString::Printf(TEXT("Equipped weapon successfully (%s)"), *Weapon->GetActorNameOrLabel()), FColor::Green);
-	CurrentWeapon = Weapon;
+	CurrentWeapon = WeaponToEquip;
+	CurrentWeapon->OnEquipped();
 	
-	Weapon->AttachToComponent(
+	WeaponToEquip->AttachToComponent(
 		WeaponOwner->GetCustomMesh(),
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		FName("swordsocket_r")
@@ -168,6 +175,12 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* Weapon)
 	}
 
 	PlayEquipMontage();
+}
+
+void UWeaponHandlerComponent::DropWeapon()
+{
+	CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	CurrentWeapon->OnDropped();
 }
 
 float UWeaponHandlerComponent::GetWeaponStaminaCost() const
@@ -261,7 +274,6 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 				}
 				
 				FDamageInfo DamageInfo;
-				// DamageInfo.Damage = CurrentWeapon->DamagePerHit;
 				DamageInfo.Damage = CurrentDamage;
 				DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
 				DamageInfo.DamageInstigator = WeaponOwner;

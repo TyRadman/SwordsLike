@@ -100,6 +100,9 @@ private:
 
 	bool bIsEquipped = false;
 
+	FVector RelativeLocation;
+	FRotator RelativeRotation;
+
 public:
 	virtual void Interact(AActor* Interactor) override;
 	UFUNCTION(Server, Reliable)
@@ -114,5 +117,6 @@ public:
 	FORCEINLINE UStaticMeshComponent* GetMesh() const { return Mesh; }
 	FORCEINLINE UParticleSystemComponent* GetTrailEffect() const { return TrailPSC; }
 	
-
+	void OnEquipped();
+	void OnDropped();
 };

@@ -133,6 +133,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UInteractionComponent* InteractionComponent;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	USceneComponent* WeaponDropPoint;
+	
 	APlayerController* PlayerController;
 	
 	UCapsuleComponent* Capsule;
@@ -179,6 +182,7 @@ public:
 	FORCEINLINE UBaseEntityAnimationsComponent* GetAnimation() const {return Animations; }
 	FORCEINLINE APlayerController* GetPlayerController() const {return PlayerController; }
 	FORCEINLINE UBaseParryComponent* GetParryComponent() const {return ParryComponent; }
+	FORCEINLINE USceneComponent* GetWeaponDropPoint() const {return WeaponDropPoint; }
 	FORCEINLINE UPlayerCombatComponent* GetCombatComponent() const {return Combat; }
 	FORCEINLINE UPlayerHealthComponent* GetHealthComponent() const {return Health; }
 	FORCEINLINE USkeletalMeshComponent* GetCustomMesh() const {return CustomMesh; }
