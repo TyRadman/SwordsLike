@@ -29,9 +29,6 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 	void Server_Interact();
-	
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_Interact();
 
 	InteractionEventOneParam OnInteractableOverlapStarted;
 	InteractionEvent OnInteractableOverlapEnded;

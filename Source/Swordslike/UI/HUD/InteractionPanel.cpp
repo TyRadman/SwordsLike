@@ -72,6 +72,11 @@ void UInteractionPanel::HideInteractionPanel()
 {
 	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("hidden"));
 	PlayAnimation(FadeOutAnimation);
+	
+	if(GetWorld()->GetTimerManager().IsTimerActive(ComparisonDisplayTimer))
+	{
+		GetWorld()->GetTimerManager().ClearTimer(ComparisonDisplayTimer);
+	}
 
 	if(bIsComparingWeapons)
 	{

@@ -138,7 +138,14 @@ void UWeaponHandlerComponent::EquipWeaponProcess(AWeapon* WeaponToEquip)
 	// if there's a weapon equipped, drop it
 	if(CurrentWeapon)
 	{
-		DropWeapon();
+		if(CurrentWeapon == WeaponToEquip)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Why are we equipping %s twice"), *CurrentWeapon->GetActorNameOrLabel());
+		}
+		else
+		{
+			DropWeapon();
+		}
 	}
 
 	// PrintOnScreen(FString::Printf(TEXT("Equipped weapon successfully (%s)"), *Weapon->GetActorNameOrLabel()), FColor::Green);

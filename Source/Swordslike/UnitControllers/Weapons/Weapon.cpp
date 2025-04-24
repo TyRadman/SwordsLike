@@ -155,6 +155,7 @@ void AWeapon::PerformOnEquipped()
  	Mesh->SetSimulatePhysics(false);
  	
  	AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ 	AreaSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
  	
  	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -186,7 +187,6 @@ void AWeapon::PerformOnDropped()
  	Mesh->SetSimulatePhysics(true);
 
  	FTimerHandle TimerHandle;
-
  	
  	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
  	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
@@ -199,9 +199,10 @@ void AWeapon::PerformOnDropped()
 		 {
 			 Mesh->SetSimulatePhysics(false);
  			
-			 AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			 AreaSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-			  AreaSphere->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		 	AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+ 			// AreaSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
+		 	AreaSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		 	AreaSphere->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 		 },
 		 1.0f,
 		 false);

@@ -116,23 +116,17 @@ void UInteractionComponent::OnOverlapEnd(UPrimitiveComponent* OverlappedComponen
 
 void UInteractionComponent::Interact()
 {
-	if(!GetOwner()->HasAuthority())
+	if(!HasAuthority())
 	{
 		Server_Interact();
 	}
-
-	Multicast_Interact_Implementation();
+	else
+	{
+		GetCurrentInteractable()->Interact(GetOwner());
+	}
 }
 
 void UInteractionComponent::Server_Interact_Implementation()
 {
-	Multicast_Interact();
-}
-
-void UInteractionComponent::Multicast_Interact_Implementation()
-{
-	if(CurrentInteractable)
-	{
-		GetCurrentInteractable()->Interact(GetOwner());
-	}
+	GetCurrentInteractable()->Interact(GetOwner());
 }

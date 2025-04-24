@@ -272,6 +272,11 @@ public:
 	void Client_OnCharacterHit(const FDamageInfo& DamageInfo);
 	UFUNCTION(Server, Reliable)
 	void Server_PerformDamagePostureOnAttacker(UBaseParryComponent* AttackerParry, const FDamageInfo& DamageInfo);
+
+	void CustomLaunchCharacter(ASwordslikeCharacter* Character, const FVector LaunchVector);
+	UFUNCTION(Server, Reliable)
+	void Server_CustomLaunchCharacter(ASwordslikeCharacter* PushedCharacter, const FVector LaunchVector);
+	void PerformCustomLauchCharacter(ASwordslikeCharacter* Character, const FVector& HitLocation);
 	
 	void OnCharacterHitRecovered();
 	void OnRollStarted();
@@ -311,5 +316,8 @@ public:
 	TSubclassOf<UCameraShakeBase> GoodParryCameraShake;
 	UPROPERTY(EditDefaultsOnly, Category=CameraShake)
 	TSubclassOf<UCameraShakeBase> PerfectParryCameraShake;
+
+private:
+	const float ParryPushBackForce = 500.0f;
 };
 

@@ -677,6 +677,12 @@ void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
 	if(ParryState != EParryState::None)
 	{
 		ParryComponent->PlayParryEffects(DamageInfo);
+
+		// if(ParryState != EParryState::Perfect)
+		// {
+		const FVector PushBackVector = -GetActorForwardVector() * ParryPushBackForce;
+		CustomLaunchCharacter(this, PushBackVector);
+		// }
 	}
 	
 	// if there is no parry, then take normal damage
@@ -747,6 +753,28 @@ void ASwordslikeCharacter::Server_PerformDamagePostureOnAttacker_Implementation(
 	{
 		AttackerParry->DamagePosture(DamageInfo);
 	}
+}
+
+void ASwordslikeCharacter::CustomLaunchCharacter(ASwordslikeCharacter* PushedCharacter, const FVector LaunchVector)
+{
+	if(HasAuthority())
+	{
+		PerformCustomLauchCharacter(PushedCharacter, LaunchVector);
+	}
+	else
+	{
+		Server_CustomLaunchCharacter(PushedCharacter, LaunchVector);
+	}
+}
+
+void ASwordslikeCharacter::Server_CustomLaunchCharacter_Implementation(ASwordslikeCharacter* PushedCharacter, const FVector LaunchVector)
+{
+		PerformCustomLauchCharacter(PushedCharacter, LaunchVector);
+}
+
+void ASwordslikeCharacter::PerformCustomLauchCharacter(ASwordslikeCharacter* Character, const FVector& LaunchVector)
+{
+	Character->LaunchCharacter(LaunchVector, true, false);
 }
 
 void ASwordslikeCharacter::OnCharacterHitRecovered()

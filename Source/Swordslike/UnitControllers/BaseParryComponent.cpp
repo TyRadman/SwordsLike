@@ -27,8 +27,6 @@ void UBaseParryComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePrope
 	DOREPLIFETIME(UBaseParryComponent, CurrentPosture);
 	DOREPLIFETIME(UBaseParryComponent, MaxPosture);
 	DOREPLIFETIME(UBaseParryComponent, CurrentParryState);
-	// DOREPLIFETIME(UBaseParryComponent, bCanRecoverPosture);
-	// DOREPLIFETIME(UBaseParryComponent, CurrentCombatState);
 }
 
 void UBaseParryComponent::InitEntityComponent(ACharacter* Character)
@@ -151,12 +149,6 @@ void UBaseParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 #pragma region Parry Network
 void UBaseParryComponent::Parry()
 {
-	// Not used
-	// if(OnParryStartedEvent.IsBound())
-	// {
-	// 	OnParryStartedEvent.Broadcast();
-	// }
-	
 	if(!HasAuthority())
 	{
 		Server_Parry();
