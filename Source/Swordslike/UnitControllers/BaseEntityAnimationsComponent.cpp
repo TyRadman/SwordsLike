@@ -102,26 +102,31 @@ void UBaseEntityAnimationsComponent::PlayRollMontage()
 #pragma region Utilies
 void UBaseEntityAnimationsComponent::PlayMontage(UAnimMontage* Montage, const bool bForcePlay)
 {
-	PrintOnScreen(FString::Printf(TEXT("Called %s to play"), *Montage->GetName()));
+	// PrintOnScreen(FString::Printf(TEXT("Called %s to play"), *Montage->GetName()));
+	PerformPlayMontage(Montage, bForcePlay);
+	
 	if (!HasAuthority())
 	{
 		Server_PlayRollMontage(Montage, bForcePlay);
 	}
 	else
 	{
-		PerformPlayMontage(Montage, bForcePlay);
 		Multicast_PlayRollMontage(Montage, bForcePlay);
 	}
 }
 
 void UBaseEntityAnimationsComponent::Server_PlayRollMontage_Implementation(UAnimMontage* Montage, const bool bForcePlay)
 {
-	PerformPlayMontage(Montage, bForcePlay);
 	Multicast_PlayRollMontage(Montage, bForcePlay);
 }
 
 void UBaseEntityAnimationsComponent::Multicast_PlayRollMontage_Implementation(UAnimMontage* Montage, const bool bForcePlay)
 {
+	if(IsLocallyControlled())
+	{
+		return;
+	}
+	
 	PerformPlayMontage(Montage, bForcePlay);
 }
 

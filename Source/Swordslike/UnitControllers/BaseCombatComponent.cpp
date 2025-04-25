@@ -127,11 +127,14 @@ void UBaseCombatComponent::AttackAction()
 
 	if(ComboState == EComboState::Broken)
 	{
+		PrintOnScreen_Local(TEXT("Broken"));
 		return;
 	}
 	
 	if(ComboState == EComboState::Idle)
 	{
+		if(PlayerCharacter->bIsDebugging)
+		UE_LOG(LogTemp, Warning, TEXT("Setting to attack 1"));
 		SetComboState(EComboState::Attacking);
 		// PrintOnScreen_Local(FString::Printf(TEXT("First attack ")));
 		PlayNextAnimation();
@@ -142,12 +145,16 @@ void UBaseCombatComponent::AttackAction()
 	}
 	else if(ComboState == EComboState::LastSecondComboWindowOpen)
 	{
+		if(PlayerCharacter->bIsDebugging)
+		UE_LOG(LogTemp, Warning, TEXT("Setting to attack 2"));
 		SetComboState(EComboState::Attacking);
 		// PrintOnScreen_Local(FString::Printf(TEXT("Late attack ")));
 		PlayNextAnimation();
 	}
 	else
 	{
+		if(PlayerCharacter->bIsDebugging)
+		UE_LOG(LogTemp, Warning, TEXT("Can't attack because we're attacking"));
 		// PrintOnScreen_Local(TEXT("No case matched"));
 		// PrintOnScreen_Local(FString::Printf(TEXT("State: %s"), *UEnum::GetValueAsString(ComboState)));
 	}
@@ -161,6 +168,14 @@ void UBaseCombatComponent::AttackAction()
 void UBaseCombatComponent::PlayNextAnimation()
 {
 	CurrentAttackMontage = WeaponHandler->GetNextAttackMontage();
+
+	if(!CurrentAttackMontage)
+	{
+		if(PlayerCharacter->bIsDebugging)
+		UE_LOG(LogTemp, Warning, TEXT("NO ATTACK MONTAGE"));
+			
+	}
+	
 	PerformPlayAttackAnimation(CurrentAttackMontage);
 	
 	if (!HasAuthority())
@@ -212,6 +227,8 @@ void UBaseCombatComponent::PerformNextAttack()
 	if (ComboState == EComboState::ComboQueued)
 	{
 		PlayNextAnimation();
+		if(PlayerCharacter->bIsDebugging)
+		UE_LOG(LogTemp, Warning, TEXT("Setting to attack 3"));
 		SetComboState(EComboState::Attacking);
 	}
 	else

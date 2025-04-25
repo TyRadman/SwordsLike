@@ -34,7 +34,6 @@ void UTargetLockerComponent::InitEntityComponent(ACharacter* Character)
 			PrintOnScreen(TEXT("UTargetLockerComponent: NOT REPLICATED! SHOULD BE!"));
 		}
 		
-		// AddToOnLockedTarget(PlayerCharacter, &ASwordslikeCharacter::OnTargetLockedOn);
 		Server_OnLockStateChanged.AddUObject(PlayerCharacter, &ASwordslikeCharacter::OnTargetLockedOn);
 		
 		if(PlayerCharacter->GetFollowCamera())
@@ -178,14 +177,9 @@ void UTargetLockerComponent::PerformLockAction()
 {
 	if(bIsLockedOnTarget && LockedTarget)
 	{
-		// const FString RoleString = GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
-		// PrintOnScreen_Local(FString::Printf(TEXT("[%s] Unlocked!"), *RoleString), FColor::Red);
 		Unlock();
 		return;
 	}
-	
-	// const FString RoleString = GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
-	// PrintOnScreen_Local(FString::Printf(TEXT("[%s] Unlocked!"), *RoleString), FColor::Orange);
 
 	LockOn();
 }

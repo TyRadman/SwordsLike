@@ -33,6 +33,10 @@ void UWeaponComparisonWidget::SetValues(AWeapon* WeaponToSet, AWeapon* WeaponToC
 			DamageText->SetColorAndOpacity(FLinearColor::Red);
 		}
 	}
+	else
+	{
+		DamageText->SetColorAndOpacity(FLinearColor::White);
+	}
 	
 	if(WeaponToSet->PostureDamagePerHit != WeaponToCompareTo->PostureDamagePerHit)
 	{
@@ -44,6 +48,10 @@ void UWeaponComparisonWidget::SetValues(AWeapon* WeaponToSet, AWeapon* WeaponToC
 		{
 			PostureDamageText->SetColorAndOpacity(FLinearColor::Red);
 		}
+	}
+	else
+	{
+		PostureDamageText->SetColorAndOpacity(FLinearColor::White);
 	}
 
 	
@@ -57,5 +65,9 @@ void UWeaponComparisonWidget::SetValues(AWeapon* WeaponToSet, AWeapon* WeaponToC
 		{
 			StaminaCostText->SetColorAndOpacity(FLinearColor::Red);
 		}
+	}
+	else
+	{
+		StaminaCostText->SetColorAndOpacity(FLinearColor::White);
 	}
 }

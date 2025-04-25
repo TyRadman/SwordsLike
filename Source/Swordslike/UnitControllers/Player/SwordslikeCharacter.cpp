@@ -21,10 +21,12 @@
 #include "TargetLockerComponent.h"
 #include "Common/LockableTargetComponent.h"
 #include "Common/WeaponHandlerComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Swordslike/SwordslikeGameInstance.h"
 #include "Swordslike/AnimNotifies/ComboAnimNotify.h"
+#include "Swordslike/Environment/DestructibleObject.h"
 #include "Swordslike/UI/HUD/HUDManager.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
@@ -107,6 +109,10 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 	ParryComponent = CreateDefaultSubobject<UBaseParryComponent>("Player Parry");
 	
 	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>("Player Interaction");
+	
+	DestructibleCollider = CreateDefaultSubobject<USphereComponent>("Destructible Collider");
+	// DestructibleCollider->SetupAttachment(RootComponent);
+	DestructibleCollider->SetupAttachment(CustomMesh);
 
 	// VFX
 	ParrySparkVFX = CreateDefaultSubobject<UNiagaraComponent>("Sparks Effect");
@@ -124,6 +130,9 @@ void ASwordslikeCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	UUtilHelper::HideCursor(GetWorld());
+	
+	DestructibleCollider->OnComponentBeginOverlap.AddDynamic(this, &ASwordslikeCharacter::OnDestructibleOverlapped);
+	DisableDestructibleCollider();
 	
 	if(Combat)
 	{
@@ -461,6 +470,8 @@ void ASwordslikeCharacter::Jump()
 		OnJumped.Broadcast();
 	}
 
+	EnableDestructibleCollider();
+
 	Super::Jump();
 }
 
@@ -472,6 +483,8 @@ void ASwordslikeCharacter::Landed(const FHitResult& Hit)
 	{
 		OnLanded.Broadcast();
 	}
+
+	DisableDestructibleCollider();
 }
 
 void ASwordslikeCharacter::Roll()
@@ -491,7 +504,14 @@ void ASwordslikeCharacter::Attack()
 {
 	if(Sprint->GetCurrentStamina() == 0.f || !bCanAttack)
 	{
+		if(bIsDebugging)
+			UE_LOG(LogTemp, Warning, TEXT("Attacking blocked"));
 		return;
+	}
+	else
+	{
+		if(bIsDebugging)
+			UE_LOG(LogTemp, Warning, TEXT("Attacking successfully"));
 	}
 	
 	if(Combat)
@@ -543,6 +563,13 @@ void ASwordslikeCharacter::EndParry()
 void ASwordslikeCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// if(DestructibleCollider->GetCollisionEnabled() == ECollisionEnabled::QueryOnly)
+	// {
+	// 	const FVector Location = DestructibleCollider->GetComponentLocation();
+	// 	const float Radius = DestructibleCollider->Bounds.SphereRadius;
+	// 	DrawDebugSphere(GetWorld(), Location, Radius, 16, FColor::Red, false, 0.1f);
+	// }
 }
 
 void ASwordslikeCharacter::Move(const FInputActionValue& Value)
@@ -601,6 +628,11 @@ void ASwordslikeCharacter::Interact()
 #pragma region Externals
 void ASwordslikeCharacter::OnTargetLockedOn(ULockableTargetComponent* Target, const bool bIsLockedOn)
 {
+	if(Sprint->GetIsSprintingValue() && bIsLockedOn)
+	{
+		return;
+	}
+	
 	SetLockOnValue(bIsLockedOn);
 }
 
@@ -667,6 +699,11 @@ void ASwordslikeCharacter::PerformOnCharacterHit(const FDamageInfo& DamageInfo)
 	}
 }
 
+void ASwordslikeCharacter::Client_OnCharacterHit_Implementation(const FDamageInfo& DamageInfo)
+{
+	OnCharacterHitProcess(DamageInfo);
+}
+
 // only called on the client
 void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
 {
@@ -678,11 +715,12 @@ void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
 	{
 		ParryComponent->PlayParryEffects(DamageInfo);
 
-		// if(ParryState != EParryState::Perfect)
-		// {
-		const FVector PushBackVector = -GetActorForwardVector() * ParryPushBackForce;
-		CustomLaunchCharacter(this, PushBackVector);
-		// }
+		// push back the character hit when the parry isn't successful
+		if(ParryState != EParryState::Perfect)
+		{
+			const FVector PushBackVector = -GetActorForwardVector() * ParryPushBackForce;
+			CustomLaunchCharacter(this, PushBackVector);
+		}
 	}
 	
 	// if there is no parry, then take normal damage
@@ -695,7 +733,11 @@ void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
 			SetCanJump(false);
 			SetCanMove(false);
 			SetCanAttack(false);
+			
+			if(bIsDebugging)
+			UE_LOG(LogTemp, Warning, TEXT("Interrupted the attack"));
 			Combat->SetComboState(EComboState::Idle);
+			WeaponHandler->ResetAttackMontages();
 			// Animations->PlayHitReactMontage(DamageInfo);
 			GetWorldTimerManager().SetTimer(HitRecoveryTimer, this, &ASwordslikeCharacter::OnCharacterHitRecovered, RecoveryDuration, false);
 		}
@@ -740,11 +782,6 @@ void ASwordslikeCharacter::OnCharacterHitProcess(const FDamageInfo& DamageInfo)
 				PerformCameraShake(PerfectParryCameraShake);
 				break;
 	}
-}
-
-void ASwordslikeCharacter::Client_OnCharacterHit_Implementation(const FDamageInfo& DamageInfo)
-{
-	OnCharacterHitProcess(DamageInfo);
 }
 
 void ASwordslikeCharacter::Server_PerformDamagePostureOnAttacker_Implementation(UBaseParryComponent* AttackerParry,const FDamageInfo& DamageInfo)
@@ -821,11 +858,15 @@ void ASwordslikeCharacter::OnStunnedRecover()
 
 void ASwordslikeCharacter::OnRollStarted()
 {
+	// enable the collider
+	// EnableDestructibleCollider();
 	SetCanJump(false);
 }
 
 void ASwordslikeCharacter::OnRollFinished()
 {
+	// disable the collider
+	// DisableDestructibleCollider();
 	SetCanJump(true);
 }
 
@@ -888,6 +929,8 @@ void ASwordslikeCharacter::CameraShakeProcess(TSubclassOf<UCameraShakeBase> Shak
 
 void ASwordslikeCharacter::PerformTestActoin()
 {
+	bIsDebugging = true;
+	
 	if(GetWorldTimerManager().IsTimerActive(TestTimeHandle))
 	{
 		GetWorldTimerManager().ClearTimer(TestTimeHandle);
@@ -947,4 +990,47 @@ FString ASwordslikeCharacter::GetInputKey(const UInputAction* InputAction)
 	}
 }
 
+void ASwordslikeCharacter::OnDestructibleOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Got here 1"));
 
+	if(OtherActor)
+	{
+		if(ADestructibleObject* Destructible = Cast<ADestructibleObject>(OtherActor))
+		{
+			FDamageInfo DamageInfo;
+			DamageInfo.ImpactLocation = GetActorLocation();// + OtherActor->GetActorLocation()) / 2.0f;
+			DamageInfo.DamageInstigator = this;
+			DamageInfo.DamageInstigatorCharacter = this;
+
+			UE_LOG(LogTemp, Warning, TEXT("Got here 2"));
+
+			if(HasAuthority())
+			{
+				Destructible->TakeDamage(DamageInfo);
+			}
+			else
+			{
+				Server_InflictDamageToDestructible(Destructible, DamageInfo);
+			}
+		}
+	}
+}
+
+void ASwordslikeCharacter::EnableDestructibleCollider()
+{
+	DestructibleCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	DestructibleCollider->SetCollisionResponseToAllChannels(ECR_Overlap);
+	DestructibleCollider->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+}
+
+void ASwordslikeCharacter::DisableDestructibleCollider()
+{
+	DestructibleCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void ASwordslikeCharacter::Server_InflictDamageToDestructible_Implementation(ADestructibleObject* Destructible, const FDamageInfo DamageInfo)
+{
+	Destructible->TakeDamage(DamageInfo);
+}

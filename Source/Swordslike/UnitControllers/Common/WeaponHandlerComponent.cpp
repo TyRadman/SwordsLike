@@ -229,13 +229,16 @@ void UWeaponHandlerComponent::CacheTargetsBetweenTwoPoints(const FVector& StartL
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(GetOwner());
 	TArray<FHitResult> HitResults;
+	FCollisionObjectQueryParams CollisionParams;
+	CollisionParams.AddObjectTypesToQuery(ECC_Pawn);
+	CollisionParams.AddObjectTypesToQuery(ECC_Destructible);
 	
 	const bool bHitStart = GetWorld()->SweepMultiByObjectType(
 		HitResults,
 		StartLocation,
 		EndLocation,
 		FQuat::Identity,
-		FCollisionObjectQueryParams(ECC_Pawn),
+		CollisionParams,
 		FCollisionShape::MakeSphere(Radius),
 		QueryParams);
 
@@ -249,7 +252,7 @@ void UWeaponHandlerComponent::CacheTargetsBetweenTwoPoints(const FVector& StartL
 
 void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitResults)
 {
-	for(const FHitResult Result : HitResults)
+	for(const FHitResult& Result : HitResults)
 	{
 		AActor* TargetActor = Result.GetActor();
 		if(!TargetActor)
@@ -257,84 +260,137 @@ void UWeaponHandlerComponent::GetTargetsFromHitResults(TArray<FHitResult>& HitRe
 			continue;
 		}
 		
-		TArray<UActorComponent*> Components;
-		TargetActor->GetComponents(Components);
 
-		for(UActorComponent* Component : Components)
+		CheckForDetectedNonCharacter(Result, TargetActor);
+
+		CheckForDetectedCharacter(Result, TargetActor);
+	}
+}
+
+void UWeaponHandlerComponent::CheckForDetectedCharacter(const FHitResult& HitResult, AActor* Target)
+{
+	TArray<UActorComponent*> Components;
+	Target->GetComponents(Components);
+
+	for(UActorComponent* Component : Components)
+	{
+		if(!Component)
 		{
-			if(!Component)
-			{
-				continue;
-			}
+			continue;
+		}
 		
-			if(IDamagable* TargetDamagable = Cast<IDamagable>(Component))
+		if(IDamagable* TargetDamagable = Cast<IDamagable>(Component))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Detected IDamagable %s"), *Target->GetActorNameOrLabel());
+				
+			if(TargetDamagable->IsInvincible())
 			{
-				if(TargetDamagable->IsInvincible())
-				{
-					break;
-				}
+				break;
+			}
 				
-				// if the target has already been hit in this attack, then skip it
-				if(TargetsHit.Contains(TargetDamagable))
-				{
-					break;
-				}
+			// if the target has already been hit in this attack, then skip it
+			if(TargetsHit.Contains(TargetDamagable))
+			{
+				break;
+			}
+			
+			FDamageInfo DamageInfo;
+			DamageInfo.Damage = CurrentDamage;
+			DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
+			DamageInfo.DamageInstigator = WeaponOwner;
+			DamageInfo.DamageInstigatorCharacter = WeaponOwner;
+			DamageInfo.ImpactLocation = HitResult.ImpactPoint;
+			DamageInfo.HitType = CurrentHitType;
 				
-				FDamageInfo DamageInfo;
-				DamageInfo.Damage = CurrentDamage;
-				DamageInfo.PostureDamage = CurrentWeapon->PostureDamagePerHit;
-				DamageInfo.DamageInstigator = WeaponOwner;
-				DamageInfo.DamageInstigatorCharacter = WeaponOwner;
-				DamageInfo.ImpactLocation = Result.ImpactPoint;
-				DamageInfo.HitType = CurrentHitType;
+			if(HasAuthority())
+			{
+				TargetDamagable->TakeDamage(DamageInfo);
+			}
+			else
+			{
+				Server_InflictDamageOnComponent(Component, DamageInfo);
+			}
 				
-				if(HasAuthority())
+			WeaponOwner->PerformCameraShake(CurrentCameraShake);
+
+			if(TargetDamagable->IsAlive())
+			{
+				if(!HasAuthority())
 				{
-					TargetDamagable->TakeDamage(DamageInfo);
+					Server_OnTargetAttacked(HitResult.ImpactPoint, CurrentWeapon);
 				}
 				else
 				{
-					Server_InflictDamage(TargetActor, DamageInfo);
+					Multicasat_OnTargetAttacked(HitResult.ImpactPoint, CurrentWeapon);
 				}
-				
-				WeaponOwner->PerformCameraShake(CurrentCameraShake);
-
-				if(TargetDamagable->IsAlive())
-				{
-					if(!HasAuthority())
-					{
-						Server_OnTargetAttacked(Result.ImpactPoint, CurrentWeapon);
-					}
-					else
-					{
-						Multicasat_OnTargetAttacked(Result.ImpactPoint, CurrentWeapon);
-					}
-				}
-				
-				TargetsHit.Add(TargetDamagable);
-				break;
 			}
+				
+			TargetsHit.Add(TargetDamagable);
 		}
 	}
 }
 
-void UWeaponHandlerComponent::Server_InflictDamage_Implementation(AActor* Target, const FDamageInfo& DamageInfo)
+void UWeaponHandlerComponent::CheckForDetectedNonCharacter(const FHitResult& HitResult, AActor* Target)
+{
+	if(IDamagable* NonCharacterDamagable = Cast<IDamagable>(Target))
+	{
+		if(NonCharacterDamagable->IsInvincible())
+		{
+			return;
+		}
+				
+		// if the target has already been hit in this attack, then skip it
+		if(TargetsHit.Contains(NonCharacterDamagable))
+		{
+			return;
+		}
+		
+		UE_LOG(LogTemp, Warning, TEXT("Detected non character %s"), *Target->GetActorNameOrLabel());
+			
+		FDamageInfo DamageInfo;
+		DamageInfo.Damage = 1.f;
+		DamageInfo.DamageInstigator = WeaponOwner;
+		DamageInfo.DamageInstigatorCharacter = WeaponOwner;
+		DamageInfo.ImpactLocation = WeaponOwner->GetActorLocation();
+				
+		if(HasAuthority())
+		{
+			NonCharacterDamagable->TakeDamage(DamageInfo);
+		}
+		else
+		{
+			Server_InflictDamageOnActor(Target, DamageInfo);
+		}
+				
+		WeaponOwner->PerformCameraShake(CurrentCameraShake);
+				
+		TargetsHit.Add(NonCharacterDamagable);
+	}
+}
+
+void UWeaponHandlerComponent::Server_InflictDamageOnComponent_Implementation(UActorComponent* TargetComponent, const FDamageInfo& DamageInfo)
+{
+	if (!TargetComponent)
+	{
+		return;
+	}
+
+	if (IDamagable* Damagable = Cast<IDamagable>(TargetComponent))
+	{
+		Damagable->TakeDamage(DamageInfo);
+	}
+}
+
+void UWeaponHandlerComponent::Server_InflictDamageOnActor_Implementation(AActor* Target, const FDamageInfo& DamageInfo)
 {
 	if (!Target)
 	{
 		return;
 	}
 	
-	TArray<UActorComponent*> Components;
-	Target->GetComponents(Components);
-
-	for (UActorComponent* Component : Components)
+	if(IDamagable* NonCharacterDamagable = Cast<IDamagable>(Target))
 	{
-		if (IDamagable* Damagable = Cast<IDamagable>(Component))
-		{
-			Damagable->TakeDamage(DamageInfo);
-			break;
-		}
+		NonCharacterDamagable->TakeDamage(DamageInfo);
 	}
 }
 

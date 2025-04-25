@@ -11,6 +11,7 @@
 #include "Camera/CameraShakeBase.h"
 #include "SwordslikeCharacter.generated.h"
 
+class ADestructibleObject;
 class UPlayerStartCharacterDataAsset;
 class UBaseEntityAnimationsComponent;
 class UWeaponAttackIndicatorWidget;
@@ -135,6 +136,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	USceneComponent* WeaponDropPoint;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	USphereComponent* DestructibleCollider;
 	
 	APlayerController* PlayerController;
 	
@@ -173,6 +177,7 @@ public:
 	FORCEINLINE UWidgetComponent* GetAttackIndicatorWidgetComponent() const {return WeaponAttackIndicatorWidgetComponent; }
 	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent; }
 	FORCEINLINE UWeaponAttackIndicatorWidget* GetAttackIndicatorWidget() const {return WeaponAttackIndicator; }
+	FORCEINLINE USphereComponent* GetDestructibleSphereComponent() const {return DestructibleCollider; }
 	FORCEINLINE UInteractionComponent* GetInteractionComponent() const {return InteractionComponent; }
 	FORCEINLINE UPlayerStartCharacterDataAsset* GetData() const { return PlayerCharacterDataAsset; }
 	FORCEINLINE UTargetLockerComponent* GetLockOnComponent() const {return TargetLockerComponent; }
@@ -196,6 +201,7 @@ public:
 	FORCEINLINE void SetCanAttack(const bool NewCanAttack) {bCanAttack = NewCanAttack; }
 	FORCEINLINE void SetCanMove(const bool NewCanMove) {bCanMove = NewCanMove; }
 	FORCEINLINE void SetCanJump(const bool NewCanJump) {bCanJump = NewCanJump; }
+	FORCEINLINE bool GetCanAttack() const {return bCanAttack;}
 
 	UPROPERTY(ReplicatedUsing=OnRep_CurrentSpeed)
 	float CurrentSpeed;
@@ -206,6 +212,7 @@ public:
 	void ResetSpeed();
 
 	FORCEINLINE FVector2D GetMovementVector() const { return MovementVector; }
+	bool bIsDebugging = false;
 
 private:
 	FVector2D MovementVector;
@@ -221,7 +228,7 @@ private:
 	 * Called when the entity takes damage
 	 */
 	FTimerHandle HitRecoveryTimer;
-	const float RecoveryDuration = .5f;
+	const float RecoveryDuration = 0.5f;
 
 	bool bCanJump = true;
 	bool bCanMove = true;
@@ -233,6 +240,11 @@ private:
 	// TEST
 	void PerformTestActoin();
 	FTimerHandle TestTimeHandle;
+
+	UFUNCTION()
+	void OnDestructibleOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION(Server, Reliable)
+	void Server_InflictDamageToDestructible(ADestructibleObject* Destructible, FDamageInfo DamageInfo);
 
 public:
 	/**
@@ -292,6 +304,9 @@ public:
 	void Client_PlayCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass);
 	void CameraShakeProcess(TSubclassOf<UCameraShakeBase> ShakeClass);
 	
+
+	void EnableDestructibleCollider();
+	void DisableDestructibleCollider();
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

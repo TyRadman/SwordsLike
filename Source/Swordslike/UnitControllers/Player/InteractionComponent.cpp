@@ -77,6 +77,7 @@ void UInteractionComponent::OnOverlapBegin(UPrimitiveComponent* OverlappedCompon
 	{
 		if(Cast<IInteractable>(OtherActor))
 		{
+			PrintOnScreen(TEXT("INTERACTED"));
 			CurrentInteractable = OtherActor;
 			Client_OnOverlapEvent_Implementation();
 		}
@@ -122,11 +123,17 @@ void UInteractionComponent::Interact()
 	}
 	else
 	{
-		GetCurrentInteractable()->Interact(GetOwner());
+		if(GetCurrentInteractable())
+		{
+			GetCurrentInteractable()->Interact(GetOwner());
+		}
 	}
 }
 
 void UInteractionComponent::Server_Interact_Implementation()
 {
-	GetCurrentInteractable()->Interact(GetOwner());
+	if(GetCurrentInteractable())
+	{
+		GetCurrentInteractable()->Interact(GetOwner());
+	}
 }

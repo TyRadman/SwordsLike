@@ -18,7 +18,8 @@ public class Swordslike : ModuleRules
 			"Niagara", 
 			"GameplayCameras",
 			"Slate", 
-			"SlateCore"
+			"SlateCore",
+			"GeometryCollectionEngine"
 		});
 		
 		PrivateIncludePaths.AddRange(new string[] { "Swordslike/UnitControllers" });

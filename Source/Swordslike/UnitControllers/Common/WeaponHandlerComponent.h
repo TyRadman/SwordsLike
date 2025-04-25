@@ -87,6 +87,8 @@ private:
 	FVector PreviousEndLocation;
 
 	void GetTargetsFromHitResults(TArray<FHitResult>& HitResults);
+	void CheckForDetectedCharacter(const FHitResult& HitResult, AActor* Target);
+	void CheckForDetectedNonCharacter(const FHitResult& HitResult, AActor* Target);
 	void CacheTargetsBetweenTwoPoints(const FVector& StartLocation, const FVector& EndLocation);
 
 	// equip animations
@@ -104,7 +106,9 @@ private:
 	void Multicast_PlayMontage(UAnimMontage* Montage);
 	
 	UFUNCTION(Server, Reliable)
-	void Server_InflictDamage(AActor* Target, const FDamageInfo& DamageInfo);
+	void Server_InflictDamageOnComponent(UActorComponent* TargetComponent, const FDamageInfo& DamageInfo);
+	UFUNCTION(Server, Reliable)
+	void Server_InflictDamageOnActor(AActor* Target, const FDamageInfo& DamageInfo);
 
 
 public:
