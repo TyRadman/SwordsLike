@@ -7,6 +7,7 @@
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/PlayerStartCharacterDataAsset.h"
 #include "Player/SwordslikeCharacter.h"
 #include "Weapons/Weapon.h"
 
@@ -390,7 +391,12 @@ void UWeaponHandlerComponent::Server_InflictDamageOnActor_Implementation(AActor*
 	}
 }
 
-void UWeaponHandlerComponent::StartWeaponAttackDetection(const EHitType NewHitType, const float NewDamage, const TSubclassOf<UCameraShakeBase>& CameraShake)
+float UWeaponHandlerComponent::GetDamage(const float ComboDamageMultiplier)
+{
+	return ComboDamageMultiplier * CurrentWeapon->DamagePerHit * PlayerCharacter->GetData()->StartingDamageMultiplier;
+}
+
+void UWeaponHandlerComponent::StartWeaponAttackDetection(const EHitType NewHitType, const float DamageMultiplier, const TSubclassOf<UCameraShakeBase>& CameraShake)
 {
 	if (!CurrentWeapon)
 	{
@@ -405,7 +411,7 @@ void UWeaponHandlerComponent::StartWeaponAttackDetection(const EHitType NewHitTy
 	}
 	
 	CurrentHitType = NewHitType;
-	CurrentDamage = NewDamage * CurrentWeapon->DamagePerHit;
+	CurrentDamage = GetDamage(DamageMultiplier);
 
 	if(!CameraShake)
 	{

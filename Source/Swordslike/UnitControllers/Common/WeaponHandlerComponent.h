@@ -38,7 +38,8 @@ public:
 	FORCEINLINE bool HasWeapon() const { return CurrentWeapon != nullptr; ;}
 
 	WeaponHitDelegate OnWeaponHitStarted;
-	void StartWeaponAttackDetection(const EHitType NewHitType, const float NewDamage, const TSubclassOf<UCameraShakeBase>& CameraShake);
+	float GetDamage(const float ComboDamageMultiplier);
+	void StartWeaponAttackDetection(const EHitType NewHitType, const float DamageMultiplier, const TSubclassOf<UCameraShakeBase>& CameraShake);
 	void StopWeaponAttackDetection();
 	
 	UFUNCTION(Server, Reliable)

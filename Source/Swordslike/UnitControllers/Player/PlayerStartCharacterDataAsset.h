@@ -13,21 +13,25 @@ class SWORDSLIKE_API UPlayerStartCharacterDataAsset : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable)
 	FString CharacterName;
 	
-	UPROPERTY(EditAnywhere, Category=Stats)
-	float StartingHealthPoints;
-	UPROPERTY(EditAnywhere, Category=Stats)
-	float StartingStamina;
-	UPROPERTY(EditAnywhere, Category=Stats)
-	float StartingPosture;
+	UPROPERTY(EditAnywhere, Category=Stats, AssetRegistrySearchable)
+	float StartingHealthPoints = 50.f;
+	UPROPERTY(EditAnywhere, Category=Stats, AssetRegistrySearchable)
+	float StartingStamina = 10.;
+	UPROPERTY(EditAnywhere, Category=Stats, AssetRegistrySearchable)
+	float StartingPosture = 10.f;
+	UPROPERTY(EditAnywhere, Category=Stats, AssetRegistrySearchable)
+	float StartingDamageMultiplier = 1.0f;
+	UPROPERTY(EditDefaultsOnly, Category=Stats, AssetRegistrySearchable)
+	int SpiritsCost = 1;
 	
-	UPROPERTY(EditAnywhere, Category=Movement)
+	UPROPERTY(EditAnywhere, Category=Movement, AssetRegistrySearchable)
 	float MovementSpeed = 100;
-	UPROPERTY(EditAnywhere, Category=Movement)
+	UPROPERTY(EditAnywhere, Category=Movement, AssetRegistrySearchable)
 	float SprintSpeed = 100;
-	UPROPERTY(EditAnywhere, Category=Movement)
+	UPROPERTY(EditAnywhere, Category=Movement, AssetRegistrySearchable)
 	float JumpHeight = 100;
 
 	UPROPERTY(EditAnywhere, Category=Visuals)
