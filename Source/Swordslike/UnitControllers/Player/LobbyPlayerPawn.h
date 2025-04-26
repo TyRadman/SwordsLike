@@ -16,6 +16,8 @@ class SWORDSLIKE_API ALobbyPlayerPawn : public APawn
 
 public:
 	ALobbyPlayerPawn();
+	void OnSelectLeft();
+	void OnSelectRight();
 
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -38,9 +40,8 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category = UI, meta=(AllowPrivateAccess))
 	TSubclassOf<UMainLobbyMenu> MainLobbyUIClass;
+
 	
-	void OnSelectLeft();
-	void OnSelectRight();
 
 	void ConfirmSelection();
 	UFUNCTION(Server, Reliable)

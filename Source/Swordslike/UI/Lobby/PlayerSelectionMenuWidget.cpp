@@ -4,10 +4,12 @@
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Player/LobbyPlayerPawn.h"
 #include "Player/MainPlayerState.h"
 
 class UPlayerStartCharacterDataAsset;
 
+float UPlayerSelectionMenuWidget::MaxToughness = 100.f;
 float UPlayerSelectionMenuWidget::MaxHealth = 100.f;
 float UPlayerSelectionMenuWidget::MaxStamina = 100.f;
 float UPlayerSelectionMenuWidget::MaxPosture = 100.f;
@@ -42,6 +44,7 @@ void UPlayerSelectionMenuWidget::UpdateWithCharacterData(const TSoftObjectPtr<UP
 	{
 		CharacterNameText->SetText(FText::FromString(Data->CharacterName));
 		CharacterImage->SetBrushFromTexture(Data->CharacterTexture);
+		ToughnessBar->SetPercent(Data->StartingDamageMultiplier / MaxToughness);
 		HealthBar->SetPercent(Data->StartingHealthPoints / MaxHealth);
 		StaminaBar->SetPercent(Data->StartingStamina / MaxStamina);
 		PostureBar->SetPercent(Data->StartingPosture / MaxPosture);
@@ -52,14 +55,15 @@ void UPlayerSelectionMenuWidget::UpdateWithCharacterData(const TSoftObjectPtr<UP
 	}
 }
 
-void UPlayerSelectionMenuWidget::OnLocalPlayerController()
+void UPlayerSelectionMenuWidget::OnLocalPlayerController_Implementation()
 {
+	UE_LOG(LogTemp, Display, TEXT("OnLocalPlayerController_Implementation"));
 	PlayerNameTextBox->SetIsReadOnly(false);
 	PlayerNameTextBox->OnTextCommitted.AddDynamic(this, &UPlayerSelectionMenuWidget::HandleNameCommitted);
 	PlayerNameTextBox->OnTextChanged.AddDynamic(this, &UPlayerSelectionMenuWidget::HandleNameChanged);
 }
 
-void UPlayerSelectionMenuWidget::OnRemotePlayerController()
+void UPlayerSelectionMenuWidget::OnRemotePlayerController_Implementation()
 {
 	PlayerNameTextBox->SetIsReadOnly(true);
 	PlayerNameTextBox->SetIsEnabled(false);
@@ -100,6 +104,16 @@ void UPlayerSelectionMenuWidget::HandleNameChanged(const FText& Text)
 void UPlayerSelectionMenuWidget::HandleNameCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	bIsEditingName = false;
+}
+
+void UPlayerSelectionMenuWidget::SetNextCharacter()
+{
+	OwnerPawn->OnSelectRight();
+}
+
+void UPlayerSelectionMenuWidget::SetPreviousCharacter()
+{
+	OwnerPawn->OnSelectLeft();
 }
 
 void UPlayerSelectionMenuWidget::SetPlayerName(const FString& NewName)

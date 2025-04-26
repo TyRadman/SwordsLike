@@ -69,35 +69,10 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 	// cache the biggest possible values based on the data assets
 	if (const USwordslikeGameInstance* GI = Cast<USwordslikeGameInstance>(GetGameInstance()))
 	{
-		TArray<TSoftObjectPtr<UPlayerStartCharacterDataAsset>> Assets = GI->PlayerCharactersData;
-		float MaxHealth = KINDA_SMALL_NUMBER;
-		float MaxStamina = KINDA_SMALL_NUMBER;
-		float MaxPosture = KINDA_SMALL_NUMBER;
-
-		for(TSoftObjectPtr<UPlayerStartCharacterDataAsset> Data : Assets)
-		{
-			if (Data)
-			{
-				if(Data->StartingHealthPoints > MaxHealth)
-				{
-					MaxHealth = Data->StartingHealthPoints;
-				}
-
-				if(Data->StartingStamina > MaxStamina)
-				{
-					MaxStamina = Data->StartingStamina;
-				}
-
-				if(Data->StartingPosture > MaxPosture)
-				{
-					MaxPosture = Data->StartingPosture;
-				}
-			}
-		}
-
-		UPlayerSelectionMenuWidget::MaxHealth = MaxHealth;
-		UPlayerSelectionMenuWidget::MaxStamina = MaxStamina;
-		UPlayerSelectionMenuWidget::MaxPosture = MaxPosture;
+		UPlayerSelectionMenuWidget::MaxHealth = GetHighestHealthPossible();
+		UPlayerSelectionMenuWidget::MaxStamina = GetHighestStaminaPossible();
+		UPlayerSelectionMenuWidget::MaxPosture = GetHighestPosturePossible();
+		UPlayerSelectionMenuWidget::MaxToughness = GetHighestToughnessPossible();
 	}
 }
 
@@ -125,3 +100,49 @@ void ALobbyGameMode::OnPlayerNotReady()
 }
 
 
+float ALobbyGameMode::GetHighestValue(float& MaxValue, float UPlayerStartCharacterDataAsset::* MemberPtr)
+{
+	if (MaxValue > -1.f)
+	{
+		return MaxValue;
+	}
+	
+	if (const USwordslikeGameInstance* GI = Cast<USwordslikeGameInstance>(GetGameInstance()))
+	{
+		TArray<TSoftObjectPtr<UPlayerStartCharacterDataAsset>> Assets = GI->PlayerCharactersData;
+		
+		for (TSoftObjectPtr<UPlayerStartCharacterDataAsset> Data : Assets)
+		{
+			if (const UPlayerStartCharacterDataAsset* LoadedData = Data.LoadSynchronous())
+			{
+				const float Value = LoadedData->*MemberPtr;
+				if (Value > MaxValue)
+				{
+					MaxValue = Value;
+				}
+			}
+		}
+	}
+
+	return MaxValue;
+}
+
+float ALobbyGameMode::GetHighestHealthPossible()
+{
+	return GetHighestValue(MaxHealth, &UPlayerStartCharacterDataAsset::StartingHealthPoints);
+}
+
+float ALobbyGameMode::GetHighestToughnessPossible()
+{
+	return GetHighestValue(MaxToughness, &UPlayerStartCharacterDataAsset::StartingDamageMultiplier);
+}
+
+float ALobbyGameMode::GetHighestStaminaPossible()
+{
+	return GetHighestValue(MaxStamina, &UPlayerStartCharacterDataAsset::StartingStamina);
+}
+
+float ALobbyGameMode::GetHighestPosturePossible()
+{
+	return GetHighestValue(MaxPosture, &UPlayerStartCharacterDataAsset::StartingPosture);
+}

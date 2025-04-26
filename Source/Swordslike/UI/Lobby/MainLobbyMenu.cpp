@@ -4,6 +4,7 @@
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
 #include "GameFramework/GameStateBase.h"
+#include "Player/LobbyPlayerPawn.h"
 #include "Player/MainPlayerState.h"
 #include "Swordslike/SwordslikeGameInstance.h"
 #include "Swordslike/GameStates/LobbyGameState.h"
@@ -72,6 +73,11 @@ void UMainLobbyMenu::SetupPlayerWidgets()
 			// populate and cache the character widget if they own it
 			if (MainPS == GetOwningPlayer()->PlayerState)
 			{
+				if(ALobbyPlayerPawn* PlayerPawn = Cast<ALobbyPlayerPawn>(GetOwningPlayer()->GetPawn()))
+				{
+					CharacterWidget->OwnerPawn = PlayerPawn;
+				}
+				
 				CharacterWidget->OnLocalPlayerController();
 				LocalPlayerCharacterWidget = CharacterWidget;
 			}
@@ -161,7 +167,6 @@ void UMainLobbyMenu::SelectPreviousCharacter()
 	}
 	
 	SelectedCharacterIndex = (SelectedCharacterIndex - 1 + AvailableCharacters.Num()) % AvailableCharacters.Num();
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%d"), SelectedCharacterIndex));
 	SetSelectedCharacter(AvailableCharacters[SelectedCharacterIndex]);
 }
 

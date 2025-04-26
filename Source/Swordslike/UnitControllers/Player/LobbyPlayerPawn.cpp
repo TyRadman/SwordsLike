@@ -43,9 +43,6 @@ void ALobbyPlayerPawn::Test()
 	{
 		if(IsLocallyControlled())
 		{
-			const FString Message = FString::Printf(TEXT("Setting up %s [%s]"), *PlayerController->GetActorNameOrLabel(), *UEnum::GetValueAsString(GetLocalRole()));
-			GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, Message);
-			
 			if (const ALobbyHUD* HUD = Cast<ALobbyHUD>(PlayerController->GetHUD()))
 			{
 				LobbyUI = HUD->GetLobbyUI();
@@ -54,8 +51,8 @@ void ALobbyPlayerPawn::Test()
 			}
 			else
 			{
-			const FString Message2 = FString::Printf(TEXT("No HUD on  %s [%s]"), *PlayerController->GetActorNameOrLabel(), *UEnum::GetValueAsString(GetLocalRole()));
-			GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, Message2);
+				const FString Message2 = FString::Printf(TEXT("No HUD on  %s [%s]"), *PlayerController->GetActorNameOrLabel(), *UEnum::GetValueAsString(GetLocalRole()));
+				GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Purple, Message2);
 			}
 		}
 		else

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+#include "Player/PlayerStartCharacterDataAsset.h"
 #include "LobbyGameMode.generated.h"
 
 /**
@@ -22,7 +23,17 @@ public:
 	FString LevelName = "Level_FirstLevel";
 
 	const FString LevelsRootPath = "/Game/Levels/";
-
+	
+	float MaxToughness = -1;
+	float MaxStamina = -1;
+	float MaxPosture = -1;
+	float MaxHealth = -1;
+	float GetHighestValue(float& MaxValue, float UPlayerStartCharacterDataAsset::* MemberPtr);
+	float GetHighestHealthPossible();
+	float GetHighestToughnessPossible();
+	float GetHighestStaminaPossible();
+	float GetHighestPosturePossible();
+	
 private:
 	void OnPlayerReady();
 	void OnPlayerNotReady();

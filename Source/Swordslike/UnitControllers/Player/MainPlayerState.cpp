@@ -18,7 +18,7 @@ void AMainPlayerState::CopyProperties(APlayerState* PlayerState)
 	{
 		if(CharacterDataAsset)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5, FColor::White, TEXT("Copied Data"));
+			// GEngine->AddOnScreenDebugMessage(-1, 5, FColor::White, TEXT("Copied Data"));
 			PS->CharacterDataAsset = CharacterDataAsset;
 		}
 		else
