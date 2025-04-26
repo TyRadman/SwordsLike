@@ -281,8 +281,6 @@ void UWeaponHandlerComponent::CheckForDetectedCharacter(const FHitResult& HitRes
 		
 		if(IDamagable* TargetDamagable = Cast<IDamagable>(Component))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Detected IDamagable %s"), *Target->GetActorNameOrLabel());
-				
 			if(TargetDamagable->IsInvincible())
 			{
 				break;
@@ -345,8 +343,6 @@ void UWeaponHandlerComponent::CheckForDetectedNonCharacter(const FHitResult& Hit
 			return;
 		}
 		
-		UE_LOG(LogTemp, Warning, TEXT("Detected non character %s"), *Target->GetActorNameOrLabel());
-			
 		FDamageInfo DamageInfo;
 		DamageInfo.Damage = 1.f;
 		DamageInfo.DamageInstigator = WeaponOwner;
@@ -409,7 +405,7 @@ void UWeaponHandlerComponent::StartWeaponAttackDetection(const EHitType NewHitTy
 	}
 	
 	CurrentHitType = NewHitType;
-	CurrentDamage = NewDamage;
+	CurrentDamage = NewDamage * CurrentWeapon->DamagePerHit;
 
 	if(!CameraShake)
 	{

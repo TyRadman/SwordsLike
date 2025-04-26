@@ -14,6 +14,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "InteractionComponent.h"
+#include "LocalizationDescriptor.h"
 #include "MainPlayerState.h"
 #include "PlayerCombatComponent.h"
 #include "PlayerHealthComponent.h"
@@ -24,11 +25,14 @@
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Swordslike/GameplayGameState.h"
 #include "Swordslike/SwordslikeGameInstance.h"
 #include "Swordslike/AnimNotifies/ComboAnimNotify.h"
 #include "Swordslike/Environment/DestructibleObject.h"
 #include "Swordslike/UI/HUD/HUDManager.h"
 #include "Swordslike/UI/HUD/MasterHUD.h"
+#include "Swordslike/UI/HUD/HealthBars/PlayerHealthBar.h"
+#include "Swordslike/UI/Menus/GameOverMenuWidget.h"
 #include "Swordslike/UI/WorldUIElements/OverheadHealthBarWidget.h"
 #include "Swordslike/UI/WorldUIElements/WeaponAttackIndicatorWidget.h"
 #include "Swordslike/UnitControllers/Player/LockWidgetController.h"
@@ -166,8 +170,10 @@ void ASwordslikeCharacter::CacheComponentReferences()
 		{
 			if (AHUD* HUD = ThePlayerController->GetHUD())
 			{
-				if(const AHUDManager* HUDManager = Cast<AHUDManager>(HUD))
+				if(AHUDManager* HUDManagerTemp = Cast<AHUDManager>(HUD))
 				{
+					HUDManager = HUDManagerTemp;
+					
 					if(HUDManager->GetMasterHUD())
 					{
 						MasterHUD = HUDManager->GetMasterHUD();
@@ -460,7 +466,7 @@ void ASwordslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 void ASwordslikeCharacter::Jump()
 {
-	if(!bCanJump || Sprint->GetCurrentStamina() == 0.f)
+	if(!CanJump())
 	{
 		return;
 	}
@@ -473,6 +479,12 @@ void ASwordslikeCharacter::Jump()
 	EnableDestructibleCollider();
 
 	Super::Jump();
+}
+
+bool ASwordslikeCharacter::CanJump() const
+{
+	UE_LOG(LogTemp, Warning, TEXT("State %s"), *UEnum::GetValueAsString(Combat->GetComboState()));
+	return bCanJump && Sprint->GetCurrentStamina() > 0.f && Combat->GetComboState() == EComboState::Idle;
 }
 
 void ASwordslikeCharacter::Landed(const FHitResult& Hit)
@@ -673,6 +685,46 @@ void ASwordslikeCharacter::OnDeath()
 {
 	GetCharacterMovement()->DisableMovement();
 	GetMesh()->SetSimulatePhysics(true);
+
+	if (APlayerState* PS = GetPlayerState())
+	{
+		if (AGameplayGameState* GS = GetWorld()->GetGameState<AGameplayGameState>())
+		{
+			GS->ReportDeath(PS);
+		}
+	}
+	
+	if(IsLocallyControlled())
+	{
+		if(HUDManager)
+		{
+			if(UGameOverMenuWidget* GameOverMenu = HUDManager->GetGameOverMenu())
+			{
+				HUDManager->GetMasterHUD()->GetStatsHUD()->HideHUD();
+				
+				FTimerHandle GameOverTimerHandle;
+				GetWorld()->GetTimerManager().SetTimer(GameOverTimerHandle, [this]()
+				{
+					if(!HUDManager->GetGameOverMenu()->IsInViewport())
+					{
+						HUDManager->GetGameOverMenu()->AddToViewport();
+					}
+					
+					HUDManager->GetGameOverMenu()->DisplayMenu();
+				},
+				3.0f,
+				false);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ASwordslikeCharacter ERROR: NO HUD MANAGER"))
+		}
+	}
+}
+
+void ASwordslikeCharacter::Client_OnDeath_Implementation()
+{
 }
 
 // Always called through the server
@@ -991,10 +1043,8 @@ FString ASwordslikeCharacter::GetInputKey(const UInputAction* InputAction)
 }
 
 void ASwordslikeCharacter::OnDestructibleOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                                    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Got here 1"));
-
 	if(OtherActor)
 	{
 		if(ADestructibleObject* Destructible = Cast<ADestructibleObject>(OtherActor))
@@ -1003,8 +1053,6 @@ void ASwordslikeCharacter::OnDestructibleOverlapped(UPrimitiveComponent* Overlap
 			DamageInfo.ImpactLocation = GetActorLocation();// + OtherActor->GetActorLocation()) / 2.0f;
 			DamageInfo.DamageInstigator = this;
 			DamageInfo.DamageInstigatorCharacter = this;
-
-			UE_LOG(LogTemp, Warning, TEXT("Got here 2"));
 
 			if(HasAuthority())
 			{

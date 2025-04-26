@@ -64,3 +64,13 @@ void UPlayerHealthBar::SetPostureBarValue(const float Current, const float Max)
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "PostureBar is NULL");
 	}
 }
+
+void UPlayerHealthBar::ShowHUD()
+{
+	PlayAnimation(ShowHUDAnimation);
+}
+
+void UPlayerHealthBar::HideHUD()
+{
+	PlayAnimation(HideHUDAnimation);
+}

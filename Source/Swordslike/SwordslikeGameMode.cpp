@@ -1,7 +1,8 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SwordslikeGameMode.h"
 
+#include "GameplayGameState.h"
+#include "GameplayPlayerState.h"
 #include "Player/MainPlayerState.h"
 #include "UI/HUD/HUDManager.h"
 #include "UnitControllers/Player/SwordslikeCharacter.h"
@@ -11,7 +12,9 @@ ASwordslikeGameMode::ASwordslikeGameMode()
 {
 	HUDClass = AHUDManager::StaticClass();
 
-	PlayerStateClass = AMainPlayerState::StaticClass();
+	PlayerStateClass = AGameplayPlayerState::StaticClass();
+
+	GameStateClass = AGameplayGameState::StaticClass(); 
 	
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/Blueprints/BP_MainPlayerCharacter"));

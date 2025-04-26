@@ -62,6 +62,11 @@ void UBaseEntityAnimationsComponent::PlayHitReactMontage(const FDamageInfo& Dama
 		HitReactionMontage = LeftHitReactMontages[HitTypeIndex];
 	}
 
+	if(!HitReactionMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No montage for hit reaction"));
+		return;
+	}
 	
 	// PrintOnScreen_Local(FString::Printf(TEXT("Montage for hit is: (%d) %s"), HitTypeIndex, *HitReactionMontage->GetName()));
 	PlayMontage(HitReactionMontage);
@@ -107,22 +112,22 @@ void UBaseEntityAnimationsComponent::PlayMontage(UAnimMontage* Montage, const bo
 	
 	if (!HasAuthority())
 	{
-		Server_PlayRollMontage(Montage, bForcePlay);
+		Server_PlayRollMontage(Montage, bForcePlay, true);
 	}
 	else
 	{
-		Multicast_PlayRollMontage(Montage, bForcePlay);
+		Multicast_PlayRollMontage(Montage, bForcePlay, false);
 	}
 }
 
-void UBaseEntityAnimationsComponent::Server_PlayRollMontage_Implementation(UAnimMontage* Montage, const bool bForcePlay)
+void UBaseEntityAnimationsComponent::Server_PlayRollMontage_Implementation(UAnimMontage* Montage, const bool bForcePlay, bool SkipLocalController)
 {
-	Multicast_PlayRollMontage(Montage, bForcePlay);
+	Multicast_PlayRollMontage(Montage, bForcePlay, SkipLocalController);
 }
 
-void UBaseEntityAnimationsComponent::Multicast_PlayRollMontage_Implementation(UAnimMontage* Montage, const bool bForcePlay)
+void UBaseEntityAnimationsComponent::Multicast_PlayRollMontage_Implementation(UAnimMontage* Montage, const bool bForcePlay, bool SkipLocalController)
 {
-	if(IsLocallyControlled())
+	if(SkipLocalController && IsLocallyControlled())
 	{
 		return;
 	}

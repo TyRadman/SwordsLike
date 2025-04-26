@@ -30,9 +30,9 @@ protected:
 
 	FORCEINLINE bool IsLocallyControlled() const
 	{
-		if (APawn* Pawn = Cast<APawn>(GetOwner()))
+		if (const APawn* Pawn = Cast<APawn>(GetOwner()))
 		{
-			if (AController* Controller = Pawn->GetController())
+			if (const AController* Controller = Pawn->GetController())
 			{
 				return Controller->IsLocalController();
 			}

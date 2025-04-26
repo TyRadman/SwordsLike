@@ -2,25 +2,26 @@
 #include "HUDManager.h"
 #include "MasterHUD.h"
 #include "Blueprint/UserWidget.h"
+#include "Swordslike/UI/Menus/GameOverMenuWidget.h"
 
 
 AHUDManager::AHUDManager()
 {
-	static ConstructorHelpers::FClassFinder<UUserWidget>MasterHUDWidgetClass(TEXT("/Game/UI/HUD/WBP_Master"));
-
-	if(MasterHUDWidgetClass.Class)
-	{
-		MasterHUD = CreateWidget<UMasterHUD>(GetWorld(), MasterHUDWidgetClass.Class);
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Red, TEXT("NO MASTER WIDGET CLASS"));
-	}
 }
 
 void AHUDManager::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if(GameOverMenuReference)
+	{
+		GameOverMenu = CreateWidget<UGameOverMenuWidget>(GetWorld(), GameOverMenuReference);
+	}
+
+	if(MasterHUDReference)
+	{
+		MasterHUD = CreateWidget<UMasterHUD>(GetWorld(), MasterHUDReference);
+	}
 
 	CreateHealthBar();
 }

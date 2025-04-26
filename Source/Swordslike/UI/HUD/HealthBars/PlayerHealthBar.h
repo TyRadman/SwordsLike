@@ -25,6 +25,11 @@ public:
 	
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UProgressBar* PostureBar;
+
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	UWidgetAnimation* ShowHUDAnimation;
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	UWidgetAnimation* HideHUDAnimation;
 	
 	void SetHealthBarSize(const float MaxHealth);
 	void SetStaminaBarSize(const float MaxStamina);
@@ -32,6 +37,9 @@ public:
 	void SetHealthBarValue(const float CurrentHealth, const float MaxHealth);
 	void SetStaminaBarValue(const float CurrentStamina, const float MaxStamina);
 	void SetPostureBarValue(const float Current, const float Max);
+
+	void ShowHUD();
+	void HideHUD();
 
 protected:
 	virtual  void NativeConstruct() override;

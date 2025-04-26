@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "MasterHUD.generated.h"
 
+class UGameOverMenuWidget;
 class UPlayerHealthBar;
 class UInteractionPanel;
 

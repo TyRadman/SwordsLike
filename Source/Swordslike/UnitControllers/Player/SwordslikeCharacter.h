@@ -11,6 +11,7 @@
 #include "Camera/CameraShakeBase.h"
 #include "SwordslikeCharacter.generated.h"
 
+class AHUDManager;
 class ADestructibleObject;
 class UPlayerStartCharacterDataAsset;
 class UBaseEntityAnimationsComponent;
@@ -74,7 +75,6 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
 	
@@ -103,47 +103,34 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats", meta = (AllowPrivateAccess = "true"))
 	UPlayerHealthComponent* Health;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animations", meta = (AllowPrivateAccess = "true"))
 	UBaseEntityAnimationsComponent* Animations;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = LockOn, meta = (AllowPrivateAccess = "true"))
 	ULockWidgetController* LockIndicatorWidget;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn")
 	UTargetLockerComponent* TargetLockerComponent;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	UPlayerCombatComponent* Combat;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	USprintComponent* Sprint;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	ULockableTargetComponent* LockableTargetComponent;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Visuals, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* CustomMesh;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UWeaponHandlerComponent* WeaponHandler;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UBaseParryComponent* ParryComponent;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UInteractionComponent* InteractionComponent;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	USceneComponent* WeaponDropPoint;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	USphereComponent* DestructibleCollider;
-	
 	APlayerController* PlayerController;
-	
 	UCapsuleComponent* Capsule;
 	UMasterHUD* MasterHUD;
+	AHUDManager* HUDManager;
 
 	///////////////////////
 	/// WIDGETS
@@ -208,6 +195,8 @@ public:
 	UFUNCTION()
 	void OnRep_CurrentSpeed();
 	void OnDeath();
+	UFUNCTION(Client, Reliable)
+	void Client_OnDeath();
 	void SetSprintSpeed();
 	void ResetSpeed();
 
@@ -334,5 +323,6 @@ public:
 
 private:
 	const float ParryPushBackForce = 500.0f;
+	bool CanJump() const;
 };
 

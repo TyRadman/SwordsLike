@@ -45,7 +45,7 @@ public:
 
 	// Attack vars
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage", EditConditionHides))
-	float Damage;
+	float DamageMultiplier;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage", EditConditionHides))
 	EHitType HitType; 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (EditCondition = "NotifyType == ECombatNotifyType::Damage", EditConditionHides))

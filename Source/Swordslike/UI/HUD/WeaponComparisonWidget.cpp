@@ -4,7 +4,7 @@
 #include "Components/TextBlock.h"
 #include "Weapons/Weapon.h"
 
-void UWeaponComparisonWidget::SetValues(AWeapon* WeaponToSet, AWeapon* WeaponToCompareTo)
+void UWeaponComparisonWidget::SetValues(AWeapon* WeaponToSet, AWeapon* WeaponToCompareTo, const bool bSetValueColors)
 {
 	if(!WeaponToSet || !WeaponToCompareTo)
 	{
@@ -20,6 +20,11 @@ void UWeaponComparisonWidget::SetValues(AWeapon* WeaponToSet, AWeapon* WeaponToC
 	if(WeaponToSet->WeaponIcon)
 	{
 		WeaponIconImage->SetBrushFromTexture(WeaponToSet->WeaponIcon);
+	}
+
+	if(!bSetValueColors)
+	{
+		return;
 	}
 	
 	if(WeaponToSet->DamagePerHit != WeaponToCompareTo->DamagePerHit)

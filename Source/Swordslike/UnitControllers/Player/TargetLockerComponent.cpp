@@ -68,10 +68,10 @@ void UTargetLockerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// if(!GetOwner()->HasAuthority())
-	// {
-	// 	return;
-	// }
+	if(!IsLocallyControlled())
+	{
+		return;
+	}
 
 	if(CanPerformLock())
 	{
@@ -86,14 +86,6 @@ void UTargetLockerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 bool UTargetLockerComponent::CanPerformLock() const
 {
-	// const FString RoleString = GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
-	// const FString NetRoleString = UEnum::GetValueAsString(GetOwner()->GetRemoteRole());
-	// FColor DebugColor = GetOwner()->HasAuthority()? FColor::Cyan : FColor::Orange;
-	//
-	// PrintOnScreen_Local(FString::Printf(TEXT("[%s, %s, %s] bIsLockedOnTarget value: %s"),
-	// 	*RoleString, *NetRoleString, *GetOwner()->GetActorNameOrLabel(),
-	// 	bIsLockedOnTarget ? TEXT("true") : TEXT("false")), DebugColor);
-	
 	if(!bIsLockedOnTarget)
 	{
 		// PrintOnScreen_Local(TEXT("No bIsLockedOnTarget"));
@@ -166,6 +158,7 @@ void UTargetLockerComponent::ValidateLock()
 	// if target is dead or if the timer for when the target went out of sight runs off
 	if(!LockedTargetHealth->IsAlive() || bIsTimerFinished)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Unlocked"));
 		bIsTimerFinished = false;
 		Unlock();
 	}

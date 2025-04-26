@@ -55,8 +55,8 @@ void UInteractionPanel::DisplayInteractionPanel(ASwordslikeCharacter* Character)
 					ComparisonDisplayTimer,
 					[this, CurrentWeapon, InteractableWeapon]()
 					{
-						CurrentWeaponWidget->SetValues(CurrentWeapon, InteractableWeapon);
-						NewWeaponWidget->SetValues(InteractableWeapon, CurrentWeapon);
+						CurrentWeaponWidget->SetValues(CurrentWeapon, InteractableWeapon, false);
+						NewWeaponWidget->SetValues(InteractableWeapon, CurrentWeapon, true);
 						PlayAnimation(ComparisonFadeInAnimation);
 						bIsComparingWeapons = true;
 					},

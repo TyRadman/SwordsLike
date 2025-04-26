@@ -4,6 +4,7 @@
 #include "GameFramework/HUD.h"
 #include "HUDManager.generated.h"
 
+class UGameOverMenuWidget;
 class UMasterHUD;
 class UPlayerHealthBar;
 /**
@@ -18,6 +19,7 @@ public:
 	AHUDManager();
 
 	FORCEINLINE UMasterHUD* GetMasterHUD() const { return MasterHUD; }
+	FORCEINLINE UGameOverMenuWidget* GetGameOverMenu() const { return GameOverMenu; } 
 
 protected:
 	virtual void BeginPlay() override;
@@ -25,6 +27,13 @@ protected:
 private:
 	UPROPERTY()
 	UMasterHUD* MasterHUD;
+	
+	UPROPERTY(EditDefaultsOnly, Category = References, meta=(AllowPrivateAccess=true))
+	TSubclassOf<UMasterHUD> MasterHUDReference;
+	UPROPERTY(EditDefaultsOnly, Category = References, meta=(AllowPrivateAccess=true))
+	TSubclassOf<UGameOverMenuWidget> GameOverMenuReference;
+	UPROPERTY()
+	UGameOverMenuWidget* GameOverMenu;
 
 	void CreateHealthBar();
 };

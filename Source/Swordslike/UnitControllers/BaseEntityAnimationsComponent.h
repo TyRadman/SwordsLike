@@ -58,9 +58,9 @@ public:
 	void PlayRollMontage();
 
 	UFUNCTION(Server, Reliable)
-	void Server_PlayRollMontage(UAnimMontage* Montage, const bool bForcePlay);
+	void Server_PlayRollMontage(UAnimMontage* Montage, const bool bForcePlay, bool SkipLocalController);
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PlayRollMontage(UAnimMontage* Montage, const bool bForcePlay);
+	void Multicast_PlayRollMontage(UAnimMontage* Montage, const bool bForcePlay, bool SkipLocalController);
 	
 	void PlayMontage(UAnimMontage* Montage, const bool bForcePlay = false);
 

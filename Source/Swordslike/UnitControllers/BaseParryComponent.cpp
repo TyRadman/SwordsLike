@@ -386,15 +386,12 @@ void UBaseParryComponent::PerformServerAddToCurrentPosture(const FDamageInfo Dam
 		
 	if(CurrentPosture <= 0)
 	{
-		// PrintOnScreen(FString::Printf(TEXT("%s [%s]"), *UEnum::GetValueAsString(State), *UEnum::GetValueAsString(GetOwnerRole())));
 		if(State == ECombatState::Normal)
 		{
 			OnStunned();
 		}
 		else if(State == ECombatState::Stunned)
 		{
-			// TODO: must be handled better. A cheat for now.
-			// CurrentAttacker = DamageInfo.DamageInstigator;
 			OnKnockDown(DamageInfo.DamageInstigator);
 		}
 	}
@@ -469,25 +466,15 @@ void UBaseParryComponent::PerformRecoverFromStun()
 // Called only through the server
 void UBaseParryComponent::OnKnockDown(AActor* Attacker)
 {
-	// if (HasAuthority())
-	// {
-	// PlayerCharacter->PerformCameraShake(KnockDownCameraShake);
-	PrintOnScreen(TEXT("Knockdown"));
 	SetCombatState(ECombatState::KnockedDown);
 	PerformKnockDown(Attacker);
+	PlayerCharacter->EnableDestructibleCollider();
 	Multicast_PerformKnockDown(Attacker);
-	// }
-	// else
-	// {
-	// 	Server_PerformKnockDown();
-	// }
 }
 
 void UBaseParryComponent::Server_PerformKnockDown_Implementation()
 {
-	// SetCombatState(ECombatState::KnockedDown);
-	// PerformKnockDown();
-	// Multicast_PerformKnockDown();
+	
 }
 
 void UBaseParryComponent::Multicast_PerformKnockDown_Implementation(AActor* Attacker)
@@ -510,11 +497,6 @@ void UBaseParryComponent::PerformKnockDown(const AActor* Attacker)
 	
 	const FVector Direction = (Attacker->GetActorLocation() - PlayerCharacter->GetActorLocation()).GetSafeNormal();
 	const FRotator HitRotation = Direction.Rotation();
-	
-	// if(OwnerController)
-	// {
-	// 	OwnerController->SetControlRotation(HitRotation);
-	// }
 
 	PlayerCharacter->SetActorRotation(HitRotation);
 	PlayerCharacter->GetCharacterMovement()->bUseControllerDesiredRotation = true;
@@ -533,6 +515,7 @@ void UBaseParryComponent::EndRecoveryFromKnockDown()
 {
 	SetCombatState(ECombatState::Normal);
 	PlayerCharacter->RestoreCharacterRotation();
+	PlayerCharacter->DisableDestructibleCollider();
 	FullyRefillPosture();
 }
 

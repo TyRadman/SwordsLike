@@ -31,5 +31,5 @@ public:
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	UImage* WeaponIconImage;
 
-	void SetValues(AWeapon* WeaponToSet, AWeapon* WeaponToCompareTo);
+	void SetValues(AWeapon* WeaponToSet, AWeapon* WeaponToCompareTo, const bool bSetValueColors);
 };
