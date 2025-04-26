@@ -27,6 +27,7 @@ protected:
 	TSubclassOf<UPlayerSelectionMenuWidget> PlayersWidgetClass;
 
 	TMap<AMainPlayerState*, UPlayerSelectionMenuWidget*> PlayerWidgetsMap;
+	TArray<UPlayerSelectionMenuWidget*> PlayerWidgetsList;
 
 	
 private:

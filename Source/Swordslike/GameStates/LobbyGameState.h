@@ -13,4 +13,7 @@ UCLASS()
 class SWORDSLIKE_API ALobbyGameState : public AGameState
 {
 	GENERATED_BODY()
+
+	int PlayersCounter = -1;
+	virtual void AddPlayerState(APlayerState* PlayerState) override;
 };

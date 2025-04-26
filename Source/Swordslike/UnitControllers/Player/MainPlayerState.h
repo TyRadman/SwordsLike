@@ -16,7 +16,7 @@ enum class EPlayerPhase : uint8
 };
 
 UCLASS()
-class SWORDSLIKE_API AMainPlayerState : public APlayerState
+class SWORDSLIKE_API  AMainPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
@@ -47,4 +47,11 @@ public:
 	UPlayerStartCharacterDataAsset* CharacterDataAsset;
 	UFUNCTION()
 	void OnRep_CharacterDataAsset();
+
+	UPROPERTY(ReplicatedUsing=OnRep_StateIndex)
+	int32 StateIndex = -1;
+
+protected:
+	UFUNCTION()
+	void OnRep_StateIndex();
 };

@@ -6,6 +6,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "Player/MainPlayerState.h"
 #include "Swordslike/SwordslikeGameInstance.h"
+#include "Swordslike/GameStates/LobbyGameState.h"
 #include "Swordslike/Utilities/UtilHelper.h"
 
 class AMainPlayerController;
@@ -30,6 +31,18 @@ void UMainLobbyMenu::NativeConstruct()
 	{
 		UUtilHelper::ShowCursor(GetWorld(), this, false);
 	}
+	
+	PlayerWidgetsMap.Empty();
+
+	TArray<UWidget*> Children = PlayersGrid->GetAllChildren();
+	for (UWidget* Child : Children)
+	{
+		if (UPlayerSelectionMenuWidget* PlayerWidget = Cast<UPlayerSelectionMenuWidget>(Child))
+		{
+			PlayerWidget->SetVisibility(ESlateVisibility::Hidden);
+			PlayerWidgetsList.Add(PlayerWidget);
+		}
+	}
 }
 
 void UMainLobbyMenu::SetupPlayerWidgets()
@@ -40,43 +53,29 @@ void UMainLobbyMenu::SetupPlayerWidgets()
 		return;
 	}
 	
-	AGameStateBase* GameState = GetWorld()->GetGameState();
+	ALobbyGameState* GameState = Cast<ALobbyGameState>(GetWorld()->GetGameState());
 	if (!GameState || !PlayersWidgetClass)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "UMainLobbyMenu ERROR: no game state or playersWidgetClass!");
 		return;
 	}
-	
-	PlayersGrid->ClearChildren();
-	PlayerWidgetsMap.Empty();
 
 	int Index = 0;
 	for (APlayerState* PlayerState : GameState->PlayerArray)
 	{
 		if (AMainPlayerState* MainPS = Cast<AMainPlayerState>(PlayerState))
 		{
-			UPlayerSelectionMenuWidget* CharacterWidget = CreateWidget<UPlayerSelectionMenuWidget>(this, PlayersWidgetClass);
-			if (!CharacterWidget)
-			{
-				continue;
-			}
-			
+			UPlayerSelectionMenuWidget* CharacterWidget = PlayerWidgetsList[MainPS->StateIndex];
+			CharacterWidget->SetVisibility(ESlateVisibility::Visible);
 			PlayerWidgetsMap.Add(MainPS, CharacterWidget);
 
-			const int Row = Index / MaxColsCount;
-			const int Col = Index % MaxColsCount;
-			
-			if (UUniformGridSlot* GridSlot = Cast<UUniformGridSlot>(PlayersGrid->AddChildToUniformGrid(CharacterWidget, Row, Col)))
-			{
-				GridSlot->SetHorizontalAlignment(HAlign_Center);
-				GridSlot->SetVerticalAlignment(VAlign_Top);
-			}
-
+			// populate and cache the character widget if they own it
 			if (MainPS == GetOwningPlayer()->PlayerState)
 			{
 				CharacterWidget->OnLocalPlayerController();
 				LocalPlayerCharacterWidget = CharacterWidget;
 			}
+			// otherwise, disable the widget as it belongs to another player
 			else
 			{
 				CharacterWidget->OnRemotePlayerController();
@@ -113,14 +112,15 @@ void UMainLobbyMenu::UpdateNameText(const FString& NewName)
 
 void UMainLobbyMenu::BindWidgets()
 {
-	AGameStateBase* GameState = GetWorld()->GetGameState();
+	const AGameStateBase* GameState = GetWorld()->GetGameState();
 	if (!GameState)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "ERROR: No game state!");
 		return;
 	}
 
-	for (APlayerState* PlayerState : GameState->PlayerArray)
+	auto PlayerStates = GameState->PlayerArray;
+	for (APlayerState* PlayerState : PlayerStates)
 	{
 		AMainPlayerState* MainPlayerState = Cast<AMainPlayerState>(PlayerState);
 		if (!MainPlayerState)
@@ -207,12 +207,4 @@ void UMainLobbyMenu::SetSelectedCharacter(const TSoftObjectPtr<UPlayerStartChara
 	}
 	
 	LocalPlayerCharacterWidget->UpdateWithCharacterData(Character);
-
-	// if (APlayerController* PC = GetOwningPlayer())
-	// {
-	// 	if (AMainPlayerController* MPC = Cast<AMainPlayerController>(PC))
-	// 	{
-	// 		MPC->Server_SelectCharacter(Character);
-	// 	}
-	// }
 }

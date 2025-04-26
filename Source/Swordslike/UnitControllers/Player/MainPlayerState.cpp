@@ -7,6 +7,7 @@ void AMainPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AMainPlayerState, CharacterDataAsset);
+	DOREPLIFETIME(AMainPlayerState, StateIndex);
 }
 
 void AMainPlayerState::CopyProperties(APlayerState* PlayerState)
@@ -65,4 +66,9 @@ void AMainPlayerState::OnRep_CharacterDataAsset()
 	{
 		OnCharacterChangedEvent.Broadcast();
 	}
+}
+
+void AMainPlayerState::OnRep_StateIndex()
+{
+	
 }

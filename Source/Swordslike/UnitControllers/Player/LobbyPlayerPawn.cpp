@@ -34,7 +34,7 @@ void ALobbyPlayerPawn::BeginPlay()
 
 	FTimerHandle TimerHandle;
 	// GetWorldTimerManager().SetTimerForNextTick(this, &ALobbyPlayerPawn::Test);
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ALobbyPlayerPawn::Test, 5.f, false);
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ALobbyPlayerPawn::Test, 2.f, false);
 }
 
 void ALobbyPlayerPawn::Test()

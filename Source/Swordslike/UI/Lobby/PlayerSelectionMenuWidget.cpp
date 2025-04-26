@@ -57,7 +57,6 @@ void UPlayerSelectionMenuWidget::OnLocalPlayerController()
 	PlayerNameTextBox->SetIsReadOnly(false);
 	PlayerNameTextBox->OnTextCommitted.AddDynamic(this, &UPlayerSelectionMenuWidget::HandleNameCommitted);
 	PlayerNameTextBox->OnTextChanged.AddDynamic(this, &UPlayerSelectionMenuWidget::HandleNameChanged);
-
 }
 
 void UPlayerSelectionMenuWidget::OnRemotePlayerController()
