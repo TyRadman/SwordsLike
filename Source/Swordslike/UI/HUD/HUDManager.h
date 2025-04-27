@@ -19,7 +19,8 @@ public:
 	AHUDManager();
 
 	FORCEINLINE UMasterHUD* GetMasterHUD() const { return MasterHUD; }
-	FORCEINLINE UGameOverMenuWidget* GetGameOverMenu() const { return GameOverMenu; } 
+	FORCEINLINE UGameOverMenuWidget* GetGameOverMenu() const { return GameOverMenu; }
+
 
 protected:
 	virtual void BeginPlay() override;

@@ -54,4 +54,7 @@ public:
 protected:
 	UFUNCTION()
 	void OnRep_StateIndex();
+
+private:
+	bool bIsDefaultNameSet = false;
 };

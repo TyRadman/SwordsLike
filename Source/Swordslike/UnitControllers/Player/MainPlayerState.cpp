@@ -32,6 +32,15 @@ void AMainPlayerState::OnRep_PlayerName()
 {
 	Super::OnRep_PlayerName();
 
+	// to get rid of the default long name and set a new default
+	if(!bIsDefaultNameSet)
+	{
+		bIsDefaultNameSet = true;
+		SetPlayerName("New Player");
+		ForceNetUpdate();
+		return;
+	}
+	
 	if(OnPlayerNameChanged.IsBound())
 	{
 		OnPlayerNameChanged.Broadcast(GetPlayerName());

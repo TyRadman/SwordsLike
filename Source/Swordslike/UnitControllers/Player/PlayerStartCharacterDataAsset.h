@@ -4,10 +4,11 @@
 #include "Engine/DataAsset.h"
 #include "PlayerStartCharacterDataAsset.generated.h"
 
+class UCharacterAnimationProfileDA;
 /**
  * Holds the data related to the character selection phase like the starting player character and starting weapons.
  */
-UCLASS()
+UCLASS(Blueprintable)
 class SWORDSLIKE_API UPlayerStartCharacterDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
@@ -38,4 +39,6 @@ public:
 	UTexture2D* CharacterTexture;
 	UPROPERTY(EditAnywhere, Category=Visuals)
 	USkeletalMesh* CharacterSkeletalMesh;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Visuals)
+	UCharacterAnimationProfileDA* AnimationData;
 };

@@ -11,7 +11,7 @@ void ALobbyGameState::AddPlayerState(APlayerState* PlayerState)
 		if(AMainPlayerState* State = Cast<AMainPlayerState>(PlayerState))
 		{
 			PlayersCounter++;
-			State->StateIndex = PlayersCounter;	
+			State->StateIndex = PlayersCounter;
 		}
 	}
 }

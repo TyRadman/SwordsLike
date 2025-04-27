@@ -126,7 +126,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	USceneComponent* WeaponDropPoint;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
-	USphereComponent* DestructibleCollider;
+	UCapsuleComponent* DestructibleCollider;
 	APlayerController* PlayerController;
 	UCapsuleComponent* Capsule;
 	UMasterHUD* MasterHUD;
@@ -164,8 +164,9 @@ public:
 	FORCEINLINE UWidgetComponent* GetAttackIndicatorWidgetComponent() const {return WeaponAttackIndicatorWidgetComponent; }
 	FORCEINLINE ULockableTargetComponent* GetLockableTargetComponent() const {return LockableTargetComponent; }
 	FORCEINLINE UWeaponAttackIndicatorWidget* GetAttackIndicatorWidget() const {return WeaponAttackIndicator; }
-	FORCEINLINE USphereComponent* GetDestructibleSphereComponent() const {return DestructibleCollider; }
+	FORCEINLINE UCapsuleComponent* GetDestructibleSphereComponent() const {return DestructibleCollider; }
 	FORCEINLINE UInteractionComponent* GetInteractionComponent() const {return InteractionComponent; }
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UPlayerStartCharacterDataAsset* GetData() const { return PlayerCharacterDataAsset; }
 	FORCEINLINE UTargetLockerComponent* GetLockOnComponent() const {return TargetLockerComponent; }
 	FORCEINLINE UOverheadHealthBarWidget* GetOverHeadHUDComponent() const {return OverHeadHUD; }

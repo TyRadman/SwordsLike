@@ -71,7 +71,7 @@ public:
 	FORCEINLINE void OnReady() {DisplayReadyText(true);}
 	FORCEINLINE void OnNotReady() {DisplayReadyText(false);}
 
-	CharacterNameEvent OnPlayerNameChanged;
+	CharacterNameEvent OnPlayerNameChanged_Widget;
 	
 	UFUNCTION()
 	void HandleNameChanged(const FText& Text);

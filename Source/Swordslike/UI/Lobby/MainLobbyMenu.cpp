@@ -144,7 +144,7 @@ void UMainLobbyMenu::BindWidgets()
 		MainPlayerState->OnPlayerReady.AddUObject(CharacterWidget, &UPlayerSelectionMenuWidget::OnReady);
 		MainPlayerState->OnPlayerNotReady.AddUObject(CharacterWidget, &UPlayerSelectionMenuWidget::OnNotReady);
 
-		CharacterWidget->OnPlayerNameChanged.AddUObject(MainPlayerState, &AMainPlayerState::SetPlayerNewName);
+		CharacterWidget->OnPlayerNameChanged_Widget.AddUObject(MainPlayerState, &AMainPlayerState::SetPlayerNewName);
 	}
 }
 

@@ -57,10 +57,11 @@ void UPlayerSelectionMenuWidget::UpdateWithCharacterData(const TSoftObjectPtr<UP
 
 void UPlayerSelectionMenuWidget::OnLocalPlayerController_Implementation()
 {
-	UE_LOG(LogTemp, Display, TEXT("OnLocalPlayerController_Implementation"));
 	PlayerNameTextBox->SetIsReadOnly(false);
 	PlayerNameTextBox->OnTextCommitted.AddDynamic(this, &UPlayerSelectionMenuWidget::HandleNameCommitted);
 	PlayerNameTextBox->OnTextChanged.AddDynamic(this, &UPlayerSelectionMenuWidget::HandleNameChanged);
+
+	HandleNameChanged(FText::FromString(TEXT("Player Name")));
 }
 
 void UPlayerSelectionMenuWidget::OnRemotePlayerController_Implementation()
@@ -95,9 +96,9 @@ void UPlayerSelectionMenuWidget::HandleNameChanged(const FText& Text)
 	}
 
 	// fire the event to update the text field on other clients
-	if(OnPlayerNameChanged.IsBound())
+	if(OnPlayerNameChanged_Widget.IsBound())
 	{
-		OnPlayerNameChanged.Broadcast(PlayerNameTextBox->GetText().ToString());
+		OnPlayerNameChanged_Widget.Broadcast(PlayerNameTextBox->GetText().ToString());
 	}
 }
 

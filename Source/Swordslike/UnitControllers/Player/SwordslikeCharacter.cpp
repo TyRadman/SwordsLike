@@ -114,8 +114,7 @@ ASwordslikeCharacter::ASwordslikeCharacter()
 	
 	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>("Player Interaction");
 	
-	DestructibleCollider = CreateDefaultSubobject<USphereComponent>("Destructible Collider");
-	// DestructibleCollider->SetupAttachment(RootComponent);
+	DestructibleCollider = CreateDefaultSubobject<UCapsuleComponent>("Destructible Collider");
 	DestructibleCollider->SetupAttachment(CustomMesh);
 
 	// VFX
