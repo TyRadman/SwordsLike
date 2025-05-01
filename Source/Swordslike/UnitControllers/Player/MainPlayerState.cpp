@@ -1,6 +1,8 @@
 #include "MainPlayerState.h"
 
+#include "LobbyPlayerPawn.h"
 #include "Net/UnrealNetwork.h"
+#include "Swordslike/SwordslikeGameInstance.h"
 
 void AMainPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -36,7 +38,16 @@ void AMainPlayerState::OnRep_PlayerName()
 	if(!bIsDefaultNameSet)
 	{
 		bIsDefaultNameSet = true;
-		SetPlayerName("New Player");
+		
+	TArray<FString> SoulNames = {
+		TEXT("Aelric"), TEXT("Nyvara"), TEXT("Thorne"), TEXT("Kaelen"), TEXT("Veyla"),
+		TEXT("Draven"), TEXT("Maelis"), TEXT("Riven"), TEXT("Zareth"), TEXT("Sorin"),
+		TEXT("Vaelis"), TEXT("Noctis"), TEXT("Eryndor"), TEXT("Malrik"), TEXT("Saelyn"),
+		TEXT("Kareth"), TEXT("Lyric"), TEXT("Vorn"), TEXT("Zalen"), TEXT("Orwyn")
+	};
+
+		const FString RandomSoulName = SoulNames[FMath::RandRange(0, SoulNames.Num() - 1)];
+		SetPlayerName(RandomSoulName);
 		ForceNetUpdate();
 		return;
 	}
@@ -47,8 +58,14 @@ void AMainPlayerState::OnRep_PlayerName()
 	}
 }
 
+// Called on UMainLobbyMenu when the text widget changes. Only local calls
 void AMainPlayerState::SetPlayerNewName(const FString& NewName)
 {
+	if(USwordslikeGameInstance* Instance = Cast<USwordslikeGameInstance>(GetGameInstance()))
+	{
+		Instance->PlayerName = NewName;
+	}
+	
 	if(!HasAuthority())
 	{
 		Server_SetPlayerNewName(NewName);

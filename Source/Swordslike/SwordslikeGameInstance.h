@@ -43,6 +43,9 @@ public:
 		LocalData = NewCharacterData;
 	}
 
+	UPROPERTY(EditDefaultsOnly)
+	FString PlayerName = FString("Dummy Name");
+	
 private:
 	UPROPERTY(EditAnywhere, Category=CharactersData, meta=(AllowPrivateAccess=true))
 	UPlayerStartCharacterDataAsset* DefaultCharacterData;

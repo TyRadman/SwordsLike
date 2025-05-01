@@ -47,6 +47,7 @@ void ASwordslikeCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	DOREPLIFETIME(ASwordslikeCharacter, bIsLockedOnTarget);
 	DOREPLIFETIME(ASwordslikeCharacter, CurrentSpeed);
 	DOREPLIFETIME(ASwordslikeCharacter, PlayerCharacterDataAsset);
+	DOREPLIFETIME(ASwordslikeCharacter, PlayerName);
 }
 
 ASwordslikeCharacter::ASwordslikeCharacter()
@@ -279,6 +280,18 @@ void ASwordslikeCharacter::InitializePlayerComponents()
 	{
 		OverHeadHUD = CastOverHeadHUD;
 		OverHeadHUD->InitEntityComponent(this);
+
+		FTimerHandle Timer;
+
+		GetWorldTimerManager().SetTimer(Timer,
+			[this]()
+			{
+				if(const USwordslikeGameInstance* Instance = Cast<USwordslikeGameInstance>(GetGameInstance()))
+				{
+					SetPlayerName(Instance->PlayerName);
+				}
+			},
+			5.0f, false);
 	}
 	else
 	{
@@ -482,7 +495,6 @@ void ASwordslikeCharacter::Jump()
 
 bool ASwordslikeCharacter::CanJump() const
 {
-	UE_LOG(LogTemp, Warning, TEXT("State %s"), *UEnum::GetValueAsString(Combat->GetComboState()));
 	return bCanJump && Sprint->GetCurrentStamina() > 0.f && Combat->GetComboState() == EComboState::Idle;
 }
 
@@ -947,9 +959,12 @@ void ASwordslikeCharacter::RotateCharacterToDirection(const FRotator& NewRotatio
 	GetController()->SetControlRotation(NewRotation);
 }
 
-void ASwordslikeCharacter::PrintOverhead(const FString& Message)
+void ASwordslikeCharacter::SetOverheadText(const FString& Message)
 {
-	OverHeadHUD->SetOverheadNameValue(FText::FromString(Message));
+	if(OverHeadHUD)
+	{
+		OverHeadHUD->SetOverheadNameValue(FText::FromString(Message));
+	}
 }
 
 void ASwordslikeCharacter::PerformCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass)
@@ -1080,4 +1095,69 @@ void ASwordslikeCharacter::DisableDestructibleCollider()
 void ASwordslikeCharacter::Server_InflictDamageToDestructible_Implementation(ADestructibleObject* Destructible, const FDamageInfo DamageInfo)
 {
 	Destructible->TakeDamage(DamageInfo);
+}
+
+void ASwordslikeCharacter::SetPlayerName(const FString& Name)
+{
+	// OverHeadHUD->SetOverheadNameValue(FText::FromString(Name));
+	if (!IsLocallyControlled())
+	{
+		Client_SetPlayerName();
+	}
+	else
+	{
+		Server_SetPlayerName(Name);
+	}
+}
+
+void ASwordslikeCharacter::Server_SetPlayerName_Implementation(const FString& Name)
+{
+	Multicast_SetPlayerName(Name);
+	// Client_SetPlayerName();
+}
+
+void ASwordslikeCharacter::Client_SetPlayerName_Implementation()
+{
+	if(USwordslikeGameInstance* GameInstance = Cast<USwordslikeGameInstance>(GetGameInstance()))
+	{
+		
+		if(HasAuthority())
+		{
+			Multicast_SetPlayerName(GameInstance->PlayerName);
+		}
+		else
+		{
+			Server_SetPlayerName(GameInstance->PlayerName);
+		}
+		// if(HasAuthority())
+		// {
+		// 	Server_SetPlayerNameProcess(GameInstance->PlayerName);
+		// }
+		// else
+		// {
+		// 	PlayerName = GameInstance->PlayerName;
+		// 	OnRep_PlayerName();
+		// }
+	}
+}
+
+void ASwordslikeCharacter::Server_SetPlayerNameProcess_Implementation(const FString& Name)
+{
+	PlayerName = Name;
+	OnRep_PlayerName();
+}
+
+void ASwordslikeCharacter::OnRep_PlayerName()
+{
+	if (OverHeadHUD)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[OnRep_PlayerName] Setting overhead name to: %s [%s]"), *PlayerName, *UEnum::GetValueAsString(GetLocalRole()));
+		OverHeadHUD->SetOverheadNameValue(FText::FromString(PlayerName));
+	}
+}
+
+void ASwordslikeCharacter::Multicast_SetPlayerName_Implementation(const FString& Name)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[OnRep_PlayerName] Setting overhead name to: %s [%s]"), *Name, *UEnum::GetValueAsString(GetLocalRole()));
+	OverHeadHUD->SetOverheadNameValue(FText::FromString(Name));
 }

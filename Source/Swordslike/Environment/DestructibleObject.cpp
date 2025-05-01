@@ -8,8 +8,6 @@
 ADestructibleObject::ADestructibleObject()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	
 	
 	DestructibleMesh = CreateDefaultSubobject<UStaticMeshComponent>("Destructible Mesh");
 	DestructibleMesh->SetupAttachment(RootComponent);

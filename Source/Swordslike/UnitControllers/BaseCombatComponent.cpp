@@ -134,7 +134,7 @@ void UBaseCombatComponent::AttackAction()
 	if(ComboState == EComboState::Idle)
 	{
 		if(PlayerCharacter->bIsDebugging)
-		UE_LOG(LogTemp, Warning, TEXT("Setting to attack 1"));
+		// UE_LOG(LogTemp, Warning, TEXT("Setting to attack 1"));
 		SetComboState(EComboState::Attacking);
 		// PrintOnScreen_Local(FString::Printf(TEXT("First attack ")));
 		PlayNextAnimation();
@@ -146,7 +146,7 @@ void UBaseCombatComponent::AttackAction()
 	else if(ComboState == EComboState::LastSecondComboWindowOpen)
 	{
 		if(PlayerCharacter->bIsDebugging)
-		UE_LOG(LogTemp, Warning, TEXT("Setting to attack 2"));
+		// UE_LOG(LogTemp, Warning, TEXT("Setting to attack 2"));
 		SetComboState(EComboState::Attacking);
 		// PrintOnScreen_Local(FString::Printf(TEXT("Late attack ")));
 		PlayNextAnimation();
@@ -228,7 +228,7 @@ void UBaseCombatComponent::PerformNextAttack()
 	{
 		PlayNextAnimation();
 		if(PlayerCharacter->bIsDebugging)
-		UE_LOG(LogTemp, Warning, TEXT("Setting to attack 3"));
+		// UE_LOG(LogTemp, Warning, TEXT("Setting to attack 3"));
 		SetComboState(EComboState::Attacking);
 	}
 	else

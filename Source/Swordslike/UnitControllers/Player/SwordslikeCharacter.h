@@ -156,6 +156,22 @@ protected:
 
 	void CacheComponentReferences();
 	void InitializePlayerComponents();
+
+	UPROPERTY(ReplicatedUsing=OnRep_PlayerName)
+	FString PlayerName;
+	
+	UFUNCTION()
+	void OnRep_PlayerName();
+	void SetPlayerName(const FString& Name);
+	UFUNCTION(Server, Reliable)
+	void Server_SetPlayerName(const FString& Name);
+	UFUNCTION(Client, Reliable)
+	void Client_SetPlayerName();
+	UFUNCTION(Server, Reliable)
+	void Server_SetPlayerNameProcess(const FString& Name);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetPlayerName(const FString& Name);
+	
 	bool bIsInitialized = false;
 	bool bOnBeginPlayerRegistered = false;
 	void SetDefaultReplicationProperties();
@@ -182,8 +198,8 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE UCapsuleComponent* GetInteractionSphere() const {return Capsule; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	FORCEINLINE USprintComponent* GetSprintComponent() const {return Sprint; }
 	FORCEINLINE UAnimInstance* GetAnimInstance() const {return AnimInstance; }
+	FORCEINLINE USprintComponent* GetSprintComponent() const {return Sprint; }
 	FORCEINLINE UMasterHUD* GetMasterHUD() const {return MasterHUD; }
 	
 	FORCEINLINE void SetCanAttack(const bool NewCanAttack) {bCanAttack = NewCanAttack; }
@@ -287,7 +303,7 @@ public:
 	void OnSprintEnded();
 
 	void RotateCharacterToDirection(const FRotator& NewRotation);
-	void PrintOverhead(const FString& Message);
+	void SetOverheadText(const FString& Message);
 
 	void PerformCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass);
 	UFUNCTION(Client, Reliable)
@@ -304,7 +320,6 @@ private:
 
 public:
 	FString GetInteractionInput();
-	FString PlayerName;
 
 private:
 	FString GetInputKey(const UInputAction* InputAction);
