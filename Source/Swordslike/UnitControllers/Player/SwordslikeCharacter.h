@@ -226,8 +226,6 @@ private:
 	void SetInitialValues();
 	UFUNCTION(Server, Reliable)
 	void Server_SetInitialValues(UPlayerStartCharacterDataAsset* Data);
-	// UFUNCTION(NetMulticast, Reliable)
-	// void Multicast_SetInitialValues(UPlayerStartCharacterDataAsset* Data);
 	void PerformSetInitialValues(UPlayerStartCharacterDataAsset* Data);
 
 	/**

@@ -1064,7 +1064,7 @@ void ASwordslikeCharacter::OnDestructibleOverlapped(UPrimitiveComponent* Overlap
 		if(ADestructibleObject* Destructible = Cast<ADestructibleObject>(OtherActor))
 		{
 			FDamageInfo DamageInfo;
-			DamageInfo.ImpactLocation = GetActorLocation();// + OtherActor->GetActorLocation()) / 2.0f;
+			DamageInfo.ImpactLocation = GetActorLocation();
 			DamageInfo.DamageInstigator = this;
 			DamageInfo.DamageInstigatorCharacter = this;
 
@@ -1113,14 +1113,12 @@ void ASwordslikeCharacter::SetPlayerName(const FString& Name)
 void ASwordslikeCharacter::Server_SetPlayerName_Implementation(const FString& Name)
 {
 	Multicast_SetPlayerName(Name);
-	// Client_SetPlayerName();
 }
 
 void ASwordslikeCharacter::Client_SetPlayerName_Implementation()
 {
-	if(USwordslikeGameInstance* GameInstance = Cast<USwordslikeGameInstance>(GetGameInstance()))
+	if(const USwordslikeGameInstance* GameInstance = Cast<USwordslikeGameInstance>(GetGameInstance()))
 	{
-		
 		if(HasAuthority())
 		{
 			Multicast_SetPlayerName(GameInstance->PlayerName);
@@ -1129,15 +1127,6 @@ void ASwordslikeCharacter::Client_SetPlayerName_Implementation()
 		{
 			Server_SetPlayerName(GameInstance->PlayerName);
 		}
-		// if(HasAuthority())
-		// {
-		// 	Server_SetPlayerNameProcess(GameInstance->PlayerName);
-		// }
-		// else
-		// {
-		// 	PlayerName = GameInstance->PlayerName;
-		// 	OnRep_PlayerName();
-		// }
 	}
 }
 

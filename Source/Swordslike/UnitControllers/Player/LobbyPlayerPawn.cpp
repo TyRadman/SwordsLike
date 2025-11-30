@@ -93,7 +93,7 @@ void ALobbyPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	{
 		Input->BindAction(LeftInputAction, ETriggerEvent::Started, this, &ALobbyPlayerPawn::OnSelectLeft);
 		Input->BindAction(RightInputAction, ETriggerEvent::Started, this, &ALobbyPlayerPawn::OnSelectRight);
-		Input->BindAction(ConfirmInputAction, ETriggerEvent::Started, this, &ALobbyPlayerPawn::ConfirmSelection);
+		// Input->BindAction(ConfirmInputAction, ETriggerEvent::Started, this, &ALobbyPlayerPawn::ConfirmSelection);
 		Input->BindAction(ReturnInputAction, ETriggerEvent::Started, this, &ALobbyPlayerPawn::ReturnFromSelection);
 	}
 }

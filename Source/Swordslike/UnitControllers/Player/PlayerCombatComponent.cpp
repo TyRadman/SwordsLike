@@ -6,13 +6,11 @@ UPlayerCombatComponent::UPlayerCombatComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-
 // Called when the game starts
 void UPlayerCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 }
-
 
 // Called every frame
 void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -24,5 +22,3 @@ void UPlayerCombatComponent::Roll()
 {
 	Super::Roll();
 }
-
-

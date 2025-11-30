@@ -25,13 +25,12 @@ class SWORDSLIKE_API UPlayerSelectionMenuWidget : public UUserWidget
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ReadyText;
-	
 	UPROPERTY(meta = (BindWidget))
-	UImage* CharacterImage;
-	
+	UTextBlock* CharacterNameText;
 	UPROPERTY(meta = (BindWidget))
 	UEditableText* PlayerNameTextBox;
-	
+	UPROPERTY(meta = (BindWidget))
+	UImage* CharacterImage;
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* ToughnessBar;
 	UPROPERTY(meta = (BindWidget))
@@ -40,11 +39,8 @@ class SWORDSLIKE_API UPlayerSelectionMenuWidget : public UUserWidget
 	UProgressBar* StaminaBar;
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* PostureBar;
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* CharacterNameText;
 	
 	bool bIsEditingName = false;
-
 	const int32 NameMaxCharacters = 12;
 
 protected:

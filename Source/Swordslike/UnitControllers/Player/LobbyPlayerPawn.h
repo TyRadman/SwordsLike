@@ -43,6 +43,7 @@ protected:
 
 	
 
+	UFUNCTION(BlueprintCallable, meta=(AllowPrivateAccess))
 	void ConfirmSelection();
 	UFUNCTION(Server, Reliable)
 	void Server_ConfirmSelection();
